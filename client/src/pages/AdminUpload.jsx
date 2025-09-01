@@ -1,0 +1,663 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import API, { setAuthToken } from '../services/api';
+import { Upload, FileText, BookOpen, Tag, Folder, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+
+export default function AdminUpload() {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    subjectName: '',
+    topicName: '',
+    date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    files: [] // Changed from file to files array
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const [filePreview, setFilePreview] = useState([]);
+
+  const forceRelogin = () => {
+    localStorage.removeItem('token');
+    setAuthToken(null);
+    navigate('/admin/login');
+  };
+
+
+
+  const handleFiles = (files) => {
+    const fileArray = Array.from(files);
+    setForm({ ...form, files: fileArray });
+    if (fileArray.length > 0) {
+      const previews = fileArray.map(file => ({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        type: file.type
+      }));
+      setFilePreview(previews);
+    }
+  };
+
+  const handleSingleFile = (file) => {
+    handleFiles([file]);
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    
+    // Debug token information
+    const token = localStorage.getItem('token');
+    console.log('🔐 Upload attempt with token:', token ? token.substring(0, 20) + '...' : 'null');
+    
+    if (!token) {
+      setError('No authentication token found. Please login as admin first.');
+      setLoading(false);
+      return;
+    }
+    
+    // Decode token to check if it's an admin token
+    try {
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      console.log('🎫 Token payload:', tokenPayload);
+      
+      if (!tokenPayload.isAdmin) {
+        setError('Not an admin token. Please login via Admin Login.');
+        setLoading(false);
+        return;
+      }
+    } catch (decodeError) {
+      console.log('❌ Token decode error:', decodeError);
+      setError('Invalid token format. Please login again.');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const data = new FormData();
+      data.append('title', form.title);
+      data.append('description', form.description);
+      data.append('subjectName', form.subjectName);
+      data.append('topicName', form.topicName);
+      data.append('date', form.date);
+      
+      // Append all files
+      form.files.forEach((file, index) => {
+        data.append('files', file);
+      });
+      
+      setAuthToken(token);
+      console.log(`🚀 Sending upload request for ${form.files.length} files...`);
+      
+      const response = await API.post('/notes/upload', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      console.log('✅ Upload successful:', response.data);
+      const filesCount = response.data.filesUploaded || form.files.length;
+      setSuccess(`${filesCount} note(s) uploaded successfully!`);
+      setForm({ 
+        title: '', 
+        description: '', 
+        subjectName: '', 
+        topicName: '', 
+        date: new Date().toISOString().split('T')[0],
+        files: [] 
+      });
+      setFilePreview([]);
+    } catch (err) {
+      console.log('❌ Upload error:', err);
+      console.log('Error response:', err.response?.data);
+      
+      let errorMessage = err.response?.data?.msg || err.message;
+      
+      // Handle specific JWT signature errors
+      if (err.response?.data?.error === 'invalid signature') {
+        errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login to get a fresh token.';
+      } else if (err.response?.data?.errorType === 'JsonWebTokenError') {
+        errorMessage = 'Authentication token is corrupted. Please log out and log back in via Admin Login.';
+      }
+      
+      setError(errorMessage);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+      padding: '2rem 1rem',
+      paddingTop: '6rem'
+    }}>
+      {/* Header Section */}
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto 3rem',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1))',
+          border: '1px solid rgba(139, 92, 246, 0.2)',
+          borderRadius: '2rem',
+          padding: '0.75rem 1.5rem',
+          marginBottom: '2rem'
+        }}>
+          <Upload size={20} style={{ color: '#a855f7' }} />
+          <span style={{ color: '#e2e8f0', fontWeight: '500', letterSpacing: '0.05em' }}>ADMIN PORTAL</span>
+        </div>
+        
+        <h1 style={{
+          fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+          fontWeight: '900',
+          background: 'linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #6366f1 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          margin: '0 0 1rem',
+          letterSpacing: '-0.02em'
+        }}>Upload Note</h1>
+        
+        <p style={{
+          color: '#94a3b8',
+          fontSize: '1.125rem',
+          maxWidth: '600px',
+          margin: '0 auto',
+          lineHeight: '1.6'
+        }}>Share knowledge with students by uploading educational content to the platform</p>
+      </div>
+
+      {/* Admin Login Notice */}
+      {(!localStorage.getItem('token') || 
+        (localStorage.getItem('token') && 
+          !JSON.parse(atob(localStorage.getItem('token').split('.')[1])).isAdmin)) && (
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto 2rem',
+          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
+          border: '1px solid rgba(251, 191, 36, 0.2)',
+          borderRadius: '1rem',
+          padding: '1.5rem',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            marginBottom: '0.75rem'
+          }}>
+            <AlertCircle size={20} style={{ color: '#f59e0b' }} />
+            <span style={{ color: '#f59e0b', fontWeight: '600' }}>Admin Access Required</span>
+          </div>
+          <p style={{ color: '#fbbf24', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
+            This page requires admin privileges. Please use 
+            <a href="/admin/login" style={{ color: '#fbbf24', textDecoration: 'underline' }}> Admin Login </a>
+            to access the upload functionality.
+          </p>
+        </div>
+      )}
+      {/* Main Upload Form */}
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        background: 'rgba(15, 23, 42, 0.6)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(148, 163, 184, 0.1)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+      }}>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Title Input */}
+          <div style={{ position: 'relative' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#e2e8f0',
+              fontWeight: '600',
+              marginBottom: '0.75rem',
+              fontSize: '0.95rem'
+            }}>
+              <FileText size={18} style={{ color: '#a855f7' }} />
+              Note Title
+            </label>
+            <input
+              type="text"
+              placeholder="Enter a descriptive title for your note"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.5)',
+                border: '2px solid rgba(148, 163, 184, 0.1)',
+                borderRadius: '0.75rem',
+                padding: '1rem 1.25rem',
+                color: '#e2e8f0',
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'all 0.3s ease',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+          {/* Description Textarea */}
+          <div style={{ position: 'relative' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#e2e8f0',
+              fontWeight: '600',
+              marginBottom: '0.75rem',
+              fontSize: '0.95rem'
+            }}>
+              <FileText size={18} style={{ color: '#a855f7' }} />
+              Description
+            </label>
+            <textarea
+              placeholder="Provide a detailed description of the note content"
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              rows={4}
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.5)',
+                border: '2px solid rgba(148, 163, 184, 0.1)',
+                borderRadius: '0.75rem',
+                padding: '1rem 1.25rem',
+                color: '#e2e8f0',
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'all 0.3s ease',
+                resize: 'vertical',
+                minHeight: '100px',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+          {/* Subject and Topic Input Fields */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: '#e2e8f0',
+                fontWeight: '600',
+                marginBottom: '0.75rem',
+                fontSize: '0.95rem'
+              }}>
+                <BookOpen size={18} style={{ color: '#a855f7' }} />
+                Subject Name
+              </label>
+              <input
+                type="text"
+                placeholder="Enter subject name (e.g., Mathematics, Physics)"
+                value={form.subjectName}
+                onChange={e => setForm({ ...form, subjectName: e.target.value })}
+                required
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.5)',
+                  border: '2px solid rgba(148, 163, 184, 0.1)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem 1.25rem',
+                  color: '#e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: '#e2e8f0',
+                fontWeight: '600',
+                marginBottom: '0.75rem',
+                fontSize: '0.95rem'
+              }}>
+                <Tag size={18} style={{ color: '#a855f7' }} />
+                Topic Name
+              </label>
+              <input
+                type="text"
+                placeholder="Enter topic name (e.g., Calculus, Quantum Mechanics)"
+                value={form.topicName}
+                onChange={e => setForm({ ...form, topicName: e.target.value })}
+                required
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.5)',
+                  border: '2px solid rgba(148, 163, 184, 0.1)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem 1.25rem',
+                  color: '#e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'all 0.3s ease',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Date Input Field */}
+          <div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#e2e8f0',
+              fontWeight: '600',
+              marginBottom: '0.75rem',
+              fontSize: '0.95rem'
+            }}>
+              <Tag size={18} style={{ color: '#a855f7' }} />
+              Date
+            </label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={e => setForm({ ...form, date: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.5)',
+                border: '2px solid rgba(148, 163, 184, 0.1)',
+                borderRadius: '0.75rem',
+                padding: '1rem 1.25rem',
+                color: '#e2e8f0',
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'all 0.3s ease',
+                boxSizing: 'border-box',
+                colorScheme: 'dark'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+          {/* File Upload Area */}
+          <div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#e2e8f0',
+              fontWeight: '600',
+              marginBottom: '0.75rem',
+              fontSize: '0.95rem'
+            }}>
+              <Folder size={18} style={{ color: '#a855f7' }} />
+              Upload Files (Multiple supported)
+            </label>
+            
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              style={{
+                border: `2px dashed ${dragActive ? 'rgba(168, 85, 247, 0.6)' : 'rgba(148, 163, 184, 0.3)'}`,
+                borderRadius: '1rem',
+                padding: '2rem',
+                textAlign: 'center',
+                background: dragActive ? 'rgba(168, 85, 247, 0.05)' : 'rgba(30, 41, 59, 0.3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                position: 'relative'
+              }}
+              onClick={() => document.getElementById('file-input').click()}
+            >
+              <input
+                id="file-input"
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.png"
+                onChange={(e) => handleFiles(e.target.files)}
+                required
+                style={{ display: 'none' }}
+              />
+              
+              {filePreview.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ color: '#a855f7', fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
+                    {filePreview.length} file(s) selected:
+                  </div>
+                  {filePreview.map((file, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '0.5rem', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'rgba(168, 85, 247, 0.1)',
+                        borderRadius: '0.5rem',
+                        border: '1px solid rgba(168, 85, 247, 0.3)'
+                      }}>
+                        <FileText size={20} style={{ color: '#a855f7' }} />
+                      </div>
+                      <div style={{ textAlign: 'left', flex: 1 }}>
+                        <div style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '0.95rem' }}>{file.name}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{file.size} • {file.type}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <div style={{
+                    width: '3rem',
+                    height: '3rem',
+                    background: 'rgba(168, 85, 247, 0.1)',
+                    borderRadius: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1rem',
+                    border: '1px solid rgba(168, 85, 247, 0.3)'
+                  }}>
+                    <Upload size={24} style={{ color: '#a855f7' }} />
+                  </div>
+                  <div style={{ color: '#e2e8f0', fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    Drag & drop your files here
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                    or click to browse • Multiple files supported • PDF, DOC, DOCX, JPG, PNG
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              background: loading 
+                ? 'rgba(100, 116, 139, 0.5)' 
+                : 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)',
+              border: 'none',
+              borderRadius: '0.75rem',
+              padding: '1.25rem 2rem',
+              color: 'white',
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              boxShadow: loading ? 'none' : '0 10px 25px -5px rgba(139, 92, 246, 0.4)',
+              transform: loading ? 'none' : 'translateY(0)',
+              marginTop: '1rem'
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 15px 35px -5px rgba(139, 92, 246, 0.5)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 10px 25px -5px rgba(139, 92, 246, 0.4)';
+              }
+            }}
+          >
+            {loading ? (
+              <><Loader size={20} style={{ animation: 'spin 1s linear infinite' }} /> Uploading {form.files.length} file(s)...</>
+            ) : (
+              <><Upload size={20} /> Upload Note(s) ({form.files.length || 0} file(s))</>
+            )}
+          </button>
+          {/* Success/Error Messages */}
+          {success && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '1rem 1.25rem',
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: '0.75rem',
+              color: '#4ade80'
+            }}>
+              <CheckCircle size={20} />
+              <span style={{ fontWeight: '500' }}>{success}</span>
+            </div>
+          )}
+          
+          {error && (
+            <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '1rem 1.25rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.75rem',
+                color: '#f87171',
+                marginBottom: '1rem'
+              }}>
+                <AlertCircle size={20} />
+                <span style={{ fontWeight: '500' }}>{error}</span>
+              </div>
+              
+              {/* Show re-login button for authentication errors */}
+              {(error.includes('signature') || error.includes('token') || error.includes('authentication')) && (
+                <button
+                  onClick={forceRelogin}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #dc2626 100%)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '0.75rem 1.5rem',
+                    color: 'white',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 5px 15px -3px rgba(245, 158, 11, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                >
+                  🔑 Go to Admin Login
+                </button>
+              )}
+            </div>
+          )}
+        </form>
+      </div>
+      
+      {/* CSS for spinner animation */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
