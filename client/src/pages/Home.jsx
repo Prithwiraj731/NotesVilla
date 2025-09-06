@@ -4,12 +4,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export default function Home() {
   const nav = useNavigate();
   const handleDive = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      nav("/notes");
-    } else {
-      nav("/login");
-    }
+    nav("/notes");
   };
 
   return (
