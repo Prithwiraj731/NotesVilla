@@ -32,8 +32,14 @@ export default function NoteDetails() {
       // For multiple files
       note.files.forEach((file, index) => {
         setTimeout(() => {
+          // Fix localhost URLs for production
+          let downloadUrl = file.fileUrl;
+          if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
+            downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
+          }
+          
           const link = document.createElement('a');
-          link.href = file.fileUrl;
+          link.href = downloadUrl;
           link.download = file.originalName || `file-${index + 1}`;
           link.target = '_blank';
           link.rel = 'noopener noreferrer';
@@ -44,8 +50,14 @@ export default function NoteDetails() {
       });
     } else if (note?.fileUrl) {
       // For single file
+      // Fix localhost URLs for production
+      let downloadUrl = note.fileUrl;
+      if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
+        downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
+      }
+      
       const link = document.createElement('a');
-      link.href = note.fileUrl;
+      link.href = downloadUrl;
       link.download = note.filename || 'note-file';
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
@@ -361,8 +373,14 @@ export default function NoteDetails() {
                   </h4>
                   <button
                     onClick={() => {
+                      // Fix localhost URLs for production
+                      let downloadUrl = file.fileUrl;
+                      if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
+                        downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
+                      }
+                      
                       const link = document.createElement('a');
-                      link.href = file.fileUrl;
+                      link.href = downloadUrl;
                       link.download = file.originalName || `file-${index + 1}`;
                       link.target = '_blank';
                       link.rel = 'noopener noreferrer';

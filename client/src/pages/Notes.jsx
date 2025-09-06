@@ -544,8 +544,14 @@ export default function Notes(){
                         handleCardClick(note);
                       } else if (note.fileUrl) {
                         // For single file, download directly
+                        // Fix localhost URLs for production
+                        let downloadUrl = note.fileUrl;
+                        if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
+                          downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
+                        }
+                        
                         const link = document.createElement('a');
-                        link.href = note.fileUrl;
+                        link.href = downloadUrl;
                         link.download = note.filename || 'note-file';
                         link.target = '_blank';
                         link.rel = 'noopener noreferrer';
