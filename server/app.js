@@ -14,7 +14,7 @@ const app = express();
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://notesvilla-frontend.netlify.app', 'https://notesvilla-frontend.vercel.app']
-    : ['http://localhost:5173', 'http://localhost:3000'],
+    : true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -50,6 +50,14 @@ if (process.env.MONGO_URI) {
   console.log('🌐 Connection URL preview:', process.env.MONGO_URI.substring(0, 30) + '...');
 }
 
+// Start server first, then try to connect to MongoDB
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📝 Admin credentials: ${process.env.ADMIN_USERNAME}`);
+  console.log('📺 Ready to accept requests!');
+});
+
+// Try to connect to MongoDB (non-blocking)
 mongoose.connect(process.env.MONGO_URI, { 
   serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
   socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
@@ -59,12 +67,6 @@ mongoose.connect(process.env.MONGO_URI, {
     console.log('📊 Connection state:', mongoose.connection.readyState);
     console.log('📋 Database name:', mongoose.connection.db.databaseName);
     console.log('🔗 Connection host:', mongoose.connection.host);
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📝 Admin credentials: ${process.env.ADMIN_USERNAME}`);
-      console.log('📺 Ready to accept requests!');
-    });
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:');
@@ -79,10 +81,6 @@ mongoose.connect(process.env.MONGO_URI, {
       console.error('   Example: mongodb+srv://username:password@cluster.mongodb.net/notesvilla');
     }
     
-    console.error('\n💡 Starting server without database for testing...');
-    // Start server anyway for testing frontend
-    app.listen(PORT, () => {
-      console.log(`⚠️  Server running on port ${PORT} (WITHOUT DATABASE)`);
-      console.log('   Please fix MongoDB connection to enable full functionality');
-    });
+    console.error('\n⚠️  Server running WITHOUT DATABASE');
+    console.error('   Admin login will work, but notes functionality may be limited');
   });
