@@ -28,6 +28,8 @@ export default function NoteDetails() {
   };
 
   const handleDownload = () => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     if (note?.files && note.files.length > 1) {
       // For multiple files
       note.files.forEach((file, index) => {
@@ -38,14 +40,32 @@ export default function NoteDetails() {
             downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
           }
           
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = file.originalName || `file-${index + 1}`;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          if (isMobile) {
+            fetch(downloadUrl)
+              .then(response => response.blob())
+              .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = file.originalName || `file-${index + 1}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+              })
+              .catch(() => {
+                window.open(downloadUrl, '_blank');
+              });
+          } else {
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = file.originalName || `file-${index + 1}`;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
@@ -56,14 +76,32 @@ export default function NoteDetails() {
         downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
       }
       
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = note.filename || 'note-file';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (isMobile) {
+        fetch(downloadUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = note.filename || 'note-file';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(() => {
+            window.open(downloadUrl, '_blank');
+          });
+      } else {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = note.filename || 'note-file';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -379,14 +417,34 @@ export default function NoteDetails() {
                         downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
                       }
                       
-                      const link = document.createElement('a');
-                      link.href = downloadUrl;
-                      link.download = file.originalName || `file-${index + 1}`;
-                      link.target = '_blank';
-                      link.rel = 'noopener noreferrer';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        fetch(downloadUrl)
+                          .then(response => response.blob())
+                          .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = file.originalName || `file-${index + 1}`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                          })
+                          .catch(() => {
+                            window.open(downloadUrl, '_blank');
+                          });
+                      } else {
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = file.originalName || `file-${index + 1}`;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
                     }}
                     style={{
                       display: 'inline-flex',
