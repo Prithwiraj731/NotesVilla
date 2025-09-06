@@ -28,43 +28,30 @@ export default function NoteDetails() {
   };
 
   const handleDownload = () => {
-    // Mobile browser detection
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     if (note?.files && note.files.length > 1) {
       // For multiple files
       note.files.forEach((file, index) => {
         setTimeout(() => {
-          if (isMobile) {
-            // For mobile, open in new tab to trigger download
-            window.open(file.fileUrl, '_blank');
-          } else {
-            // Standard download approach for desktop
-            const link = document.createElement('a');
-            link.href = file.fileUrl;
-            link.download = file.originalName || `file-${index + 1}`;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
+          const link = document.createElement('a');
+          link.href = file.fileUrl;
+          link.download = file.originalName || `file-${index + 1}`;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
       // For single file
-      if (isMobile) {
-        // For mobile, open in new tab to trigger download
-        window.open(note.fileUrl, '_blank');
-      } else {
-        // Standard download approach for desktop
-        const link = document.createElement('a');
-        link.href = note.fileUrl;
-        link.download = note.filename || 'note-file';
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const link = document.createElement('a');
+      link.href = note.fileUrl;
+      link.download = note.filename || 'note-file';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -374,18 +361,14 @@ export default function NoteDetails() {
                   </h4>
                   <button
                     onClick={() => {
-                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                      if (isMobile) {
-                        window.open(file.fileUrl, '_blank');
-                      } else {
-                        const link = document.createElement('a');
-                        link.href = file.fileUrl;
-                        link.download = file.originalName || `file-${index + 1}`;
-                        link.target = '_blank';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }
+                      const link = document.createElement('a');
+                      link.href = file.fileUrl;
+                      link.download = file.originalName || `file-${index + 1}`;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
                     }}
                     style={{
                       display: 'inline-flex',

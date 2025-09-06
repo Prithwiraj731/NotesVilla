@@ -544,17 +544,14 @@ export default function Notes(){
                         handleCardClick(note);
                       } else if (note.fileUrl) {
                         // For single file, download directly
-                        if (isMobile) {
-                          window.open(note.fileUrl, '_blank');
-                        } else {
-                          const link = document.createElement('a');
-                          link.href = note.fileUrl;
-                          link.download = note.filename || 'note-file';
-                          link.target = '_blank';
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }
+                        const link = document.createElement('a');
+                        link.href = note.fileUrl;
+                        link.download = note.filename || 'note-file';
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
                       }
                     }}
                     style={{
