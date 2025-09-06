@@ -560,7 +560,14 @@ export default function Notes(){
                               const url = window.URL.createObjectURL(blob);
                               const link = document.createElement('a');
                               link.href = url;
-                              link.download = note.filename || 'note-file';
+                              // Ensure proper file extension
+                              let filename = note.filename || 'note-file';
+                              if (!filename.includes('.') && downloadUrl.includes('.')) {
+                                const urlParts = downloadUrl.split('.');
+                                const extension = urlParts[urlParts.length - 1].split('?')[0];
+                                filename = filename + '.' + extension;
+                              }
+                              link.download = filename;
                               document.body.appendChild(link);
                               link.click();
                               document.body.removeChild(link);

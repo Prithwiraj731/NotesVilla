@@ -47,7 +47,14 @@ export default function NoteDetails() {
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = file.originalName || `file-${index + 1}`;
+                // Ensure proper file extension
+                let filename = file.originalName || `file-${index + 1}`;
+                if (!filename.includes('.') && downloadUrl.includes('.')) {
+                  const urlParts = downloadUrl.split('.');
+                  const extension = urlParts[urlParts.length - 1].split('?')[0];
+                  filename = filename + '.' + extension;
+                }
+                link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -83,7 +90,14 @@ export default function NoteDetails() {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = note.filename || 'note-file';
+            // Ensure proper file extension
+            let filename = note.filename || 'note-file';
+            if (!filename.includes('.') && downloadUrl.includes('.')) {
+              const urlParts = downloadUrl.split('.');
+              const extension = urlParts[urlParts.length - 1].split('?')[0];
+              filename = filename + '.' + extension;
+            }
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -426,7 +440,14 @@ export default function NoteDetails() {
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.href = url;
-                            link.download = file.originalName || `file-${index + 1}`;
+                            // Ensure proper file extension
+                            let filename = file.originalName || `file-${index + 1}`;
+                            if (!filename.includes('.') && downloadUrl.includes('.')) {
+                              const urlParts = downloadUrl.split('.');
+                              const extension = urlParts[urlParts.length - 1].split('?')[0];
+                              filename = filename + '.' + extension;
+                            }
+                            link.download = filename;
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
