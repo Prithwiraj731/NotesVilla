@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: notesvilla-backend
+    env: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USERNAME
+        value: prithwi1016
+      - key: ADMIN_PASSWORD
+        value: Prithwi_1100
+      - key: JWT_SECRET
+        value: notesvilla_super_secret_jwt_key_2025_very_long_and_secure_string
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: MONGO_URI
+        value: mongodb+srv://prithwi1016:Prithwi_1100@notes.dnmn9vm.mongodb.net/notesvilla?retryWrites=true&w=majority&appName=notes
