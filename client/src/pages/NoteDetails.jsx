@@ -35,10 +35,9 @@ export default function NoteDetails() {
           const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
           const originalName = file.originalName || filename;
 
-          // Create download URL with proper endpoint
-          const baseUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:5000'
-            : window.location.origin;
+          // Create download URL with proper API endpoint
+          const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+          const baseUrl = apiBase.replace('/api', ''); // Remove /api suffix to get base server URL
           const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
           // Direct download - browser will handle properly with server headers
