@@ -98,6 +98,39 @@ router.get('/subject/:subjectName', (req, res, next) => {
   next();
 }, notesCtrl.listNotesBySubject);
 
+// Download endpoint with proper headers
+router.get('/download/:filename', (req, res) => {
+  console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
+  
+  const filename = req.params.filename;
+  const filePath = path.join(uploadsDir, filename);
+  
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    console.log('❌ File not found:', filePath);
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  // Get original filename from query parameter if provided
+  const originalName = req.query.name || filename;
+  
+  // Set proper headers for download
+  res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  
+  // Send file
+  res.download(filePath, originalName, (err) => {
+    if (err) {
+      console.error('❌ Download error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Error downloading file' });
+      }
+    } else {
+      console.log('✅ File downloaded successfully:', originalName);
+    }
+  });
+});
+
 // Add a debug endpoint
 router.get('/debug', (req, res) => {
   console.log('📋 GET /api/notes/debug called');
@@ -107,6 +140,7 @@ router.get('/debug', (req, res) => {
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
       'GET /api/notes/topics/:subjectName',
+      'GET /api/notes/download/:filename',
       'POST /api/notes/upload (admin only)'
     ]
   });

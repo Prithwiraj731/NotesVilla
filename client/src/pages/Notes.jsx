@@ -543,50 +543,18 @@ export default function Notes(){
                         // For multiple files, navigate to details page
                         handleCardClick(note);
                       } else if (note.fileUrl) {
-                        // For single file, download directly
-                        // Fix localhost URLs for production
-                        let downloadUrl = note.fileUrl;
-                        if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
-                          downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
-                        }
+                        // For single file, use proper download endpoint
+                        const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
+                        const originalName = note.filename || filename;
                         
-                        // For mobile, use fetch to force download
-                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        // Create download URL with proper endpoint
+                        const baseUrl = window.location.hostname === 'localhost' 
+                          ? 'http://localhost:5000' 
+                          : window.location.origin;
+                        const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
                         
-                        if (isMobile) {
-                          fetch(downloadUrl)
-                            .then(response => response.blob())
-                            .then(blob => {
-                              const url = window.URL.createObjectURL(blob);
-                              const link = document.createElement('a');
-                              link.href = url;
-                              // Ensure proper file extension
-                              let filename = note.filename || 'note-file';
-                              if (!filename.includes('.') && downloadUrl.includes('.')) {
-                                const urlParts = downloadUrl.split('.');
-                                const extension = urlParts[urlParts.length - 1].split('?')[0];
-                                filename = filename + '.' + extension;
-                              }
-                              link.download = filename;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              window.URL.revokeObjectURL(url);
-                            })
-                            .catch(() => {
-                              // Fallback: open in new tab
-                              window.open(downloadUrl, '_blank');
-                            });
-                        } else {
-                          const link = document.createElement('a');
-                          link.href = downloadUrl;
-                          link.download = note.filename || 'note-file';
-                          link.target = '_blank';
-                          link.rel = 'noopener noreferrer';
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }
+                        // Direct download link - browser will handle properly with server headers
+                        window.open(downloadUrl, '_blank');
                       }
                     }}
                     style={{

@@ -28,104 +28,46 @@ export default function NoteDetails() {
   };
 
   const handleDownload = () => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     if (note?.files && note.files.length > 1) {
       // For multiple files
       note.files.forEach((file, index) => {
         setTimeout(() => {
-          // Fix localhost URLs for production
-          let downloadUrl = file.fileUrl;
-          if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
-            downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
-          }
-          
-          if (isMobile) {
-            fetch(downloadUrl)
-              .then(response => response.blob())
-              .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                // Ensure proper file extension
-                let filename = file.originalName || `file-${index + 1}`;
-                if (!filename.includes('.') && downloadUrl.includes('.')) {
-                  const urlParts = downloadUrl.split('.');
-                  const extension = urlParts[urlParts.length - 1].split('?')[0];
-                  filename = filename + '.' + extension;
-                }
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-              })
-              .catch(() => {
-                window.open(downloadUrl, '_blank');
-              });
-          } else {
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = file.originalName || `file-${index + 1}`;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
+          const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
+          const originalName = file.originalName || filename;
+
+          // Create download URL with proper endpoint
+          const baseUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:5000'
+            : window.location.origin;
+          const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
+
+          // Direct download - browser will handle properly with server headers
+          window.open(downloadUrl, '_blank');
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
       // For single file
-      // Fix localhost URLs for production
-      let downloadUrl = note.fileUrl;
-      if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
-        downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
-      }
-      
-      if (isMobile) {
-        fetch(downloadUrl)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            // Ensure proper file extension
-            let filename = note.filename || 'note-file';
-            if (!filename.includes('.') && downloadUrl.includes('.')) {
-              const urlParts = downloadUrl.split('.');
-              const extension = urlParts[urlParts.length - 1].split('?')[0];
-              filename = filename + '.' + extension;
-            }
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-          })
-          .catch(() => {
-            window.open(downloadUrl, '_blank');
-          });
-      } else {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = note.filename || 'note-file';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
+      const originalName = note.filename || filename;
+
+      // Create download URL with proper endpoint
+      const baseUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : window.location.origin;
+      const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
+
+      // Direct download - browser will handle properly with server headers
+      window.open(downloadUrl, '_blank');
     }
   };
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ 
-          title: note.title, 
+        await navigator.share({
+          title: note.title,
           text: note.description,
-          url: window.location.href 
+          url: window.location.href
         });
       } catch (err) {
         console.log('Share cancelled');
@@ -142,10 +84,10 @@ export default function NoteDetails() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -298,7 +240,7 @@ export default function NoteDetails() {
           }}>
             {note.title}
           </h1>
-          
+
           {note.description && (
             <p style={{
               color: '#94a3b8',
@@ -332,7 +274,7 @@ export default function NoteDetails() {
               <BookOpen size={16} />
               {note.subjectName}
             </div>
-            
+
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -348,7 +290,7 @@ export default function NoteDetails() {
               <Tag size={16} />
               {note.topicName}
             </div>
-            
+
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -359,7 +301,7 @@ export default function NoteDetails() {
               <Calendar size={16} />
               {formatDate(note.date)}
             </div>
-            
+
             {/* File count indicator */}
             {note.files && note.files.length > 1 && (
               <div style={{
@@ -425,47 +367,17 @@ export default function NoteDetails() {
                   </h4>
                   <button
                     onClick={() => {
-                      // Fix localhost URLs for production
-                      let downloadUrl = file.fileUrl;
-                      if (downloadUrl.includes('localhost:5000') && window.location.hostname !== 'localhost') {
-                        downloadUrl = downloadUrl.replace('http://localhost:5000', window.location.origin);
-                      }
-                      
-                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                      
-                      if (isMobile) {
-                        fetch(downloadUrl)
-                          .then(response => response.blob())
-                          .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            // Ensure proper file extension
-                            let filename = file.originalName || `file-${index + 1}`;
-                            if (!filename.includes('.') && downloadUrl.includes('.')) {
-                              const urlParts = downloadUrl.split('.');
-                              const extension = urlParts[urlParts.length - 1].split('?')[0];
-                              filename = filename + '.' + extension;
-                            }
-                            link.download = filename;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                          })
-                          .catch(() => {
-                            window.open(downloadUrl, '_blank');
-                          });
-                      } else {
-                        const link = document.createElement('a');
-                        link.href = downloadUrl;
-                        link.download = file.originalName || `file-${index + 1}`;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }
+                      const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
+                      const originalName = file.originalName || filename;
+
+                      // Create download URL with proper endpoint
+                      const baseUrl = window.location.hostname === 'localhost'
+                        ? 'http://localhost:5000'
+                        : window.location.origin;
+                      const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
+
+                      // Direct download - browser will handle properly with server headers
+                      window.open(downloadUrl, '_blank');
                     }}
                     style={{
                       display: 'inline-flex',
@@ -564,7 +476,7 @@ export default function NoteDetails() {
               <Download size={20} />
               {note.files && note.files.length > 1 ? `Download All ${note.files.length} Files` : 'Download Note'}
             </button>
-            
+
             <button
               onClick={handleShare}
               style={{
