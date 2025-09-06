@@ -64,7 +64,7 @@ export default function Home() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "clamp(4rem, 10vh, 6rem) clamp(1rem, 4vw, 2rem) 2rem", // Responsive padding
+        padding: "clamp(2rem, 8vh, 6rem) clamp(1rem, 4vw, 2rem) clamp(1rem, 4vh, 2rem)", // Better mobile padding
       }}>
         <div style={{
           textAlign: "center",
@@ -89,12 +89,12 @@ export default function Home() {
           </div>
           
 {/* Main title */}
-<div style={{ position: "relative", marginBottom: "2rem" }}>
+<div style={{ position: "relative", marginBottom: "clamp(1rem, 4vw, 2rem)" }}>
   <h1 style={{
-    fontSize: "clamp(3rem, 15vw, 10rem)",
+    fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
     fontWeight: "900",
     letterSpacing: "-0.05em",
-    lineHeight: "0.8",
+    lineHeight: "0.9", // Tighter for mobile
     margin: 0,
     fontFamily: "'Orbitron', 'Bebas Neue', monospace",
     textTransform: "uppercase",
@@ -104,16 +104,17 @@ export default function Home() {
     backgroundClip: "text",
     textShadow: "0 0 40px rgba(148, 163, 184, 0.3)",
     transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
+    textAlign: "center",
   }}>
     NOTES
   </h1>
   <h1 style={{
-    fontSize: "clamp(3rem, 15vw, 10rem)",
+    fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
     fontWeight: "900",
     letterSpacing: "-0.05em",
-    lineHeight: "0.8",
+    lineHeight: "0.9", // Tighter for mobile
     margin: 0,
-    marginTop: "clamp(-0.5rem, -2vw, -1rem)",
+    marginTop: "clamp(-0.3rem, -1.5vw, -1rem)",
     fontFamily: "'Orbitron', 'Bebas Neue', monospace",
     textTransform: "uppercase",
     background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
@@ -123,6 +124,7 @@ export default function Home() {
     textShadow: "0 0 60px rgba(139, 92, 246, 0.5)",
     transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
     position: "relative",
+    textAlign: "center",
   }}>
     VILLA
     {/* Add a scanning line effect */}
@@ -215,16 +217,17 @@ export default function Home() {
           </p>
           
           {/* CTA Button - responsive */}
-          <div style={{ paddingTop: "clamp(1rem, 4vw, 2rem)" }}>
+          <div style={{ paddingTop: "clamp(1rem, 4vw, 2rem)", width: "100%", display: "flex", justifyContent: "center" }}>
             <button
               onClick={handleDive}
               style={{
                 position: "relative",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "0.75rem",
-                padding: "clamp(0.75rem, 3vw, 1rem) clamp(1.5rem, 5vw, 2rem)",
-                fontSize: "clamp(1rem, 3.5vw, 1.125rem)",
+                padding: "clamp(1rem, 4vw, 1.25rem) clamp(1.5rem, 6vw, 2rem)",
+                fontSize: "clamp(1rem, 4vw, 1.125rem)",
                 fontWeight: "500",
                 color: "white",
                 background: "linear-gradient(to right, #27272a, #18181b)",
@@ -233,8 +236,9 @@ export default function Home() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
-                width: "auto",
-                maxWidth: "90vw",
+                width: "100%",
+                maxWidth: "320px", // Touch-friendly max width
+                minHeight: "48px", // Touch-friendly minimum height
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "scale(1.05)";

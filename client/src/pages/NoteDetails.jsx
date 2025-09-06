@@ -28,28 +28,43 @@ export default function NoteDetails() {
   };
 
   const handleDownload = () => {
+    // Mobile browser detection
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     if (note?.files && note.files.length > 1) {
-      // For multiple files, create download links
+      // For multiple files
       note.files.forEach((file, index) => {
         setTimeout(() => {
-          const link = document.createElement('a');
-          link.href = file.fileUrl;
-          link.download = file.originalName || `file-${index + 1}`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          if (isMobile) {
+            // For mobile, open in new tab to trigger download
+            window.open(file.fileUrl, '_blank');
+          } else {
+            // Standard download approach for desktop
+            const link = document.createElement('a');
+            link.href = file.fileUrl;
+            link.download = file.originalName || `file-${index + 1}`;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
-      // For single file, create download link
-      const link = document.createElement('a');
-      link.href = note.fileUrl;
-      link.download = note.filename || 'note-file';
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // For single file
+      if (isMobile) {
+        // For mobile, open in new tab to trigger download
+        window.open(note.fileUrl, '_blank');
+      } else {
+        // Standard download approach for desktop
+        const link = document.createElement('a');
+        link.href = note.fileUrl;
+        link.download = note.filename || 'note-file';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -321,7 +336,7 @@ export default function NoteDetails() {
           {note.files && note.files.length > 1 ? (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
               gap: '1rem',
               marginBottom: '2rem'
             }}>
@@ -330,9 +345,13 @@ export default function NoteDetails() {
                   background: 'rgba(30, 41, 59, 0.5)',
                   border: '1px solid rgba(148, 163, 184, 0.2)',
                   borderRadius: '1rem',
-                  padding: '1.5rem',
+                  padding: 'clamp(1rem, 3vw, 1.5rem)',
                   textAlign: 'center',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}>
                   <FileText size={32} style={{
                     color: '#a855f7',
@@ -340,17 +359,34 @@ export default function NoteDetails() {
                   }} />
                   <h4 style={{
                     color: '#e2e8f0',
-                    fontSize: '1rem',
+                    fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
                     fontWeight: '600',
                     margin: '0 0 0.5rem',
-                    wordBreak: 'break-word'
+                    wordBreak: 'break-word',
+                    lineHeight: '1.3',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
                   }}>
                     {file.originalName || `File ${index + 1}`}
                   </h4>
-                  <a
-                    href={file.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    onClick={() => {
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      if (isMobile) {
+                        window.open(file.fileUrl, '_blank');
+                      } else {
+                        const link = document.createElement('a');
+                        link.href = file.fileUrl;
+                        link.download = file.originalName || `file-${index + 1}`;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
+                    }}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -362,8 +398,9 @@ export default function NoteDetails() {
                       color: 'white',
                       fontSize: '0.875rem',
                       fontWeight: '600',
-                      textDecoration: 'none',
-                      transition: 'all 0.3s ease'
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      minHeight: '44px' // Touch-friendly
                     }}
                     onMouseEnter={(e) => {
                       e.target.style.transform = 'scale(1.05)';
@@ -374,7 +411,7 @@ export default function NoteDetails() {
                   >
                     <Download size={14} />
                     Download
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>

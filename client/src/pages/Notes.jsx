@@ -181,8 +181,8 @@ export default function Notes(){
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
-      padding: '2rem 1rem',
-      paddingTop: '6rem'
+      padding: 'clamp(1rem, 3vw, 2rem) clamp(0.5rem, 2vw, 1rem)',
+      paddingTop: 'clamp(5rem, 12vh, 7rem)'
     }}>
       {/* Header Section */}
       <div style={{
@@ -242,9 +242,15 @@ export default function Notes(){
         borderRadius: '1rem',
         padding: '1.5rem'
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+          flexWrap: 'wrap',
+          gap: '1rem', 
+          marginBottom: '1rem' 
+        }}>
           {/* Search */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', flex: window.innerWidth < 768 ? '1' : '2', minWidth: '250px' }}>
             <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
@@ -256,12 +262,13 @@ export default function Notes(){
                 background: 'rgba(30, 41, 59, 0.5)',
                 border: '1px solid rgba(148, 163, 184, 0.2)',
                 borderRadius: '0.5rem',
-                padding: '0.75rem 1rem 0.75rem 3rem',
+                padding: 'clamp(0.75rem, 3vw, 1rem) 1rem clamp(0.75rem, 3vw, 1rem) 3rem',
                 color: '#e2e8f0',
-                fontSize: '0.875rem',
+                fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
                 outline: 'none',
                 transition: 'all 0.3s ease',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                minHeight: '48px' // Touch-friendly
               }}
               onFocus={(e) => e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)'}
               onBlur={(e) => e.target.style.borderColor = 'rgba(148, 163, 184, 0.2)'}
@@ -273,14 +280,17 @@ export default function Notes(){
             value={selectedSubject}
             onChange={e => { setSelectedSubject(e.target.value); setSelectedTopic(''); }}
             style={{
+              flex: window.innerWidth < 768 ? '1' : 'none',
+              minWidth: '150px',
               background: 'rgba(30, 41, 59, 0.5)',
               border: '1px solid rgba(148, 163, 184, 0.2)',
               borderRadius: '0.5rem',
-              padding: '0.75rem 1rem',
+              padding: 'clamp(0.75rem, 3vw, 1rem)',
               color: '#e2e8f0',
-              fontSize: '0.875rem',
+              fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
               outline: 'none',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              minHeight: '48px' // Touch-friendly
             }}
           >
             <option value="">All Subjects</option>
@@ -293,14 +303,17 @@ export default function Notes(){
             onChange={e => setSelectedTopic(e.target.value)}
             disabled={!selectedSubject}
             style={{
+              flex: window.innerWidth < 768 ? '1' : 'none',
+              minWidth: '150px',
               background: 'rgba(30, 41, 59, 0.5)',
               border: '1px solid rgba(148, 163, 184, 0.2)',
               borderRadius: '0.5rem',
-              padding: '0.75rem 1rem',
+              padding: 'clamp(0.75rem, 3vw, 1rem)',
               color: selectedSubject ? '#e2e8f0' : '#64748b',
-              fontSize: '0.875rem',
+              fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
               outline: 'none',
-              cursor: selectedSubject ? 'pointer' : 'not-allowed'
+              cursor: selectedSubject ? 'pointer' : 'not-allowed',
+              minHeight: '48px' // Touch-friendly
             }}
           >
             <option value="">All Topics</option>
@@ -398,9 +411,9 @@ export default function Notes(){
         ) : (
           <div style={{
             display: viewMode === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(350px, 1fr))' : '1fr',
+            gridTemplateColumns: viewMode === 'grid' ? (window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))') : '1fr',
             flexDirection: viewMode === 'list' ? 'column' : 'row',
-            gap: '1.5rem'
+            gap: 'clamp(1rem, 3vw, 1.5rem)'
           }}>
             {filteredNotes.map((note, index) => (
               <div
@@ -411,7 +424,7 @@ export default function Notes(){
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(148, 163, 184, 0.1)',
                   borderRadius: '1rem',
-                  padding: '1.5rem',
+                  padding: 'clamp(1rem, 3vw, 1.5rem)',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer',
                   animation: `slideInUp 0.6s ease ${index * 0.1}s both`,
@@ -433,11 +446,12 @@ export default function Notes(){
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <h3 style={{
                     color: '#e2e8f0',
-                    fontSize: '1.25rem',
+                    fontSize: 'clamp(1.125rem, 3vw, 1.25rem)',
                     fontWeight: '700',
                     margin: 0,
                     lineHeight: '1.4',
-                    flex: 1
+                    flex: 1,
+                    wordBreak: 'break-word'
                   }}>{note.title}</h3>
                   <div style={{
                     display: 'flex',
@@ -521,11 +535,28 @@ export default function Notes(){
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <a
-                    href={note.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={handleActionClick}
+                  <button
+                    onClick={(e) => {
+                      handleActionClick(e);
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      if (note.files && note.files.length > 1) {
+                        // For multiple files, navigate to details page
+                        handleCardClick(note);
+                      } else if (note.fileUrl) {
+                        // For single file, download directly
+                        if (isMobile) {
+                          window.open(note.fileUrl, '_blank');
+                        } else {
+                          const link = document.createElement('a');
+                          link.href = note.fileUrl;
+                          link.download = note.filename || 'note-file';
+                          link.target = '_blank';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      }
+                    }}
                     style={{
                       flex: 1,
                       display: 'flex',
@@ -539,8 +570,9 @@ export default function Notes(){
                       color: 'white',
                       fontSize: '0.875rem',
                       fontWeight: '600',
-                      textDecoration: 'none',
-                      transition: 'all 0.3s ease'
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      minHeight: '44px' // Touch-friendly
                     }}
                     onMouseEnter={(e) => {
                       e.target.style.background = 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)';
@@ -553,7 +585,7 @@ export default function Notes(){
                   >
                     <Download size={16} />
                     {note.files && note.files.length > 1 ? `View ${note.files.length} Files` : 'Download'}
-                  </a>
+                  </button>
                   <button
                     onClick={(e) => { handleActionClick(e); share(note); }}
                     style={{
