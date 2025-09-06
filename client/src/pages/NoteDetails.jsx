@@ -29,15 +29,27 @@ export default function NoteDetails() {
 
   const handleDownload = () => {
     if (note?.files && note.files.length > 1) {
-      // For multiple files, open each file in a new tab
+      // For multiple files, create download links
       note.files.forEach((file, index) => {
         setTimeout(() => {
-          window.open(file.fileUrl, '_blank');
+          const link = document.createElement('a');
+          link.href = file.fileUrl;
+          link.download = file.originalName || `file-${index + 1}`;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
-      // For single file, use the original fileUrl
-      window.open(note.fileUrl, '_blank');
+      // For single file, create download link
+      const link = document.createElement('a');
+      link.href = note.fileUrl;
+      link.download = note.filename || 'note-file';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -155,8 +167,8 @@ export default function NoteDetails() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
-      padding: '2rem 1rem',
-      paddingTop: '6rem'
+      padding: 'clamp(1rem, 4vw, 2rem) clamp(0.5rem, 2vw, 1rem)',
+      paddingTop: 'clamp(4rem, 10vh, 6rem)'
     }}>
       {/* Back Button */}
       <div style={{ maxWidth: '1000px', margin: '0 auto 2rem' }}>
@@ -205,7 +217,7 @@ export default function NoteDetails() {
       }}>
         {/* Header */}
         <div style={{
-          padding: '2rem',
+          padding: 'clamp(1.5rem, 4vw, 2rem)',
           borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
         }}>
           <h1 style={{

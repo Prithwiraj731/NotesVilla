@@ -50,8 +50,11 @@ exports.uploadNote = async (req, res) => {
     console.log('✅ MongoDB is connected, proceeding to save note...');
     
     // Create file array for multiple files
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://notesvilla.onrender.com' 
+      : 'http://localhost:5000';
     const filesArray = files.map(file => ({
-      fileUrl: `http://localhost:5000/uploads/${file.filename}`,
+      fileUrl: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
       originalName: file.originalname
     }));
@@ -122,8 +125,11 @@ exports.uploadSingleNote = async (req, res) => {
       });
     }
 
-    // For now, use local file URL (will work with MongoDB)
-    const fileUrl = `http://localhost:5000/uploads/${file.filename}`;
+    // Use appropriate base URL for file access
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://notesvilla.onrender.com' 
+      : 'http://localhost:5000';
+    const fileUrl = `${baseUrl}/uploads/${file.filename}`;
     
     console.log('Creating note in database...');
     console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);

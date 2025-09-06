@@ -30,13 +30,13 @@ export default function Home() {
         opacity: 0.5,
       }}></div>
       
-      {/* Floating orbs for depth */}
+      {/* Floating orbs for depth - responsive */}
       <div style={{
         position: "absolute",
-        top: "5rem",
-        left: "5rem",
-        width: "24rem",
-        height: "24rem",
+        top: "clamp(2rem, 8vw, 5rem)",
+        left: "clamp(1rem, 8vw, 5rem)",
+        width: "clamp(12rem, 40vw, 24rem)",
+        height: "clamp(12rem, 40vw, 24rem)",
         background: "radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%)",
         borderRadius: "50%",
         filter: "blur(48px)",
@@ -44,10 +44,10 @@ export default function Home() {
       }}></div>
       <div style={{
         position: "absolute",
-        bottom: "5rem",
-        right: "5rem",
-        width: "24rem",
-        height: "24rem",
+        bottom: "clamp(2rem, 8vw, 5rem)",
+        right: "clamp(1rem, 8vw, 5rem)",
+        width: "clamp(12rem, 40vw, 24rem)",
+        height: "clamp(12rem, 40vw, 24rem)",
         background: "radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)",
         borderRadius: "50%",
         filter: "blur(48px)",
@@ -64,33 +64,34 @@ export default function Home() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "6rem 1rem 0 1rem", // Added top padding to account for fixed header
+        padding: "clamp(4rem, 10vh, 6rem) clamp(1rem, 4vw, 2rem) 2rem", // Responsive padding
       }}>
         <div style={{
           textAlign: "center",
           maxWidth: "64rem",
           margin: "0 auto",
         }}>
-          {/* Small accent */}
+          {/* Small accent - responsive */}
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "0.5rem",
             color: "#71717a",
-            fontSize: "0.875rem",
+            fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)",
             letterSpacing: "0.1em",
-            marginBottom: "3rem",
+            marginBottom: "clamp(2rem, 6vw, 3rem)",
+            flexWrap: "wrap",
           }}>
             <Sparkles size={16} />
-            <span>NEXT-GEN KNOWLEDGE PLATFORM</span>
+            <span style={{ textAlign: "center" }}>NEXT-GEN KNOWLEDGE PLATFORM</span>
             <Sparkles size={16} />
           </div>
           
 {/* Main title */}
 <div style={{ position: "relative", marginBottom: "2rem" }}>
   <h1 style={{
-    fontSize: "clamp(5rem, 12vw, 10rem)",
+    fontSize: "clamp(3rem, 15vw, 10rem)",
     fontWeight: "900",
     letterSpacing: "-0.05em",
     lineHeight: "0.8",
@@ -102,17 +103,17 @@ export default function Home() {
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
     textShadow: "0 0 40px rgba(148, 163, 184, 0.3)",
-    transform: "perspective(400px) rotateX(10deg)",
+    transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
   }}>
     NOTES
   </h1>
   <h1 style={{
-    fontSize: "clamp(5rem, 12vw, 10rem)",
+    fontSize: "clamp(3rem, 15vw, 10rem)",
     fontWeight: "900",
     letterSpacing: "-0.05em",
     lineHeight: "0.8",
     margin: 0,
-    marginTop: "-1rem",
+    marginTop: "clamp(-0.5rem, -2vw, -1rem)",
     fontFamily: "'Orbitron', 'Bebas Neue', monospace",
     textTransform: "uppercase",
     background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
@@ -120,7 +121,7 @@ export default function Home() {
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
     textShadow: "0 0 60px rgba(139, 92, 246, 0.5)",
-    transform: "perspective(400px) rotateX(10deg)",
+    transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
     position: "relative",
   }}>
     VILLA
@@ -198,13 +199,14 @@ export default function Home() {
   }
 `}</style>
           
-          {/* Tagline */}
+          {/* Tagline - responsive */}
           <p style={{
-            fontSize: "1.25rem",
+            fontSize: "clamp(1rem, 4vw, 1.25rem)",
             color: "#a1a1aa",
             maxWidth: "42rem",
-            margin: "0 auto 3rem",
+            margin: "0 auto clamp(2rem, 6vw, 3rem)",
             lineHeight: "1.6",
+            padding: "0 1rem",
           }}>
             Your futuristic repository for knowledge.
             <span style={{ display: "block", marginTop: "0.5rem", color: "#71717a" }}>
@@ -212,8 +214,8 @@ export default function Home() {
             </span>
           </p>
           
-          {/* CTA Button */}
-          <div style={{ paddingTop: "2rem" }}>
+          {/* CTA Button - responsive */}
+          <div style={{ paddingTop: "clamp(1rem, 4vw, 2rem)" }}>
             <button
               onClick={handleDive}
               style={{
@@ -221,8 +223,8 @@ export default function Home() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.75rem",
-                padding: "1rem 2rem",
-                fontSize: "1.125rem",
+                padding: "clamp(0.75rem, 3vw, 1rem) clamp(1.5rem, 5vw, 2rem)",
+                fontSize: "clamp(1rem, 3.5vw, 1.125rem)",
                 fontWeight: "500",
                 color: "white",
                 background: "linear-gradient(to right, #27272a, #18181b)",
@@ -231,6 +233,8 @@ export default function Home() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+                width: "auto",
+                maxWidth: "90vw",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "scale(1.05)";
@@ -248,15 +252,17 @@ export default function Home() {
             </button>
           </div>
           
-          {/* Bottom accent */}
+          {/* Bottom accent - responsive */}
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "2rem",
-            marginTop: "4rem",
+            gap: "clamp(1rem, 4vw, 2rem)",
+            marginTop: "clamp(2rem, 8vw, 4rem)",
             color: "#52525b",
-            fontSize: "0.875rem",
+            fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)",
+            flexWrap: "wrap",
+            padding: "0 1rem",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <div style={{
