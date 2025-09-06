@@ -13,7 +13,7 @@ const app = express();
 // Configure CORS for production and development
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://notesvilla-frontend.netlify.app', 'https://notesvilla-frontend.vercel.app']
+    ? true // Temporarily allow all origins in production for debugging
     : true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
