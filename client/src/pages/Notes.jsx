@@ -177,29 +177,22 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Ultra-simple download function that avoids all CSP issues
+  // ✅ Correct download function
   const downloadViaFetch = (url, suggestedName) => {
     try {
-      // Create a simple anchor element and click it immediately
       const link = document.createElement('a');
       link.href = url;
-      link.download = suggestedName || 'download';
-
-      // Add to DOM temporarily
+      link.setAttribute('download', suggestedName || 'download');
+      link.setAttribute('target', '_blank');
+      
       document.body.appendChild(link);
-
-      // Trigger download
       link.click();
-
-      // Remove immediately
       document.body.removeChild(link);
-
-      console.log('✅ Download initiated:', suggestedName);
-
+      
+      console.log('✅ Normal download started:', suggestedName);
     } catch (error) {
       console.error('❌ Download failed:', error);
-      // Final fallback - just open the URL
-      window.location.href = url;
+      window.open(url, '_blank'); // fallback
     }
   };
 
@@ -569,16 +562,7 @@ export default function Notes() {
                         handleCardClick(note);
                       } else if (note.fileUrl) {
                         // For single file, use proper download endpoint
-                        const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
-                        const originalName = note.filename || filename;
-
-                        // Create download URL with proper backend endpoint
-                        const baseUrl = window.location.hostname === 'localhost'
-                          ? 'http://localhost:5000'
-                          : 'https://notesvilla.onrender.com'; // Point to backend server
-                        const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-
-                        downloadViaFetch(downloadUrl, originalName);
+                        downloadViaFetch(note.fileUrl, note.filename || 'note');
                       }
                     }}
                     style={{

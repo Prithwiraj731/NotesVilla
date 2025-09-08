@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText } from 'lucide-react';
 import API from '../services/api';
 
 export default function NoteDetails() {
@@ -28,42 +28,22 @@ export default function NoteDetails() {
     }
   };
 
-  // Reliable download function
+  // ✅ Correct download function
   const downloadViaFetch = (url, suggestedName) => {
     try {
-      console.log('🔄 Starting download:', suggestedName, url);
-      
-      // Method 1: Try creating download link
       const link = document.createElement('a');
       link.href = url;
-      link.download = suggestedName || 'download';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
-      // Add to DOM temporarily
+      link.setAttribute('download', suggestedName || 'download');
+      link.setAttribute('target', '_blank');
+
       document.body.appendChild(link);
-      
-      // Trigger download
       link.click();
-      
-      // Remove after a short delay
-      setTimeout(() => {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-      }, 100);
-      
-      console.log('✅ Download initiated:', suggestedName);
-      
+      document.body.removeChild(link);
+
+      console.log('✅ Normal download started:', suggestedName);
     } catch (error) {
       console.error('❌ Download failed:', error);
-      // Fallback - open in new tab
-      try {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      } catch (fallbackError) {
-        // Final fallback - navigate to URL
-        window.location.href = url;
-      }
+      window.open(url, '_blank'); // fallback
     }
   };
 
@@ -72,30 +52,12 @@ export default function NoteDetails() {
       // For multiple files
       note.files.forEach((file, index) => {
         setTimeout(() => {
-          const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
-          const originalName = file.originalName || filename;
-
-          // Create download URL with proper backend endpoint
-          const baseUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:5000'
-            : 'https://notesvilla.onrender.com'; // Point to backend server
-          const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-
-          downloadViaFetch(downloadUrl, originalName);
+          downloadViaFetch(file.fileUrl, file.originalName || 'note');
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
       // For single file
-      const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
-      const originalName = note.filename || filename;
-
-      // Create download URL with proper backend endpoint
-      const baseUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : 'https://notesvilla.onrender.com'; // Point to backend server
-      const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-
-      downloadViaFetch(downloadUrl, originalName);
+      downloadViaFetch(note.fileUrl, note.filename || 'note');
     }
   };
 
@@ -405,16 +367,7 @@ export default function NoteDetails() {
                   </h4>
                   <button
                     onClick={() => {
-                      const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
-                      const originalName = file.originalName || filename;
-
-                      // Create download URL with proper backend endpoint
-                      const baseUrl = window.location.hostname === 'localhost'
-                        ? 'http://localhost:5000'
-                        : 'https://notesvilla.onrender.com'; // Point to backend server
-                      const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-
-                      downloadViaFetch(downloadUrl, originalName);
+                      downloadViaFetch(file.fileUrl, file.originalName || 'note');
                     }}
                     style={{
                       display: 'inline-flex',
@@ -455,7 +408,7 @@ export default function NoteDetails() {
               marginBottom: '2rem'
             }}>
               {/* Note Preview - Clickable */}
-              <div 
+              <div
                 onClick={() => setShowPreview(true)}
                 style={{
                   width: '200px',
@@ -481,12 +434,12 @@ export default function NoteDetails() {
                   e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
                 }}
               >
-                {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || 
-                                 note.fileUrl.toLowerCase().includes('.jpeg') || 
-                                 note.fileUrl.toLowerCase().includes('.png')) ? (
+                {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') ||
+                  note.fileUrl.toLowerCase().includes('.jpeg') ||
+                  note.fileUrl.toLowerCase().includes('.png')) ? (
                   // Image preview
-                  <img 
-                    src={note.fileUrl} 
+                  <img
+                    src={note.fileUrl}
                     alt={note.filename || 'Note preview'}
                     style={{
                       width: '100%',
@@ -521,7 +474,7 @@ export default function NoteDetails() {
                     </span>
                   </div>
                 )}
-                
+
                 {/* Fallback document icon (hidden by default, shown if image fails) */}
                 <div style={{
                   display: 'none',
@@ -637,7 +590,7 @@ export default function NoteDetails() {
 
       {/* Full Screen Preview Modal */}
       {showPreview && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -653,7 +606,7 @@ export default function NoteDetails() {
           }}
           onClick={() => setShowPreview(false)}
         >
-          <div 
+          <div
             style={{
               position: 'relative',
               maxWidth: '90vw',
@@ -690,12 +643,12 @@ export default function NoteDetails() {
             </button>
 
             {/* Preview Content */}
-            {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || 
-                             note.fileUrl.toLowerCase().includes('.jpeg') || 
-                             note.fileUrl.toLowerCase().includes('.png')) ? (
+            {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') ||
+              note.fileUrl.toLowerCase().includes('.jpeg') ||
+              note.fileUrl.toLowerCase().includes('.png')) ? (
               // Full size image
-              <img 
-                src={note.fileUrl} 
+              <img
+                src={note.fileUrl}
                 alt={note.filename || 'Note preview'}
                 style={{
                   width: '100%',
@@ -738,13 +691,7 @@ export default function NoteDetails() {
                       </p>
                       <button
                         onClick={() => {
-                          const filename = note.fileUrl.split('/').pop();
-                          const originalName = note.filename || filename;
-                          const baseUrl = window.location.hostname === 'localhost'
-                            ? 'http://localhost:5000'
-                            : 'https://notesvilla.onrender.com';
-                          const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-                          downloadViaFetch(downloadUrl, originalName);
+                          downloadViaFetch(note.fileUrl, note.filename || 'note');
                         }}
                         style={{
                           padding: '0.75rem 1.5rem',
