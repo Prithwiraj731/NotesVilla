@@ -177,61 +177,101 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Robust download function using fetch + blob
+  // Ultra-robust download function that works in all scenarios
   const downloadViaFetch = async (url, suggestedName) => {
     try {
-      console.log('Starting fetch download:', suggestedName, url);
+      console.log('🔄 Starting download:', suggestedName, url);
 
-      const res = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'omit' // Don't send cookies for downloads
-      });
+      // Method 1: Try fetch + blob (best for CORS-enabled servers)
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit'
+        });
 
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Download failed: ${res.status} ${text}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const objectUrl = URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = suggestedName || 'download';
+          a.style.display = 'none';
+
+          document.body.appendChild(a);
+          a.click();
+
+          setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+            if (document.body.contains(a)) {
+              document.body.removeChild(a);
+            }
+          }, 100);
+
+          console.log('✅ Download completed via fetch+blob:', suggestedName);
+          return;
+        }
+      } catch (fetchError) {
+        console.log('⚠️ Fetch method failed, trying alternatives:', fetchError.message);
       }
 
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
+      // Method 2: Try iframe download (works for many CORS scenarios)
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
 
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = suggestedName || 'download';
-      a.style.display = 'none';
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 3000);
 
-      document.body.appendChild(a);
-      a.click();
+        console.log('✅ Download initiated via iframe:', suggestedName);
+        return;
+      } catch (iframeError) {
+        console.log('⚠️ Iframe method failed:', iframeError.message);
+      }
 
-      // Clean up
+      // Method 3: Direct anchor link (last resort)
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = suggestedName;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.display = 'none';
+
+      document.body.appendChild(link);
+
+      // Trigger click with user interaction simulation
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+
+      link.dispatchEvent(clickEvent);
+
       setTimeout(() => {
-        URL.revokeObjectURL(objectUrl);
-        if (document.body.contains(a)) {
-          document.body.removeChild(a);
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
         }
-      }, 100);
+      }, 1000);
 
-      console.log('✅ Download completed:', suggestedName);
+      console.log('✅ Download initiated via direct link:', suggestedName);
 
     } catch (error) {
-      console.error('❌ Fetch download failed:', error);
+      console.error('❌ All download methods failed:', error);
 
-      // Fallback: try direct link method
-      try {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = suggestedName;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        console.log('⚠️ Used fallback download method');
-      } catch (fallbackError) {
-        console.error('❌ Fallback download also failed:', fallbackError);
-        // Show user-friendly error
-        alert(`Download failed: ${error.message}. Please try again or contact support.`);
+      // Final fallback: show user the URL
+      const userChoice = confirm(
+        `Download failed. Would you like to open the file in a new tab?\n\nFile: ${suggestedName}`
+      );
+
+      if (userChoice) {
+        window.open(url, '_blank');
       }
     }
   };
