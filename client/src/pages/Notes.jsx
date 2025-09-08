@@ -115,6 +115,7 @@ export default function Notes() {
   const handleActionClick = (e) => {
     // Prevent card click when clicking action buttons
     e.stopPropagation();
+    e.preventDefault(); // Also prevent default browser behavior
   };
 
   const filterNotes = () => {
@@ -178,20 +179,35 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Enhanced download function using the new utility
+  // Simple download function for testing
   const handleDownload = async (fileUrl, filename) => {
+    console.log('🔽 handleDownload called with:', { fileUrl, filename });
+    
     try {
-      const success = await downloadFile(fileUrl, filename, {
-        enableLogging: true,
-        fallbackToNewTab: true,
-        retryAttempts: 2
-      });
+      // Extract filename from URL
+      const urlFilename = fileUrl.split('/').pop();
       
-      if (!success) {
-        // Show user-friendly error message if all strategies fail
-        console.error('Download failed for:', filename);
-        alert(`Sorry, the file "${filename}" could not be downloaded. It may have been moved or deleted.`);
-      }
+      // Create download endpoint URL
+      const baseUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://notesvilla.onrender.com';
+      
+      const downloadUrl = `${baseUrl}/api/notes/download/${urlFilename}?name=${encodeURIComponent(filename)}`;
+      
+      console.log('🔽 Download URL:', downloadUrl);
+      
+      // Simple anchor download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('🔽 Download initiated');
+      
     } catch (error) {
       console.error('Download error:', error);
       alert(`Download error: ${error.message}`);
@@ -557,14 +573,25 @@ export default function Notes() {
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
-                    onClick={(e) => {
-                      handleActionClick(e);
-                      if (note.files && note.files.length > 1) {
-                        // For multiple files, navigate to details page
-                        handleCardClick(note);
-                      } else if (note.fileUrl) {
-                        // For single file, use enhanced download function
-                        handleDownload(note.fileUrl, note.filename || 'note');
+                    onClick={async (e) => {
+                      try {
+                        handleActionClick(e);
+                        console.log('🔽 Button clicked, event handled');
+                        
+                        if (note.files && note.files.length > 1) {
+                          // For multiple files, navigate to details page
+                          console.log('🔽 Multiple files, navigating to details');
+                          handleCardClick(note);
+                        } else if (note.fileUrl) {
+                          // For single file, use enhanced download function
+                          console.log('🔽 Single file, starting download:', note.fileUrl, note.filename);
+                          await handleDownload(note.fileUrl, note.filename || 'note');
+                          console.log('🔽 Download function completed');
+                        }
+                      } catch (error) {
+                        console.error('🔽 Click handler error:', error);
+                        e.preventDefault();
+                        e.stopPropagation();
                       }
                     }}
                     style={{

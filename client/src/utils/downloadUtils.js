@@ -270,30 +270,14 @@ const downloadViaFetch = async (fileUrl, filename, enableLogging, timeout) => {
 
 /**
  * Strategy 3: Fallback to opening in new tab
- * Last resort when other methods fail
+ * Last resort when other methods fail - DISABLED to prevent redirects
  */
 const downloadViaNewTab = (fileUrl, enableLogging) => {
   return new Promise((resolve) => {
-    try {
-      const newWindow = window.open(fileUrl, '_blank');
-
-      if (newWindow) {
-        if (enableLogging) {
-          console.log('🪟 Opened file in new tab:', fileUrl);
-        }
-        resolve(true);
-      } else {
-        if (enableLogging) {
-          console.warn('🪟 Failed to open new tab (popup blocked?)');
-        }
-        resolve(false);
-      }
-    } catch (error) {
-      if (enableLogging) {
-        console.warn('🪟 New tab fallback failed:', error.message);
-      }
-      resolve(false);
+    if (enableLogging) {
+      console.warn('🪟 New tab fallback disabled to prevent unwanted redirects');
     }
+    resolve(false); // Always return false to prevent redirects
   });
 };
 
