@@ -440,10 +440,81 @@ export default function NoteDetails() {
               textAlign: 'center',
               marginBottom: '2rem'
             }}>
-              <Eye size={48} style={{
-                color: '#a855f7',
-                margin: '0 auto 1rem'
-              }} />
+              {/* Note Preview */}
+              <div style={{
+                width: '200px',
+                height: '150px',
+                margin: '0 auto 1rem',
+                background: 'rgba(168, 85, 247, 0.1)',
+                border: '2px solid rgba(168, 85, 247, 0.3)',
+                borderRadius: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || 
+                                 note.fileUrl.toLowerCase().includes('.jpeg') || 
+                                 note.fileUrl.toLowerCase().includes('.png')) ? (
+                  // Image preview
+                  <img 
+                    src={note.fileUrl} 
+                    alt={note.filename || 'Note preview'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '0.5rem'
+                    }}
+                    onError={(e) => {
+                      // Fallback to document icon if image fails to load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : (
+                  // Document preview for PDFs and other files
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#a855f7',
+                    textAlign: 'center'
+                  }}>
+                    <FileText size={32} style={{ marginBottom: '0.5rem' }} />
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>
+                      {note.fileUrl ? note.fileUrl.split('.').pop().toUpperCase() : 'FILE'}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Fallback document icon (hidden by default, shown if image fails) */}
+                <div style={{
+                  display: 'none',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#a855f7',
+                  textAlign: 'center'
+                }}>
+                  <FileText size={32} style={{ marginBottom: '0.5rem' }} />
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    {note.fileUrl ? note.fileUrl.split('.').pop().toUpperCase() : 'FILE'}
+                  </span>
+                </div>
+              </div>
               <h3 style={{
                 color: '#e2e8f0',
                 fontSize: '1.25rem',
