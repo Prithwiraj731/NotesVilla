@@ -61,9 +61,11 @@ export default function NoteDetails() {
         
         if (!success) {
           console.error('Download failed for:', note.filename);
+          alert(`Sorry, the file "${note.filename || 'note'}" could not be downloaded. It may have been moved or deleted.`);
         }
       } catch (error) {
         console.error('Download error:', error);
+        alert(`Download error: ${error.message}`);
       }
     }
   };
@@ -374,10 +376,14 @@ export default function NoteDetails() {
                   </h4>
                   <button
                     onClick={async () => {
-                      await downloadFile(file.fileUrl, file.originalName || 'note', {
+                      const success = await downloadFile(file.fileUrl, file.originalName || 'note', {
                         enableLogging: true,
                         fallbackToNewTab: true
                       });
+                      
+                      if (!success) {
+                        alert(`Sorry, the file "${file.originalName || 'note'}" could not be downloaded. It may have been moved or deleted.`);
+                      }
                     }}
                     style={{
                       display: 'inline-flex',
@@ -701,10 +707,14 @@ export default function NoteDetails() {
                       </p>
                       <button
                         onClick={async () => {
-                          await downloadFile(note.fileUrl, note.filename || 'note', {
+                          const success = await downloadFile(note.fileUrl, note.filename || 'note', {
                             enableLogging: true,
                             fallbackToNewTab: true
                           });
+                          
+                          if (!success) {
+                            alert(`Sorry, the file "${note.filename || 'note'}" could not be downloaded. It may have been moved or deleted.`);
+                          }
                         }}
                         style={{
                           padding: '0.75rem 1.5rem',

@@ -190,10 +190,11 @@ export default function Notes() {
       if (!success) {
         // Show user-friendly error message if all strategies fail
         console.error('Download failed for:', filename);
-        // Could add toast notification here in the future
+        alert(`Sorry, the file "${filename}" could not be downloaded. It may have been moved or deleted.`);
       }
     } catch (error) {
       console.error('Download error:', error);
+      alert(`Download error: ${error.message}`);
     }
   };
 

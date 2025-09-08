@@ -170,27 +170,44 @@ export const downloadMultipleFiles = async (files, options = {}) => {
 const downloadViaAnchor = (fileUrl, filename, enableLogging) => {
   return new Promise((resolve) => {
     try {
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.download = filename;
-      link.style.display = 'none';
+      // First, check if the URL is accessible
+      fetch(fileUrl, { method: 'HEAD' })
+        .then(response => {
+          if (!response.ok) {
+            if (enableLogging) {
+              console.warn(`🔗 File not accessible (${response.status}):`, fileUrl);
+            }
+            resolve(false);
+            return;
+          }
+          
+          // File exists, proceed with download
+          const link = document.createElement('a');
+          link.href = fileUrl;
+          link.download = filename;
+          link.style.display = 'none';
 
-      // Add to DOM temporarily
-      document.body.appendChild(link);
+          // Add to DOM temporarily
+          document.body.appendChild(link);
 
-      // Trigger download
-      link.click();
+          // Trigger download
+          link.click();
 
-      // Clean up
-      document.body.removeChild(link);
+          // Clean up
+          document.body.removeChild(link);
 
-      if (enableLogging) {
-        console.log('🔗 Anchor download initiated for:', filename);
-      }
+          if (enableLogging) {
+            console.log('🔗 Anchor download initiated for:', filename);
+          }
 
-      // We can't reliably detect success with this method
-      // so we assume success and let fallbacks handle failures
-      resolve(true);
+          resolve(true);
+        })
+        .catch(error => {
+          if (enableLogging) {
+            console.warn('🔗 File accessibility check failed:', error.message);
+          }
+          resolve(false);
+        });
     } catch (error) {
       if (enableLogging) {
         console.warn('🔗 Anchor download failed:', error.message);

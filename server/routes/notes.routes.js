@@ -76,29 +76,7 @@ router.get('/topics/:subjectName', (req, res, next) => {
   next();
 }, notesCtrl.listTopics);
 
-// Single note by ID - needs to be before other routes that might conflict
-router.get('/note/:id', (req, res, next) => {
-  console.log('📋 GET /api/notes/note/:id called with ID:', req.params.id);
-  next();
-}, notesCtrl.getNoteById);
-
-// FIXED: Move the main notes endpoint BEFORE the more specific routes
-router.get('/', (req, res, next) => {
-  console.log('📋 GET /api/notes/ (root) called - fetching all notes');
-  next();
-}, notesCtrl.getAllNotes);
-
-router.get('/subject/:subjectName/topic/:topicName', (req, res, next) => {
-  console.log('📋 GET /api/notes/subject/:subjectName/topic/:topicName called');
-  next();
-}, notesCtrl.listNotesByTopic);
-
-router.get('/subject/:subjectName', (req, res, next) => {
-  console.log('📋 GET /api/notes/subject/:subjectName called');
-  next();
-}, notesCtrl.listNotesBySubject);
-
-// Download endpoint with proper headers and CORS
+// Download endpoint with proper headers and CORS - MOVED UP to avoid conflicts
 router.get('/download/:filename', (req, res) => {
   console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
   
@@ -136,6 +114,28 @@ router.get('/download/:filename', (req, res) => {
     }
   });
 });
+
+// Single note by ID - needs to be before other routes that might conflict
+router.get('/note/:id', (req, res, next) => {
+  console.log('📋 GET /api/notes/note/:id called with ID:', req.params.id);
+  next();
+}, notesCtrl.getNoteById);
+
+// FIXED: Move the main notes endpoint BEFORE the more specific routes
+router.get('/', (req, res, next) => {
+  console.log('📋 GET /api/notes/ (root) called - fetching all notes');
+  next();
+}, notesCtrl.getAllNotes);
+
+router.get('/subject/:subjectName/topic/:topicName', (req, res, next) => {
+  console.log('📋 GET /api/notes/subject/:subjectName/topic/:topicName called');
+  next();
+}, notesCtrl.listNotesByTopic);
+
+router.get('/subject/:subjectName', (req, res, next) => {
+  console.log('📋 GET /api/notes/subject/:subjectName called');
+  next();
+}, notesCtrl.listNotesBySubject);
 
 // Add a debug endpoint
 router.get('/debug', (req, res) => {

@@ -17,11 +17,11 @@ console.log('From complex URL:', extractFilenameFromUrl('http://localhost:5000/a
 
 // Test URL conversion
 console.log('Testing URL conversion:');
-console.log('Static to download:', convertToDownloadUrl('http://localhost:5000/uploads/files-1757352981310-636882371.jpg', 'My Photo.jpg'));
-// Should output: http://localhost:5000/api/notes/download/files-1757352981310-636882371.jpg?name=My%20Photo.jpg
+console.log('Static to download:', convertToDownloadUrl('http://localhost:5000/uploads/files-1756709354803-597255814.png', 'My Photo.png'));
+// Should output: http://localhost:5000/api/notes/download/files-1756709354803-597255814.png?name=My%20Photo.png
 
 // Test single file download (uncomment to test with real file)
-// downloadFile('http://localhost:5000/uploads/files-1757352981310-636882371.jpg', 'test-download.jpg');
+// downloadFile('http://localhost:5000/uploads/files-1756709354803-597255814.png', 'test-download.png');
 
 // Test multiple file download (uncomment to test with real files)
 // const testFiles = [
