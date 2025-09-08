@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
-import { downloadFile } from '../utils/downloadUtils';
+
 import { Search, Download, Share2, Calendar, BookOpen, Tag, FileText, Filter, Grid, List } from 'lucide-react';
 
 export default function Notes() {
@@ -179,42 +179,36 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Simple download function for testing
+  // Simple download function - let the server handle errors
   const handleDownload = async (fileUrl, filename) => {
     console.log('🔽 handleDownload called with:', { fileUrl, filename });
     
-    try {
-      // Extract filename from URL (this should be the server-generated filename)
-      const urlFilename = fileUrl.split('/').pop();
-      console.log('🔽 Extracted server filename:', urlFilename);
-      
-      // Create download endpoint URL
-      const baseUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : 'https://notesvilla.onrender.com';
-      
-      const downloadUrl = `${baseUrl}/api/notes/download/${urlFilename}?name=${encodeURIComponent(filename)}`;
-      
-      console.log('🔽 Download URL:', downloadUrl);
-      console.log('🔽 Server filename (from URL):', urlFilename);
-      console.log('🔽 Display filename (for user):', filename);
-      
-      // Simple anchor download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      console.log('🔽 Download initiated');
-      
-    } catch (error) {
-      console.error('Download error:', error);
-      alert(`Download error: ${error.message}`);
-    }
+    // Extract filename from URL (this should be the server-generated filename)
+    const urlFilename = fileUrl.split('/').pop();
+    console.log('🔽 Extracted server filename:', urlFilename);
+    
+    // Create download endpoint URL
+    const baseUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:5000'
+      : 'https://notesvilla.onrender.com';
+    
+    const downloadUrl = `${baseUrl}/api/notes/download/${urlFilename}?name=${encodeURIComponent(filename)}`;
+    
+    console.log('🔽 Download URL:', downloadUrl);
+    console.log('🔽 Server filename (from URL):', urlFilename);
+    console.log('🔽 Display filename (for user):', filename);
+    
+    // Create download link and click it - let browser/server handle any errors
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('🔽 Download link clicked - browser will handle the download');
   };
 
   return (
