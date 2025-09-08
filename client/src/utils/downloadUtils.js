@@ -16,11 +16,12 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
     enableLogging = true,
     fallbackToNewTab = true,
     retryAttempts = 1,
-    timeout = 30000
+    timeout = 30000,
+    useDownloadEndpoint = true
   } = options;
 
   const startTime = Date.now();
-  
+
   if (enableLogging) {
     console.log('🔽 Starting download:', { fileUrl, filename, options });
   }
@@ -32,11 +33,18 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
     return false;
   }
 
+  // Convert static file URL to download endpoint URL if needed
+  const downloadUrl = useDownloadEndpoint ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
+  
+  if (enableLogging && downloadUrl !== fileUrl) {
+    console.log('🔄 Converted URL:', { original: fileUrl, download: downloadUrl });
+  }
+
   // Try multiple download strategies in order of preference
   const strategies = [
-    () => downloadViaAnchor(fileUrl, filename, enableLogging),
-    () => downloadViaFetch(fileUrl, filename, enableLogging, timeout),
-    fallbackToNewTab ? () => downloadViaNewTab(fileUrl, enableLogging) : null
+    () => downloadViaAnchor(downloadUrl, filename, enableLogging),
+    () => downloadViaFetch(downloadUrl, filename, enableLogging, timeout),
+    fallbackToNewTab ? () => downloadViaNewTab(downloadUrl, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
@@ -60,7 +68,7 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
         }
       }
     }
-    
+
     if (attempt < retryAttempts - 1) {
       if (enableLogging) {
         console.log(`🔄 Retrying download (attempt ${attempt + 2}/${retryAttempts})`);
@@ -106,7 +114,7 @@ export const downloadMultipleFiles = async (files, options = {}) => {
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    
+
     if (enableLogging) {
       console.log(`📁 Downloading file ${i + 1}/${files.length}:`, file.filename);
     }
@@ -166,20 +174,20 @@ const downloadViaAnchor = (fileUrl, filename, enableLogging) => {
       link.href = fileUrl;
       link.download = filename;
       link.style.display = 'none';
-      
+
       // Add to DOM temporarily
       document.body.appendChild(link);
-      
+
       // Trigger download
       link.click();
-      
+
       // Clean up
       document.body.removeChild(link);
-      
+
       if (enableLogging) {
         console.log('🔗 Anchor download initiated for:', filename);
       }
-      
+
       // We can't reliably detect success with this method
       // so we assume success and let fallbacks handle failures
       resolve(true);
@@ -251,7 +259,7 @@ const downloadViaNewTab = (fileUrl, enableLogging) => {
   return new Promise((resolve) => {
     try {
       const newWindow = window.open(fileUrl, '_blank');
-      
+
       if (newWindow) {
         if (enableLogging) {
           console.log('🪟 Opened file in new tab:', fileUrl);
@@ -299,5 +307,32 @@ export const isValidFileUrl = (url) => {
     return true;
   } catch (error) {
     return false;
+  }
+};
+
+/**
+ * Convert static file URL to download endpoint URL
+ * Converts /uploads/filename to /api/notes/download/filename?name=originalname
+ * @param {string} fileUrl - The static file URL
+ * @param {string} originalName - The original filename for the download
+ * @returns {string} - The download endpoint URL
+ */
+export const convertToDownloadUrl = (fileUrl, originalName) => {
+  try {
+    // Extract the filename from the URL
+    const filename = extractFilenameFromUrl(fileUrl);
+    
+    // Determine the base URL
+    const baseUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:5000'
+      : 'https://notesvilla.onrender.com';
+    
+    // Create the download endpoint URL
+    const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
+    
+    return downloadUrl;
+  } catch (error) {
+    console.warn('Failed to convert to download URL, using original:', error.message);
+    return fileUrl;
   }
 };

@@ -3,7 +3,7 @@
  * This can be run in the browser console for testing
  */
 
-import { downloadFile, downloadMultipleFiles, isValidFileUrl, extractFilenameFromUrl } from './downloadUtils.js';
+import { downloadFile, downloadMultipleFiles, isValidFileUrl, extractFilenameFromUrl, convertToDownloadUrl } from './downloadUtils.js';
 
 // Test URL validation
 console.log('Testing URL validation:');
@@ -15,8 +15,13 @@ console.log('Testing filename extraction:');
 console.log('From URL:', extractFilenameFromUrl('http://localhost:5000/uploads/test.pdf')); // should be 'test.pdf'
 console.log('From complex URL:', extractFilenameFromUrl('http://localhost:5000/api/notes/download/file-123.png?name=original.png')); // should be 'file-123.png'
 
+// Test URL conversion
+console.log('Testing URL conversion:');
+console.log('Static to download:', convertToDownloadUrl('http://localhost:5000/uploads/files-1757352981310-636882371.jpg', 'My Photo.jpg'));
+// Should output: http://localhost:5000/api/notes/download/files-1757352981310-636882371.jpg?name=My%20Photo.jpg
+
 // Test single file download (uncomment to test with real file)
-// downloadFile('http://localhost:5000/uploads/test.pdf', 'test-download.pdf');
+// downloadFile('http://localhost:5000/uploads/files-1757352981310-636882371.jpg', 'test-download.jpg');
 
 // Test multiple file download (uncomment to test with real files)
 // const testFiles = [
@@ -25,4 +30,4 @@ console.log('From complex URL:', extractFilenameFromUrl('http://localhost:5000/a
 // ];
 // downloadMultipleFiles(testFiles);
 
-export { downloadFile, downloadMultipleFiles, isValidFileUrl, extractFilenameFromUrl };
+export { downloadFile, downloadMultipleFiles, isValidFileUrl, extractFilenameFromUrl, convertToDownloadUrl };
