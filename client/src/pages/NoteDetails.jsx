@@ -27,6 +27,27 @@ export default function NoteDetails() {
     }
   };
 
+  const downloadFile = async (downloadUrl, fileName) => {
+    try {
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback to window.open if fetch fails
+      window.open(downloadUrl, '_blank');
+    }
+  };
+
   const handleDownload = () => {
     if (note?.files && note.files.length > 1) {
       // For multiple files
@@ -35,13 +56,13 @@ export default function NoteDetails() {
           const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
           const originalName = file.originalName || filename;
 
-          // Create download URL with proper API endpoint
-          const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
-          const baseUrl = apiBase.replace('/api', ''); // Remove /api suffix to get base server URL
+          // Create download URL with proper backend endpoint
+          const baseUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:5000'
+            : 'https://notesvilla.onrender.com'; // Point to backend server
           const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-          // Direct download - browser will handle properly with server headers
-          window.open(downloadUrl, '_blank');
+          downloadFile(downloadUrl, originalName);
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
@@ -49,14 +70,13 @@ export default function NoteDetails() {
       const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
       const originalName = note.filename || filename;
 
-      // Create download URL with proper endpoint
+      // Create download URL with proper backend endpoint
       const baseUrl = window.location.hostname === 'localhost'
         ? 'http://localhost:5000'
-        : window.location.origin;
+        : 'https://notesvilla.onrender.com'; // Point to backend server
       const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-      // Direct download - browser will handle properly with server headers
-      window.open(downloadUrl, '_blank');
+      downloadFile(downloadUrl, originalName);
     }
   };
 
@@ -369,14 +389,13 @@ export default function NoteDetails() {
                       const filename = file.fileUrl.split('/').pop(); // Extract filename from URL
                       const originalName = file.originalName || filename;
 
-                      // Create download URL with proper endpoint
+                      // Create download URL with proper backend endpoint
                       const baseUrl = window.location.hostname === 'localhost'
                         ? 'http://localhost:5000'
-                        : window.location.origin;
+                        : 'https://notesvilla.onrender.com'; // Point to backend server
                       const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-                      // Direct download - browser will handle properly with server headers
-                      window.open(downloadUrl, '_blank');
+                      downloadFile(downloadUrl, originalName);
                     }}
                     style={{
                       display: 'inline-flex',
