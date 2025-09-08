@@ -184,8 +184,9 @@ export default function Notes() {
     console.log('🔽 handleDownload called with:', { fileUrl, filename });
     
     try {
-      // Extract filename from URL
+      // Extract filename from URL (this should be the server-generated filename)
       const urlFilename = fileUrl.split('/').pop();
+      console.log('🔽 Extracted server filename:', urlFilename);
       
       // Create download endpoint URL
       const baseUrl = window.location.hostname === 'localhost'
@@ -195,6 +196,8 @@ export default function Notes() {
       const downloadUrl = `${baseUrl}/api/notes/download/${urlFilename}?name=${encodeURIComponent(filename)}`;
       
       console.log('🔽 Download URL:', downloadUrl);
+      console.log('🔽 Server filename (from URL):', urlFilename);
+      console.log('🔽 Display filename (for user):', filename);
       
       // Simple anchor download
       const link = document.createElement('a');
@@ -585,7 +588,10 @@ export default function Notes() {
                         } else if (note.fileUrl) {
                           // For single file, use enhanced download function
                           console.log('🔽 Single file, starting download:', note.fileUrl, note.filename);
-                          await handleDownload(note.fileUrl, note.filename || 'note');
+                          console.log('🔽 Note object:', note);
+                          // Use originalName for display, but the URL contains the correct server filename
+                          const displayName = note.originalName || note.filename || 'note';
+                          await handleDownload(note.fileUrl, displayName);
                           console.log('🔽 Download function completed');
                         }
                       } catch (error) {

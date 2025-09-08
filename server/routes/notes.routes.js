@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit per file
@@ -37,7 +37,7 @@ const upload = multer({
     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -49,7 +49,7 @@ const upload = multer({
 // Need to add middleware to allow authentication but not require admin for getting notes
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if(!authHeader) return res.status(401).json({ msg: 'Missing token' });
+  if (!authHeader) return res.status(401).json({ msg: 'Missing token' });
   const token = authHeader.split(' ')[1];
   try {
     const jwt = require('jsonwebtoken');
@@ -79,29 +79,40 @@ router.get('/topics/:subjectName', (req, res, next) => {
 // Download endpoint with proper headers and CORS - MOVED UP to avoid conflicts
 router.get('/download/:filename', (req, res) => {
   console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
-  
+  console.log('📁 Looking for file at:', uploadsDir);
+  console.log('📄 Full file path:', path.join(uploadsDir, req.params.filename));
+
   const filename = req.params.filename;
   const filePath = path.join(uploadsDir, filename);
-  
+
+  // List all files in uploads directory for debugging
+  try {
+    const allFiles = fs.readdirSync(uploadsDir);
+    console.log('📂 Available files in uploads:', allFiles);
+  } catch (err) {
+    console.log('❌ Error reading uploads directory:', err.message);
+  }
+
   // Check if file exists
   if (!fs.existsSync(filePath)) {
     console.log('❌ File not found:', filePath);
-    return res.status(404).json({ error: 'File not found' });
+    console.log('❌ Requested filename:', filename);
+    return res.status(404).json({ error: 'File not found', requestedFile: filename });
   }
-  
+
   // Get original filename from query parameter if provided
   const originalName = req.query.name || filename;
-  
+
   // Set CORS headers for cross-origin downloads
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   // Set proper headers for download
   res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
   res.setHeader('Cache-Control', 'no-cache');
-  
+
   // Send file
   res.download(filePath, originalName, (err) => {
     if (err) {
@@ -140,8 +151,8 @@ router.get('/subject/:subjectName', (req, res, next) => {
 // Add a debug endpoint
 router.get('/debug', (req, res) => {
   console.log('📋 GET /api/notes/debug called');
-  res.json({ 
-    message: 'Notes API is working', 
+  res.json({
+    message: 'Notes API is working',
     availableEndpoints: [
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
