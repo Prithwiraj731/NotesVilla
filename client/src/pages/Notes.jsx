@@ -177,12 +177,12 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Ultra-robust download function that works in all scenarios
+  // CSP-compliant download function
   const downloadViaFetch = async (url, suggestedName) => {
     try {
       console.log('🔄 Starting download:', suggestedName, url);
 
-      // Method 1: Try fetch + blob (best for CORS-enabled servers)
+      // Method 1: Try fetch + blob (CSP-safe)
       try {
         const res = await fetch(url, {
           method: 'GET',
@@ -197,11 +197,12 @@ export default function Notes() {
           const a = document.createElement('a');
           a.href = objectUrl;
           a.download = suggestedName || 'download';
-          a.style.display = 'none';
+          a.style.cssText = 'display: none !important;';
 
           document.body.appendChild(a);
           a.click();
 
+          // Clean up immediately
           setTimeout(() => {
             URL.revokeObjectURL(objectUrl);
             if (document.body.contains(a)) {
@@ -213,65 +214,37 @@ export default function Notes() {
           return;
         }
       } catch (fetchError) {
-        console.log('⚠️ Fetch method failed, trying alternatives:', fetchError.message);
+        console.log('⚠️ Fetch method failed:', fetchError.message);
       }
 
-      // Method 2: Try iframe download (works for many CORS scenarios)
-      try {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 3000);
-
-        console.log('✅ Download initiated via iframe:', suggestedName);
-        return;
-      } catch (iframeError) {
-        console.log('⚠️ Iframe method failed:', iframeError.message);
-      }
-
-      // Method 3: Direct anchor link (last resort)
+      // Method 2: Simple anchor download (CSP-safe, no iframe)
       const link = document.createElement('a');
       link.href = url;
       link.download = suggestedName;
-      link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.style.display = 'none';
+      link.style.cssText = 'display: none !important;';
 
       document.body.appendChild(link);
-
-      // Trigger click with user interaction simulation
-      const clickEvent = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      });
-
-      link.dispatchEvent(clickEvent);
+      link.click();
 
       setTimeout(() => {
         if (document.body.contains(link)) {
           document.body.removeChild(link);
         }
-      }, 1000);
+      }, 500);
 
       console.log('✅ Download initiated via direct link:', suggestedName);
 
     } catch (error) {
-      console.error('❌ All download methods failed:', error);
+      console.error('❌ Download failed:', error);
 
-      // Final fallback: show user the URL
-      const userChoice = confirm(
-        `Download failed. Would you like to open the file in a new tab?\n\nFile: ${suggestedName}`
-      );
-
-      if (userChoice) {
-        window.open(url, '_blank');
+      // Simple fallback without confirm dialog (CSP-safe)
+      try {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        console.log('⚠️ Opened file in new tab as fallback');
+      } catch (fallbackError) {
+        console.error('❌ All download methods failed:', fallbackError);
+        // Could show a toast notification here instead of alert
       }
     }
   };
