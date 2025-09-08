@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { downloadFile } from '../utils/downloadUtils';
 import { Search, Download, Share2, Calendar, BookOpen, Tag, FileText, Filter, Grid, List } from 'lucide-react';
 
 export default function Notes() {
@@ -177,22 +178,22 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // ✅ Correct download function
-  const downloadViaFetch = (url, suggestedName) => {
+  // Enhanced download function using the new utility
+  const handleDownload = async (fileUrl, filename) => {
     try {
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', suggestedName || 'download');
-      link.setAttribute('target', '_blank');
+      const success = await downloadFile(fileUrl, filename, {
+        enableLogging: true,
+        fallbackToNewTab: true,
+        retryAttempts: 2
+      });
       
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      console.log('✅ Normal download started:', suggestedName);
+      if (!success) {
+        // Show user-friendly error message if all strategies fail
+        console.error('Download failed for:', filename);
+        // Could add toast notification here in the future
+      }
     } catch (error) {
-      console.error('❌ Download failed:', error);
-      window.open(url, '_blank'); // fallback
+      console.error('Download error:', error);
     }
   };
 
@@ -561,8 +562,8 @@ export default function Notes() {
                         // For multiple files, navigate to details page
                         handleCardClick(note);
                       } else if (note.fileUrl) {
-                        // For single file, use proper download endpoint
-                        downloadViaFetch(note.fileUrl, note.filename || 'note');
+                        // For single file, use enhanced download function
+                        handleDownload(note.fileUrl, note.filename || 'note');
                       }
                     }}
                     style={{

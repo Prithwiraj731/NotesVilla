@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText } from 'lucide-react';
 import API from '../services/api';
+import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 
 export default function NoteDetails() {
   const { id } = useParams();
@@ -28,36 +29,42 @@ export default function NoteDetails() {
     }
   };
 
-  // ✅ Correct download function
-  const downloadViaFetch = (url, suggestedName) => {
-    try {
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', suggestedName || 'download');
-      link.setAttribute('target', '_blank');
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      console.log('✅ Normal download started:', suggestedName);
-    } catch (error) {
-      console.error('❌ Download failed:', error);
-      window.open(url, '_blank'); // fallback
-    }
-  };
-
-  const handleDownload = () => {
+  // Enhanced download function using the new utility
+  const handleDownload = async () => {
     if (note?.files && note.files.length > 1) {
-      // For multiple files
-      note.files.forEach((file, index) => {
-        setTimeout(() => {
-          downloadViaFetch(file.fileUrl, file.originalName || 'note');
-        }, index * 500); // Stagger the downloads by 500ms
-      });
+      // For multiple files, use batch download
+      const files = note.files.map(file => ({
+        fileUrl: file.fileUrl,
+        filename: file.originalName || 'note'
+      }));
+      
+      try {
+        const results = await downloadMultipleFiles(files, {
+          staggerDelay: 500,
+          enableLogging: true,
+          continueOnError: true
+        });
+        
+        console.log('Batch download results:', results);
+        // Could add user notification here based on results
+      } catch (error) {
+        console.error('Batch download error:', error);
+      }
     } else if (note?.fileUrl) {
       // For single file
-      downloadViaFetch(note.fileUrl, note.filename || 'note');
+      try {
+        const success = await downloadFile(note.fileUrl, note.filename || 'note', {
+          enableLogging: true,
+          fallbackToNewTab: true,
+          retryAttempts: 2
+        });
+        
+        if (!success) {
+          console.error('Download failed for:', note.filename);
+        }
+      } catch (error) {
+        console.error('Download error:', error);
+      }
     }
   };
 
@@ -366,8 +373,11 @@ export default function NoteDetails() {
                     {file.originalName || `File ${index + 1}`}
                   </h4>
                   <button
-                    onClick={() => {
-                      downloadViaFetch(file.fileUrl, file.originalName || 'note');
+                    onClick={async () => {
+                      await downloadFile(file.fileUrl, file.originalName || 'note', {
+                        enableLogging: true,
+                        fallbackToNewTab: true
+                      });
                     }}
                     style={{
                       display: 'inline-flex',
@@ -690,8 +700,11 @@ export default function NoteDetails() {
                         This file type cannot be previewed in the browser. Click download to view it.
                       </p>
                       <button
-                        onClick={() => {
-                          downloadViaFetch(note.fileUrl, note.filename || 'note');
+                        onClick={async () => {
+                          await downloadFile(note.fileUrl, note.filename || 'note', {
+                            enableLogging: true,
+                            fallbackToNewTab: true
+                          });
                         }}
                         style={{
                           padding: '0.75rem 1.5rem',
