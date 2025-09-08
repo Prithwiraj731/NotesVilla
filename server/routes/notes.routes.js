@@ -98,7 +98,7 @@ router.get('/subject/:subjectName', (req, res, next) => {
   next();
 }, notesCtrl.listNotesBySubject);
 
-// Download endpoint with proper headers
+// Download endpoint with proper headers and CORS
 router.get('/download/:filename', (req, res) => {
   console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
   
@@ -114,9 +114,15 @@ router.get('/download/:filename', (req, res) => {
   // Get original filename from query parameter if provided
   const originalName = req.query.name || filename;
   
+  // Set CORS headers for cross-origin downloads
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
   // Set proper headers for download
-  res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Cache-Control', 'no-cache');
   
   // Send file
   res.download(filePath, originalName, (err) => {

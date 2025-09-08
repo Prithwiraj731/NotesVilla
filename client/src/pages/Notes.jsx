@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { Search, Download, Share2, Calendar, BookOpen, Tag, FileText, Filter, Grid, List } from 'lucide-react';
 
-export default function Notes(){
+export default function Notes() {
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -32,7 +32,7 @@ export default function Notes(){
       const r = await API.get('/notes/subjects');
       console.log('✅ Subjects response status:', r.status);
       console.log('✅ Subjects loaded:', r.data);
-      
+
       if (Array.isArray(r.data)) {
         setSubjects(r.data);
         setDebugInfo(prev => prev + `Subjects: ${r.data.length} loaded. `);
@@ -43,12 +43,12 @@ export default function Notes(){
     } catch (err) {
       console.error('❌ Error loading subjects:', err);
       console.error('❌ Error response:', err.response?.data);
-      
+
       let errorMessage = 'Failed to load subjects.';
       if (err.response?.status === 404) {
         errorMessage += ' Subjects endpoint not found (404).';
       }
-      
+
       setError(errorMessage + ' ' + (err.response?.data?.msg || err.message));
       setDebugInfo(prev => prev + `Subjects failed: ${err.message}. `);
     }
@@ -61,18 +61,18 @@ export default function Notes(){
       console.log('📡 Making request to: /api/notes');
       setLoading(true);
       setError('');
-      
+
       const r = await API.get('/notes');
       console.log('✅ Raw response:', r);
       console.log('✅ Response status:', r.status);
       console.log('✅ Response headers:', r.headers);
       console.log('✅ Notes loaded:', r.data);
       console.log('📝 Number of notes:', r.data.length);
-      
+
       if (Array.isArray(r.data)) {
         setNotes(r.data);
         setDebugInfo(prev => prev + `Notes: ${r.data.length} loaded. `);
-        
+
         if (r.data.length === 0) {
           setError('No notes found in the database. Upload some notes first!');
         }
@@ -87,7 +87,7 @@ export default function Notes(){
       console.error('❌ Error request:', err.request);
       console.error('❌ Error status:', err.response?.status);
       console.error('❌ Error data:', err.response?.data);
-      
+
       let errorMessage = 'Failed to load notes.';
       if (err.response?.status === 404) {
         errorMessage += ' Endpoint not found (404). Check if server is running on localhost:5000.';
@@ -98,7 +98,7 @@ export default function Notes(){
       } else {
         errorMessage += ' ' + (err.response?.data?.msg || err.message);
       }
-      
+
       setError(errorMessage);
       setDebugInfo(prev => prev + `Notes failed: ${err.message}. `);
     } finally {
@@ -118,24 +118,24 @@ export default function Notes(){
 
   const filterNotes = () => {
     let filtered = notes;
-    
+
     if (selectedSubject) {
       filtered = filtered.filter(note => note.subjectName === selectedSubject);
     }
-    
+
     if (selectedTopic) {
       filtered = filtered.filter(note => note.topicName === selectedTopic);
     }
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(note => 
+      filtered = filtered.filter(note =>
         note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.topicName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     setFilteredNotes(filtered);
   };
 
@@ -164,10 +164,10 @@ export default function Notes(){
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -177,41 +177,62 @@ export default function Notes(){
     setSearchTerm('');
   };
 
-  const downloadFile = (downloadUrl, fileName) => {
+  // Robust download function using fetch + blob
+  const downloadViaFetch = async (url, suggestedName) => {
     try {
-      console.log('Starting download:', fileName, downloadUrl);
-      
-      // Create a temporary anchor element for download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      
-      // Add some attributes to ensure it works on all browsers
-      link.style.display = 'none';
-      link.target = '_self'; // Changed from _blank to _self
-      link.rel = 'noopener noreferrer';
-      
-      // Add to DOM, click, and remove
-      document.body.appendChild(link);
-      
-      // Use setTimeout to ensure the element is in DOM
+      console.log('Starting fetch download:', suggestedName, url);
+
+      const res = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit' // Don't send cookies for downloads
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Download failed: ${res.status} ${text}`);
+      }
+
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = suggestedName || 'download';
+      a.style.display = 'none';
+
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
       setTimeout(() => {
-        link.click();
-        
-        // Clean up after a short delay
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-        }, 100);
-      }, 10);
-      
-      console.log('Download initiated for:', fileName);
-      
+        URL.revokeObjectURL(objectUrl);
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+      }, 100);
+
+      console.log('✅ Download completed:', suggestedName);
+
     } catch (error) {
-      console.error('Download error:', error);
-      // Fallback: open in new window
-      window.open(downloadUrl, '_blank');
+      console.error('❌ Fetch download failed:', error);
+
+      // Fallback: try direct link method
+      try {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = suggestedName;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('⚠️ Used fallback download method');
+      } catch (fallbackError) {
+        console.error('❌ Fallback download also failed:', fallbackError);
+        // Show user-friendly error
+        alert(`Download failed: ${error.message}. Please try again or contact support.`);
+      }
     }
   };
 
@@ -238,7 +259,7 @@ export default function Notes(){
           margin: '0 0 1rem',
           letterSpacing: '-0.02em'
         }}>Notes Library</h1>
-        
+
         <p style={{
           color: '#94a3b8',
           fontSize: '1.125rem',
@@ -280,12 +301,12 @@ export default function Notes(){
         borderRadius: '1rem',
         padding: '1.5rem'
       }}>
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           flexDirection: window.innerWidth < 768 ? 'column' : 'row',
           flexWrap: 'wrap',
-          gap: '1rem', 
-          marginBottom: '1rem' 
+          gap: '1rem',
+          marginBottom: '1rem'
         }}>
           {/* Search */}
           <div style={{ position: 'relative', flex: window.innerWidth < 768 ? '1' : '2', minWidth: '250px' }}>
@@ -583,14 +604,14 @@ export default function Notes(){
                         // For single file, use proper download endpoint
                         const filename = note.fileUrl.split('/').pop(); // Extract filename from URL
                         const originalName = note.filename || filename;
-                        
+
                         // Create download URL with proper backend endpoint
-                        const baseUrl = window.location.hostname === 'localhost' 
-                          ? 'http://localhost:5000' 
+                        const baseUrl = window.location.hostname === 'localhost'
+                          ? 'http://localhost:5000'
                           : 'https://notesvilla.onrender.com'; // Point to backend server
                         const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-                        
-                        downloadFile(downloadUrl, originalName);
+
+                        downloadViaFetch(downloadUrl, originalName);
                       }
                     }}
                     style={{

@@ -27,41 +27,62 @@ export default function NoteDetails() {
     }
   };
 
-  const downloadFile = (downloadUrl, fileName) => {
+  // Robust download function using fetch + blob
+  const downloadViaFetch = async (url, suggestedName) => {
     try {
-      console.log('Starting download:', fileName, downloadUrl);
-
-      // Create a temporary anchor element for download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-
-      // Add some attributes to ensure it works on all browsers
-      link.style.display = 'none';
-      link.target = '_self'; // Changed from _blank to _self
-      link.rel = 'noopener noreferrer';
-
-      // Add to DOM, click, and remove
-      document.body.appendChild(link);
-
-      // Use setTimeout to ensure the element is in DOM
+      console.log('Starting fetch download:', suggestedName, url);
+      
+      const res = await fetch(url, { 
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit' // Don't send cookies for downloads
+      });
+      
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Download failed: ${res.status} ${text}`);
+      }
+      
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = suggestedName || 'download';
+      a.style.display = 'none';
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
       setTimeout(() => {
-        link.click();
-
-        // Clean up after a short delay
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-        }, 100);
-      }, 10);
-
-      console.log('Download initiated for:', fileName);
-
+        URL.revokeObjectURL(objectUrl);
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+      }, 100);
+      
+      console.log('✅ Download completed:', suggestedName);
+      
     } catch (error) {
-      console.error('Download error:', error);
-      // Fallback: open in new window
-      window.open(downloadUrl, '_blank');
+      console.error('❌ Fetch download failed:', error);
+      
+      // Fallback: try direct link method
+      try {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = suggestedName;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('⚠️ Used fallback download method');
+      } catch (fallbackError) {
+        console.error('❌ Fallback download also failed:', fallbackError);
+        // Show user-friendly error
+        alert(`Download failed: ${error.message}. Please try again or contact support.`);
+      }
     }
   };
 
@@ -79,7 +100,7 @@ export default function NoteDetails() {
             : 'https://notesvilla.onrender.com'; // Point to backend server
           const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-          downloadFile(downloadUrl, originalName);
+          downloadViaFetch(downloadUrl, originalName);
         }, index * 500); // Stagger the downloads by 500ms
       });
     } else if (note?.fileUrl) {
@@ -93,7 +114,7 @@ export default function NoteDetails() {
         : 'https://notesvilla.onrender.com'; // Point to backend server
       const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-      downloadFile(downloadUrl, originalName);
+      downloadViaFetch(downloadUrl, originalName);
     }
   };
 
@@ -412,7 +433,7 @@ export default function NoteDetails() {
                         : 'https://notesvilla.onrender.com'; // Point to backend server
                       const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
 
-                      downloadFile(downloadUrl, originalName);
+                      downloadViaFetch(downloadUrl, originalName);
                     }}
                     style={{
                       display: 'inline-flex',
