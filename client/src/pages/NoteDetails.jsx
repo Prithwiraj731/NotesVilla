@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText } from 'lucide-react';
 import API from '../services/api';
-import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
+
 
 export default function NoteDetails() {
   const { id } = useParams();
@@ -29,44 +29,54 @@ export default function NoteDetails() {
     }
   };
 
-  // Enhanced download function using the new utility
+  // Fixed download function - extract stored filename from fileUrl
   const handleDownload = async () => {
     if (note?.files && note.files.length > 1) {
-      // For multiple files, use batch download
-      const files = note.files.map(file => ({
-        fileUrl: file.fileUrl,
-        filename: file.originalName || 'note'
-      }));
-      
-      try {
-        const results = await downloadMultipleFiles(files, {
-          staggerDelay: 500,
-          enableLogging: true,
-          continueOnError: true
-        });
+      // For multiple files, download each one
+      for (const file of note.files) {
+        const storedFilename = file.fileUrl ? file.fileUrl.split('/').pop() : file.filename;
+        const originalName = file.originalName || file.filename || storedFilename;
         
-        console.log('Batch download results:', results);
-        // Could add user notification here based on results
-      } catch (error) {
-        console.error('Batch download error:', error);
+        const baseUrl = window.location.hostname === 'localhost'
+          ? 'http://localhost:5000'
+          : 'https://notesvilla.onrender.com';
+        
+        const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
+        
+        // Stagger downloads to avoid overwhelming the browser
+        setTimeout(() => {
+          downloadViaFetch(downloadUrl, originalName);
+        }, note.files.indexOf(file) * 500);
       }
     } else if (note?.fileUrl) {
       // For single file
-      try {
-        const success = await downloadFile(note.fileUrl, note.filename || 'note', {
-          enableLogging: true,
-          fallbackToNewTab: true,
-          retryAttempts: 2
-        });
-        
-        if (!success) {
-          console.error('Download failed for:', note.filename);
-          alert(`Sorry, the file "${note.filename || 'note'}" could not be downloaded. It may have been moved or deleted.`);
-        }
-      } catch (error) {
-        console.error('Download error:', error);
-        alert(`Download error: ${error.message}`);
-      }
+      const storedFilename = note.fileUrl.split('/').pop();
+      const originalName = note.originalName || note.filename || storedFilename;
+      
+      const baseUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://notesvilla.onrender.com';
+      
+      const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
+      
+      downloadViaFetch(downloadUrl, originalName);
+    }
+  };
+
+  // Simple download helper function
+  const downloadViaFetch = (url, suggestedName) => {
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', suggestedName || 'download');
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log('🔽 Download initiated via fetch');
+    } catch (err) {
+      console.error('❌ Download failed:', err);
+      window.open(url, '_blank'); // fallback
     }
   };
 
@@ -375,15 +385,17 @@ export default function NoteDetails() {
                     {file.originalName || `File ${index + 1}`}
                   </h4>
                   <button
-                    onClick={async () => {
-                      const success = await downloadFile(file.fileUrl, file.originalName || 'note', {
-                        enableLogging: true,
-                        fallbackToNewTab: true
-                      });
+                    onClick={() => {
+                      const storedFilename = file.fileUrl ? file.fileUrl.split('/').pop() : file.filename;
+                      const originalName = file.originalName || file.filename || storedFilename;
                       
-                      if (!success) {
-                        alert(`Sorry, the file "${file.originalName || 'note'}" could not be downloaded. It may have been moved or deleted.`);
-                      }
+                      const baseUrl = window.location.hostname === 'localhost'
+                        ? 'http://localhost:5000'
+                        : 'https://notesvilla.onrender.com';
+                      
+                      const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
+                      
+                      downloadViaFetch(downloadUrl, originalName);
                     }}
                     style={{
                       display: 'inline-flex',
@@ -706,15 +718,17 @@ export default function NoteDetails() {
                         This file type cannot be previewed in the browser. Click download to view it.
                       </p>
                       <button
-                        onClick={async () => {
-                          const success = await downloadFile(note.fileUrl, note.filename || 'note', {
-                            enableLogging: true,
-                            fallbackToNewTab: true
-                          });
+                        onClick={() => {
+                          const storedFilename = note.fileUrl.split('/').pop();
+                          const originalName = note.originalName || note.filename || storedFilename;
                           
-                          if (!success) {
-                            alert(`Sorry, the file "${note.filename || 'note'}" could not be downloaded. It may have been moved or deleted.`);
-                          }
+                          const baseUrl = window.location.hostname === 'localhost'
+                            ? 'http://localhost:5000'
+                            : 'https://notesvilla.onrender.com';
+                          
+                          const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
+                          
+                          downloadViaFetch(downloadUrl, originalName);
                         }}
                         style={{
                           padding: '0.75rem 1.5rem',

@@ -76,54 +76,52 @@ router.get('/topics/:subjectName', (req, res, next) => {
   next();
 }, notesCtrl.listTopics);
 
-// Download endpoint with proper headers and CORS - MOVED UP to avoid conflicts
+// Fixed download endpoint - uses stored filename but serves with original name
 router.get('/download/:filename', (req, res) => {
-  console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
-  console.log('📁 Looking for file at:', uploadsDir);
-  console.log('📄 Full file path:', path.join(uploadsDir, req.params.filename));
-
-  const filename = req.params.filename;
-  const filePath = path.join(uploadsDir, filename);
-
-  // List all files in uploads directory for debugging
   try {
-    const allFiles = fs.readdirSync(uploadsDir);
-    console.log('📂 Available files in uploads:', allFiles);
-  } catch (err) {
-    console.log('❌ Error reading uploads directory:', err.message);
-  }
+    console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
+    console.log('📁 Looking for file at:', uploadsDir);
+    
+    const storedFilename = req.params.filename; // stored in uploads
+    const originalName = req.query.name || storedFilename;
+    const filePath = path.join(uploadsDir, storedFilename);
+    
+    console.log('📄 Stored filename:', storedFilename);
+    console.log('📄 Original name:', originalName);
+    console.log('📄 Full file path:', filePath);
 
-  // Check if file exists
-  if (!fs.existsSync(filePath)) {
-    console.log('❌ File not found:', filePath);
-    console.log('❌ Requested filename:', filename);
-    return res.status(404).json({ error: 'File not found', requestedFile: filename });
-  }
-
-  // Get original filename from query parameter if provided
-  const originalName = req.query.name || filename;
-
-  // Set CORS headers for cross-origin downloads
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Set proper headers for download
-  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
-  res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-
-  // Send file
-  res.download(filePath, originalName, (err) => {
-    if (err) {
-      console.error('❌ Download error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Error downloading file' });
-      }
-    } else {
-      console.log('✅ File downloaded successfully:', originalName);
+    // List all files in uploads directory for debugging
+    try {
+      const allFiles = fs.readdirSync(uploadsDir);
+      console.log('📂 Available files in uploads:', allFiles);
+    } catch (err) {
+      console.log('❌ Error reading uploads directory:', err.message);
     }
-  });
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.log('❌ File not found:', filePath);
+      console.log('❌ Requested stored filename:', storedFilename);
+      return res.status(404).json({ msg: 'File not found', requestedFile: storedFilename });
+    }
+
+    console.log('✅ File found, initiating download...');
+
+    // Use res.download which automatically sets proper headers
+    res.download(filePath, originalName, (err) => {
+      if (err) {
+        console.error('❌ Download error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ msg: 'Error downloading file' });
+        }
+      } else {
+        console.log('✅ File downloaded successfully:', originalName);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Server error:', error);
+    res.status(500).json({ msg: 'Server error' });
+  }
 });
 
 // Single note by ID - needs to be before other routes that might conflict

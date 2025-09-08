@@ -179,40 +179,30 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Fixed download function with better URL handling
-  const handleDownload = async (fileUrl, filename) => {
-    console.log('🔽 handleDownload called with:', { fileUrl, filename });
-    console.log('🔽 Full fileUrl:', fileUrl);
+  // Fixed download function - extract stored filename from fileUrl
+  const handleDownload = async (note) => {
+    console.log('🔽 handleDownload called with note:', note);
 
-    // Better URL parsing - handle different URL formats
-    let urlFilename;
-    try {
-      // Try to extract filename from URL more carefully
-      if (fileUrl.includes('/')) {
-        const urlParts = fileUrl.split('/');
-        urlFilename = urlParts[urlParts.length - 1];
+    let storedFilename;
+    let originalName;
 
-        // Remove any query parameters from the filename
-        if (urlFilename.includes('?')) {
-          urlFilename = urlFilename.split('?')[0];
-        }
-      } else {
-        // If no slashes, the fileUrl might already be just the filename
-        urlFilename = fileUrl;
-      }
+    if (note.files && note.files.length > 0) {
+      // Multi-file note - use first file
+      const firstFile = note.files[0];
+      storedFilename = firstFile.fileUrl ? firstFile.fileUrl.split('/').pop() : firstFile.filename;
+      originalName = firstFile.originalName || firstFile.filename || storedFilename;
+    } else {
+      // Single file note - extract stored filename from fileUrl
+      storedFilename = note.fileUrl ? note.fileUrl.split('/').pop() : note.filename;
+      originalName = note.originalName || note.filename || storedFilename;
+    }
 
-      console.log('🔽 Extracted server filename:', urlFilename);
+    console.log('🔽 Stored filename (server):', storedFilename);
+    console.log('🔽 Original name (user-friendly):', originalName);
 
-      // Validate that we have a proper filename
-      if (!urlFilename || urlFilename.length < 3) {
-        console.error('🔽 Invalid filename extracted:', urlFilename);
-        alert(`Error: Could not extract valid filename from URL: ${fileUrl}`);
-        return;
-      }
-
-    } catch (error) {
-      console.error('🔽 Error parsing fileUrl:', error);
-      alert(`Error parsing file URL: ${error.message}`);
+    if (!storedFilename) {
+      console.error('🔽 No stored filename found');
+      alert('Error: No filename found for this note');
       return;
     }
 
@@ -221,23 +211,29 @@ export default function Notes() {
       ? 'http://localhost:5000'
       : 'https://notesvilla.onrender.com';
 
-    const downloadUrl = `${baseUrl}/api/notes/download/${urlFilename}?name=${encodeURIComponent(filename)}`;
+    const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
 
     console.log('🔽 Download URL:', downloadUrl);
-    console.log('🔽 Server filename (from URL):', urlFilename);
-    console.log('🔽 Display filename (for user):', filename);
 
-    // Create download link and click it
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    link.style.display = 'none';
+    // Use downloadViaFetch for reliable downloads
+    downloadViaFetch(downloadUrl, originalName);
+  };
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    console.log('🔽 Download link clicked - browser will handle the download');
+  // Simple download helper function
+  const downloadViaFetch = (url, suggestedName) => {
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', suggestedName || 'download');
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log('🔽 Download initiated via fetch');
+    } catch (err) {
+      console.error('❌ Download failed:', err);
+      window.open(url, '_blank'); // fallback
+    }
   };
 
   return (
@@ -609,18 +605,11 @@ export default function Notes() {
                           console.log('🔽 Multiple files, navigating to details');
                           handleCardClick(note);
                         } else if (note.fileUrl) {
-                          // For single file, use enhanced download function
+                          // For single file, use simplified download function
                           console.log('🔽 Single file, starting download');
                           console.log('🔽 Full note object:', JSON.stringify(note, null, 2));
-                          console.log('🔽 note.fileUrl:', note.fileUrl);
-                          console.log('🔽 note.filename:', note.filename);
-                          console.log('🔽 note.originalName:', note.originalName);
 
-                          // Use originalName for display, but the URL contains the correct server filename
-                          const displayName = note.originalName || note.filename || note.title || 'note';
-                          console.log('🔽 Using display name:', displayName);
-
-                          await handleDownload(note.fileUrl, displayName);
+                          await handleDownload(note);
                           console.log('🔽 Download function completed');
                         }
                       } catch (error) {
