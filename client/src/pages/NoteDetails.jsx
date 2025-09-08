@@ -27,23 +27,40 @@ export default function NoteDetails() {
     }
   };
 
-  const downloadFile = async (downloadUrl, fileName) => {
+  const downloadFile = (downloadUrl, fileName) => {
     try {
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error('Download failed');
+      console.log('Starting download:', fileName, downloadUrl);
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Create a temporary anchor element for download
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = fileName;
+
+      // Add some attributes to ensure it works on all browsers
+      link.style.display = 'none';
+      link.target = '_self'; // Changed from _blank to _self
+      link.rel = 'noopener noreferrer';
+
+      // Add to DOM, click, and remove
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+
+      // Use setTimeout to ensure the element is in DOM
+      setTimeout(() => {
+        link.click();
+
+        // Clean up after a short delay
+        setTimeout(() => {
+          if (document.body.contains(link)) {
+            document.body.removeChild(link);
+          }
+        }, 100);
+      }, 10);
+
+      console.log('Download initiated for:', fileName);
+
     } catch (error) {
       console.error('Download error:', error);
-      // Fallback to window.open if fetch fails
+      // Fallback: open in new window
       window.open(downloadUrl, '_blank');
     }
   };
