@@ -177,75 +177,29 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // CSP-compliant download function
-  const downloadViaFetch = async (url, suggestedName) => {
+  // Ultra-simple download function that avoids all CSP issues
+  const downloadViaFetch = (url, suggestedName) => {
     try {
-      console.log('🔄 Starting download:', suggestedName, url);
-
-      // Method 1: Try fetch + blob (CSP-safe)
-      try {
-        const res = await fetch(url, {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit'
-        });
-
-        if (res.ok) {
-          const blob = await res.blob();
-          const objectUrl = URL.createObjectURL(blob);
-
-          const a = document.createElement('a');
-          a.href = objectUrl;
-          a.download = suggestedName || 'download';
-          a.style.cssText = 'display: none !important;';
-
-          document.body.appendChild(a);
-          a.click();
-
-          // Clean up immediately
-          setTimeout(() => {
-            URL.revokeObjectURL(objectUrl);
-            if (document.body.contains(a)) {
-              document.body.removeChild(a);
-            }
-          }, 100);
-
-          console.log('✅ Download completed via fetch+blob:', suggestedName);
-          return;
-        }
-      } catch (fetchError) {
-        console.log('⚠️ Fetch method failed:', fetchError.message);
-      }
-
-      // Method 2: Simple anchor download (CSP-safe, no iframe)
+      // Create a simple anchor element and click it immediately
       const link = document.createElement('a');
       link.href = url;
-      link.download = suggestedName;
-      link.rel = 'noopener noreferrer';
-      link.style.cssText = 'display: none !important;';
+      link.download = suggestedName || 'download';
 
+      // Add to DOM temporarily
       document.body.appendChild(link);
+
+      // Trigger download
       link.click();
 
-      setTimeout(() => {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-      }, 500);
+      // Remove immediately
+      document.body.removeChild(link);
 
-      console.log('✅ Download initiated via direct link:', suggestedName);
+      console.log('✅ Download initiated:', suggestedName);
 
     } catch (error) {
       console.error('❌ Download failed:', error);
-
-      // Simple fallback without confirm dialog (CSP-safe)
-      try {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        console.log('⚠️ Opened file in new tab as fallback');
-      } catch (fallbackError) {
-        console.error('❌ All download methods failed:', fallbackError);
-        // Could show a toast notification here instead of alert
-      }
+      // Final fallback - just open the URL
+      window.location.href = url;
     }
   };
 
