@@ -9,6 +9,7 @@ export default function NoteDetails() {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadNote();
@@ -27,13 +28,17 @@ export default function NoteDetails() {
     }
   };
 
-  // Ultra-simple download function that avoids all CSP issues
+  // Reliable download function
   const downloadViaFetch = (url, suggestedName) => {
     try {
-      // Create a simple anchor element and click it immediately
+      console.log('🔄 Starting download:', suggestedName, url);
+      
+      // Method 1: Try creating download link
       const link = document.createElement('a');
       link.href = url;
       link.download = suggestedName || 'download';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
       // Add to DOM temporarily
       document.body.appendChild(link);
@@ -41,15 +46,24 @@ export default function NoteDetails() {
       // Trigger download
       link.click();
       
-      // Remove immediately
-      document.body.removeChild(link);
+      // Remove after a short delay
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 100);
       
       console.log('✅ Download initiated:', suggestedName);
       
     } catch (error) {
       console.error('❌ Download failed:', error);
-      // Final fallback - just open the URL
-      window.location.href = url;
+      // Fallback - open in new tab
+      try {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (fallbackError) {
+        // Final fallback - navigate to URL
+        window.location.href = url;
+      }
     }
   };
 
@@ -440,20 +454,33 @@ export default function NoteDetails() {
               textAlign: 'center',
               marginBottom: '2rem'
             }}>
-              {/* Note Preview */}
-              <div style={{
-                width: '200px',
-                height: '150px',
-                margin: '0 auto 1rem',
-                background: 'rgba(168, 85, 247, 0.1)',
-                border: '2px solid rgba(168, 85, 247, 0.3)',
-                borderRadius: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
+              {/* Note Preview - Clickable */}
+              <div 
+                onClick={() => setShowPreview(true)}
+                style={{
+                  width: '200px',
+                  height: '150px',
+                  margin: '0 auto 1rem',
+                  background: 'rgba(168, 85, 247, 0.1)',
+                  border: '2px solid rgba(168, 85, 247, 0.3)',
+                  borderRadius: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                }}
+              >
                 {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || 
                                  note.fileUrl.toLowerCase().includes('.jpeg') || 
                                  note.fileUrl.toLowerCase().includes('.png')) ? (
@@ -528,7 +555,7 @@ export default function NoteDetails() {
                 fontSize: '0.875rem',
                 margin: '0 0 1.5rem'
               }}>
-                Click download to view the complete note
+                Click preview to view the complete note, or download to save it
               </p>
             </div>
           )}
@@ -607,6 +634,139 @@ export default function NoteDetails() {
           </div>
         </div>
       </div>
+
+      {/* Full Screen Preview Modal */}
+      {showPreview && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '2rem'
+          }}
+          onClick={() => setShowPreview(false)}
+        >
+          <div 
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              background: 'white',
+              borderRadius: '1rem',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowPreview(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                color: 'white',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                zIndex: 1001,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+
+            {/* Preview Content */}
+            {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || 
+                             note.fileUrl.toLowerCase().includes('.jpeg') || 
+                             note.fileUrl.toLowerCase().includes('.png')) ? (
+              // Full size image
+              <img 
+                src={note.fileUrl} 
+                alt={note.filename || 'Note preview'}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  maxWidth: '90vw',
+                  maxHeight: '90vh',
+                  objectFit: 'contain'
+                }}
+              />
+            ) : (
+              // PDF or document viewer
+              <iframe
+                src={note.fileUrl}
+                title={note.filename || 'Note preview'}
+                style={{
+                  width: '80vw',
+                  height: '80vh',
+                  border: 'none',
+                  borderRadius: '0.5rem'
+                }}
+                onError={() => {
+                  // If iframe fails, show download message
+                  return (
+                    <div style={{
+                      width: '80vw',
+                      height: '80vh',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2rem',
+                      textAlign: 'center'
+                    }}>
+                      <FileText size={64} style={{ color: '#a855f7', marginBottom: '1rem' }} />
+                      <h3 style={{ color: '#1f2937', marginBottom: '1rem' }}>
+                        {note.filename || 'Document'}
+                      </h3>
+                      <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
+                        This file type cannot be previewed in the browser. Click download to view it.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const filename = note.fileUrl.split('/').pop();
+                          const originalName = note.filename || filename;
+                          const baseUrl = window.location.hostname === 'localhost'
+                            ? 'http://localhost:5000'
+                            : 'https://notesvilla.onrender.com';
+                          const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
+                          downloadViaFetch(downloadUrl, originalName);
+                        }}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+                          border: 'none',
+                          borderRadius: '0.5rem',
+                          color: 'white',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Download File
+                      </button>
+                    </div>
+                  );
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* CSS Animations */}
       <style jsx>{`
