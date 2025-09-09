@@ -671,83 +671,122 @@ export default function NoteDetails() {
             </button>
 
             {/* Preview Content */}
-            {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') ||
-              note.fileUrl.toLowerCase().includes('.jpeg') ||
-              note.fileUrl.toLowerCase().includes('.png')) ? (
-              // Full size image
-              <img
-                src={note.fileUrl}
-                alt={note.filename || 'Note preview'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  maxWidth: '90vw',
-                  maxHeight: '90vh',
-                  objectFit: 'contain'
-                }}
-              />
-            ) : (
-              // PDF or document viewer
-              <iframe
-                src={note.fileUrl}
-                title={note.filename || 'Note preview'}
-                style={{
-                  width: '80vw',
-                  height: '80vh',
-                  border: 'none',
-                  borderRadius: '0.5rem'
-                }}
-                onError={() => {
-                  // If iframe fails, show download message
-                  return (
-                    <div style={{
+            {(() => {
+              const isImage = note.fileUrl && (
+                note.fileUrl.toLowerCase().includes('.jpg') ||
+                note.fileUrl.toLowerCase().includes('.jpeg') ||
+                note.fileUrl.toLowerCase().includes('.png')
+              );
+
+              const isPDF = note.fileUrl && note.fileUrl.toLowerCase().includes('.pdf');
+
+              if (isImage) {
+                return (
+                  <img
+                    src={note.fileUrl}
+                    alt={note.filename || 'Note preview'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      maxWidth: '90vw',
+                      maxHeight: '90vh',
+                      objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                      // If image fails to load, show fallback
+                      e.target.style.display = 'none';
+                      const fallback = e.target.nextSibling;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                );
+              } else if (isPDF) {
+                return (
+                  <iframe
+                    src={note.fileUrl}
+                    title={note.filename || 'Note preview'}
+                    style={{
                       width: '80vw',
                       height: '80vh',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '2rem',
-                      textAlign: 'center'
-                    }}>
-                      <FileText size={64} style={{ color: '#a855f7', marginBottom: '1rem' }} />
-                      <h3 style={{ color: '#1f2937', marginBottom: '1rem' }}>
-                        {note.filename || 'Document'}
-                      </h3>
-                      <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
-                        This file type cannot be previewed in the browser. Click download to view it.
-                      </p>
-                      <button
-                        onClick={() => {
-                          const storedFilename = note.fileUrl.split('/').pop();
-                          const originalName = note.originalName || note.filename || storedFilename;
-                          
-                          const baseUrl = window.location.hostname === 'localhost'
-                            ? 'http://localhost:5000'
-                            : 'https://notesvilla.onrender.com';
-                          
-                          const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-                          
-                          downloadViaFetch(downloadUrl, originalName);
-                        }}
-                        style={{
-                          padding: '0.75rem 1.5rem',
-                          background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                          border: 'none',
-                          borderRadius: '0.5rem',
-                          color: 'white',
-                          fontSize: '1rem',
-                          fontWeight: '600',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Download File
-                      </button>
-                    </div>
-                  );
+                      border: 'none',
+                      borderRadius: '0.5rem'
+                    }}
+                    onLoad={(e) => {
+                      // Check if iframe loaded successfully
+                      try {
+                        if (e.target.contentDocument?.body?.innerHTML === '') {
+                          throw new Error('Empty content');
+                        }
+                      } catch (err) {
+                        // If PDF fails to load, show fallback
+                        e.target.style.display = 'none';
+                        const fallback = e.target.nextSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                );
+              } else {
+                // For other file types, show download option
+                return null; // Will show fallback below
+              }
+            })()}
+
+            {/* Fallback for failed previews or unsupported files */}
+            <div style={{
+              display: (() => {
+                const isImage = note.fileUrl && (
+                  note.fileUrl.toLowerCase().includes('.jpg') ||
+                  note.fileUrl.toLowerCase().includes('.jpeg') ||
+                  note.fileUrl.toLowerCase().includes('.png')
+                );
+                const isPDF = note.fileUrl && note.fileUrl.toLowerCase().includes('.pdf');
+                return (isImage || isPDF) ? 'none' : 'flex';
+              })(),
+              width: '80vw',
+              height: '80vh',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              textAlign: 'center',
+              background: '#f9fafb',
+              borderRadius: '0.5rem'
+            }}>
+              <FileText size={64} style={{ color: '#a855f7', marginBottom: '1rem' }} />
+              <h3 style={{ color: '#1f2937', marginBottom: '1rem' }}>
+                {note.filename || 'Document'}
+              </h3>
+              <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
+                This file type cannot be previewed in the browser. Click download to view it.
+              </p>
+              <button
+                onClick={() => {
+                  const storedFilename = note.fileUrl ? note.fileUrl.split('/').pop() : note.filename;
+                  const originalName = note.originalName || note.filename || storedFilename;
+
+                  const baseUrl = window.location.hostname === 'localhost'
+                    ? 'http://localhost:5000'
+                    : 'https://notesvilla.onrender.com';
+
+                  const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
+
+                  downloadViaFetch(downloadUrl, originalName);
                 }}
-              />
-            )}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Download File
+              </button>
+            </div>
           </div>
         </div>
       )}

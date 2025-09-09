@@ -147,16 +147,16 @@ export default function Notes() {
   };
 
   const share = async (note) => {
+    const shareUrl = `${window.location.origin}/note/${note._id}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: note.title, url: note.fileUrl });
+        await navigator.share({ title: note.title, url: shareUrl });
       } catch (err) {
         console.log('Share cancelled');
       }
     } else {
       try {
-        await navigator.clipboard.writeText(note.fileUrl);
-        // You could add a toast notification here
+        await navigator.clipboard.writeText(shareUrl);
         alert('Link copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy link');
