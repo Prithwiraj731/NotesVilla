@@ -219,24 +219,40 @@ export default function Notes() {
     downloadViaFetch(downloadUrl, originalName);
   };
 
-  // Simple download helper function using fetch and blob for cross-origin support
+  // Reliable download helper function that works across different environments
   const downloadViaFetch = async (url, suggestedName) => {
     try {
-      const response = await fetch(url, { mode: 'cors' });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      // First try the direct anchor approach with download attribute
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = url;
       link.setAttribute('download', suggestedName || 'download');
+      link.setAttribute('target', '_blank'); // Prevent navigation
+      link.style.display = 'none';
       document.body.appendChild(link);
+
+      // Trigger download
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-      console.log('🔽 Download initiated via blob URL');
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+
+      console.log('🔽 Download initiated via direct link');
     } catch (err) {
       console.error('❌ Download failed:', err);
-      window.open(url, '_blank'); // fallback
+      // Final fallback - open in new tab with download intent
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        // Try to close the window after a short delay if download starts
+        setTimeout(() => {
+          try {
+            newWindow.close();
+          } catch (e) {
+            // Ignore if window already closed or blocked
+          }
+        }, 2000);
+      }
     }
   };
 
