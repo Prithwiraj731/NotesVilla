@@ -83,9 +83,6 @@ export default function Home() {
             marginBottom: "clamp(2rem, 6vw, 3rem)",
             flexWrap: "wrap",
           }}>
-            <Sparkles size={16} />
-            <span style={{ textAlign: "center" }}>NEXT-GEN KNOWLEDGE PLATFORM</span>
-            <Sparkles size={16} />
           </div>
           
 {/* Main title */}
