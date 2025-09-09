@@ -73,7 +73,7 @@ router.get('/download-test', (req, res) => {
 
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Fixed download endpoint - uses stored filename but serves with original name
-router.get('/download/:filename([^/]+)', (req, res) => {
+router.get('/download/:filename', (req, res) => {
   try {
     // Extract filename from route parameter
     const storedFilename = req.params.filename; // stored in uploads
@@ -166,9 +166,27 @@ router.get('/debug', (req, res) => {
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
       'GET /api/notes/topics/:subjectName',
-      'GET /api/notes/download/* (download files)',
+      'GET /api/notes/download/:filename (download files)',
       'GET /api/notes/download-test (test download route)',
       'POST /api/notes/upload (admin only)'
+    ]
+  });
+});
+
+// Catch-all route for debugging - should be LAST
+router.get('*', (req, res) => {
+  console.log('🔍 Unmatched route called:', req.path);
+  console.log('🔍 Full URL:', req.originalUrl);
+  console.log('🔍 Method:', req.method);
+  res.status(404).json({ 
+    error: 'Route not found',
+    path: req.path,
+    method: req.method,
+    availableRoutes: [
+      '/api/notes/',
+      '/api/notes/subjects',
+      '/api/notes/download/:filename',
+      '/api/notes/debug'
     ]
   });
 });
