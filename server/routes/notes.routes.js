@@ -61,28 +61,24 @@ const requireAuth = (req, res, next) => {
   }
 };
 
-// Admin upload (only admin) - support both single and multiple files
-router.post('/upload', adminMiddleware, upload.array('files', 10), notesCtrl.uploadNote);
-router.post('/upload-single', adminMiddleware, upload.single('file'), notesCtrl.uploadSingleNote);
+// Add a simple test route for downloads (must be before the main download route)
+router.get('/download-test', (req, res) => {
+  console.log('📋 GET /api/notes/download-test called');
+  res.json({
+    message: 'Download route is accessible',
+    uploadsDir: uploadsDir,
+    timestamp: new Date().toISOString()
+  });
+});
 
-// Public endpoints - no authentication required for viewing notes
-router.get('/subjects', (req, res, next) => {
-  console.log('📋 GET /api/notes/subjects called');
-  next();
-}, notesCtrl.listSubjects);
-
-router.get('/topics/:subjectName', (req, res, next) => {
-  console.log('📋 GET /api/notes/topics/:subjectName called with:', req.params.subjectName);
-  next();
-}, notesCtrl.listTopics);
-
+// IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Fixed download endpoint - uses stored filename but serves with original name
-router.get('/download/:filename', (req, res) => {
+router.get('/download/:filename([^/]+)', (req, res) => {
   try {
-    console.log('📥 GET /api/notes/download/:filename called with:', req.params.filename);
-    console.log('📁 Looking for file at:', uploadsDir);
-    
+    // Extract filename from route parameter
     const storedFilename = req.params.filename; // stored in uploads
+    console.log('📥 GET /api/notes/download/:filename called with:', storedFilename);
+    console.log('📁 Looking for file at:', uploadsDir);
     const originalName = req.query.name || storedFilename;
     const filePath = path.join(uploadsDir, storedFilename);
     
@@ -124,6 +120,21 @@ router.get('/download/:filename', (req, res) => {
   }
 });
 
+// Admin upload (only admin) - support both single and multiple files
+router.post('/upload', adminMiddleware, upload.array('files', 10), notesCtrl.uploadNote);
+router.post('/upload-single', adminMiddleware, upload.single('file'), notesCtrl.uploadSingleNote);
+
+// Public endpoints - no authentication required for viewing notes
+router.get('/subjects', (req, res, next) => {
+  console.log('📋 GET /api/notes/subjects called');
+  next();
+}, notesCtrl.listSubjects);
+
+router.get('/topics/:subjectName', (req, res, next) => {
+  console.log('📋 GET /api/notes/topics/:subjectName called with:', req.params.subjectName);
+  next();
+}, notesCtrl.listTopics);
+
 // Single note by ID - needs to be before other routes that might conflict
 router.get('/note/:id', (req, res, next) => {
   console.log('📋 GET /api/notes/note/:id called with ID:', req.params.id);
@@ -155,7 +166,8 @@ router.get('/debug', (req, res) => {
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
       'GET /api/notes/topics/:subjectName',
-      'GET /api/notes/download/:filename',
+      'GET /api/notes/download/* (download files)',
+      'GET /api/notes/download-test (test download route)',
       'POST /api/notes/upload (admin only)'
     ]
   });
