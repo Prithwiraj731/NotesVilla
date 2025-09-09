@@ -219,11 +219,11 @@ export default function Notes() {
     downloadViaFetch(downloadUrl, originalName);
   };
 
-  // Simple download helper function
+  // Simple download helper function using fetch and blob for cross-origin support
   const downloadViaFetch = async (url, suggestedName) => {
     try {
       const response = await fetch(url, { mode: 'cors' });
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -233,7 +233,7 @@ export default function Notes() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(blobUrl);
-      console.log('🔽 Download initiated via fetch (blob)');
+      console.log('🔽 Download initiated via blob URL');
     } catch (err) {
       console.error('❌ Download failed:', err);
       window.open(url, '_blank'); // fallback

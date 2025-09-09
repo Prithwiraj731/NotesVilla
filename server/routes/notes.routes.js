@@ -73,11 +73,11 @@ router.get('/download-test', (req, res) => {
 
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Fixed download endpoint - uses stored filename but serves with original name
-// Use explicit parameter to properly match filenames with dots and extensions
-router.get('/download/:filename(*)', (req, res) => {
+// Use wildcard to properly match filenames with dots and extensions
+router.get('/download/*', (req, res) => {
   try {
-    // Extract filename from route parameter
-    const storedFilename = req.params.filename; // stored in uploads
+    // Extract filename from wildcard parameter
+    const storedFilename = req.params[0]; // stored in uploads
     console.log('📥 GET /api/notes/download/:filename called with:', storedFilename);
     console.log('📁 Looking for file at:', uploadsDir);
     const originalName = req.query.name || storedFilename;
@@ -201,22 +201,6 @@ router.get('/debug', (req, res) => {
   });
 });
 
-// Catch-all route for debugging - should be LAST
-router.get('*', (req, res) => {
-  console.log('🔍 Unmatched route called:', req.path);
-  console.log('🔍 Full URL:', req.originalUrl);
-  console.log('🔍 Method:', req.method);
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.path,
-    method: req.method,
-    availableRoutes: [
-      '/api/notes/',
-      '/api/notes/subjects',
-      '/api/notes/download/:filename',
-      '/api/notes/debug'
-    ]
-  });
-});
+// Catch-all route removed to avoid path-to-regexp issues
 
 module.exports = router;
