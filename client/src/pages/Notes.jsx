@@ -220,16 +220,20 @@ export default function Notes() {
   };
 
   // Simple download helper function
-  const downloadViaFetch = (url, suggestedName) => {
+  const downloadViaFetch = async (url, suggestedName) => {
     try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', suggestedName || 'download');
-      link.setAttribute('target', '_blank');
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      console.log('🔽 Download initiated via fetch');
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+      console.log('🔽 Download initiated via fetch (blob)');
     } catch (err) {
       console.error('❌ Download failed:', err);
       window.open(url, '_blank'); // fallback

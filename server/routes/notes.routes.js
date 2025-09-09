@@ -73,11 +73,11 @@ router.get('/download-test', (req, res) => {
 
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Fixed download endpoint - uses stored filename but serves with original name
-// Use regex to properly match filenames with dots and extensions
-router.get(/^\/download\/(.+)$/, (req, res) => {
+// Use explicit parameter to properly match filenames with dots and extensions
+router.get('/download/:filename(*)', (req, res) => {
   try {
-    // Extract filename from regex capture group
-    const storedFilename = req.params[0]; // stored in uploads
+    // Extract filename from route parameter
+    const storedFilename = req.params.filename; // stored in uploads
     console.log('📥 GET /api/notes/download/:filename called with:', storedFilename);
     console.log('📁 Looking for file at:', uploadsDir);
     const originalName = req.query.name || storedFilename;
@@ -102,18 +102,45 @@ router.get(/^\/download\/(.+)$/, (req, res) => {
       return res.status(404).json({ msg: 'File not found', requestedFile: storedFilename });
     }
 
-    console.log('✅ File found, initiating download...');
+    console.log('✅ File found, reading file content...');
 
-    // Use res.download which automatically sets proper headers
-    res.download(filePath, originalName, (err) => {
+    // Read file content and send with explicit download headers
+    fs.readFile(filePath, (err, data) => {
       if (err) {
-        console.error('❌ Download error:', err);
-        if (!res.headersSent) {
-          res.status(500).json({ msg: 'Error downloading file' });
-        }
-      } else {
-        console.log('✅ File downloaded successfully:', originalName);
+        console.error('❌ Error reading file:', err);
+        return res.status(500).json({ msg: 'Error reading file' });
       }
+
+      // Get file extension to determine content type
+      const ext = path.extname(originalName).toLowerCase();
+      let contentType = 'application/octet-stream'; // default
+
+      // Set appropriate content type based on file extension
+      const contentTypes = {
+        '.pdf': 'application/pdf',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.txt': 'text/plain',
+        '.zip': 'application/zip',
+        '.rar': 'application/x-rar-compressed'
+      };
+
+      if (contentTypes[ext]) {
+        contentType = contentTypes[ext];
+      }
+
+      // Set headers to force download
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+      res.setHeader('Content-Length', data.length);
+
+      // Send the file content
+      res.send(data);
+      console.log('✅ File downloaded successfully:', originalName);
     });
   } catch (error) {
     console.error('❌ Server error:', error);

@@ -4,7 +4,7 @@
 
 ### 1. Fixed Preview Functionality (NoteDetails.jsx)
 - **Issue**: Preview modal had poor error handling for failed image/PDF loads
-- **Solution**: 
+- **Solution**:
   - Added proper error handling for image loading failures
   - Improved iframe loading detection for PDFs
   - Added fallback UI for unsupported file types
@@ -23,6 +23,15 @@
   - Added better error handling in preview modal download fallback
   - Improved URL construction for downloads
   - Consistent download URL generation across components
+
+### 4. Fixed Download Opening in New Tab Issue
+- **Issue**: Clicking download button opened file in new browser tab instead of downloading
+- **Solution**:
+  - Updated `downloadViaFetch` function in both `Notes.jsx` and `NoteDetails.jsx`
+  - Changed from direct link href to fetch + blob URL approach
+  - Now properly triggers file download instead of opening in new tab
+  - Works cross-origin (fixes issues with deployed servers)
+  - Added proper error handling and fallback to window.open
 
 ## 🔍 Server-Side Analysis
 - **Download Route**: Already properly implemented in `server/routes/notes.routes.js`
