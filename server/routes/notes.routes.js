@@ -73,15 +73,16 @@ router.get('/download-test', (req, res) => {
 
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Fixed download endpoint - uses stored filename but serves with original name
-router.get('/download/:filename', (req, res) => {
+// Use regex to properly match filenames with dots and extensions
+router.get(/^\/download\/(.+)$/, (req, res) => {
   try {
-    // Extract filename from route parameter
-    const storedFilename = req.params.filename; // stored in uploads
+    // Extract filename from regex capture group
+    const storedFilename = req.params[0]; // stored in uploads
     console.log('📥 GET /api/notes/download/:filename called with:', storedFilename);
     console.log('📁 Looking for file at:', uploadsDir);
     const originalName = req.query.name || storedFilename;
     const filePath = path.join(uploadsDir, storedFilename);
-    
+
     console.log('📄 Stored filename:', storedFilename);
     console.log('📄 Original name:', originalName);
     console.log('📄 Full file path:', filePath);
@@ -178,7 +179,7 @@ router.get('*', (req, res) => {
   console.log('🔍 Unmatched route called:', req.path);
   console.log('🔍 Full URL:', req.originalUrl);
   console.log('🔍 Method:', req.method);
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Route not found',
     path: req.path,
     method: req.method,
