@@ -35,16 +35,24 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
 
   // Convert static file URL to download endpoint URL if needed
   const downloadUrl = useDownloadEndpoint ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
-  
+  const originalUrl = fileUrl; // keep original for fallback attempts
+
   if (enableLogging && downloadUrl !== fileUrl) {
     console.log('🔄 Converted URL:', { original: fileUrl, download: downloadUrl });
   }
 
   // Try multiple download strategies in order of preference
+  // 1) download endpoint via fetch (most reliable across devices)
+  // 2) download endpoint via anchor
+  // 3) original static URL via fetch (fallback for 404s on endpoint)
+  // 4) original static URL via anchor
+  // 5) optional new tab (last resort)
   const strategies = [
-    () => downloadViaAnchor(downloadUrl, filename, enableLogging),
     () => downloadViaFetch(downloadUrl, filename, enableLogging, timeout),
-    fallbackToNewTab ? () => downloadViaNewTab(downloadUrl, enableLogging) : null
+    () => downloadViaAnchor(downloadUrl, filename, enableLogging),
+    () => downloadViaFetch(originalUrl, filename, enableLogging, timeout),
+    () => downloadViaAnchor(originalUrl, filename, enableLogging),
+    fallbackToNewTab ? () => downloadViaNewTab(originalUrl, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
@@ -180,7 +188,7 @@ const downloadViaAnchor = (fileUrl, filename, enableLogging) => {
             resolve(false);
             return;
           }
-          
+
           // File exists, proceed with download
           const link = document.createElement('a');
           link.href = fileUrl;
@@ -322,15 +330,15 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
   try {
     // Extract the filename from the URL
     const filename = extractFilenameFromUrl(fileUrl);
-    
+
     // Determine the base URL
     const baseUrl = window.location.hostname === 'localhost'
       ? 'http://localhost:5000'
       : 'https://notesvilla.onrender.com';
-    
+
     // Create the download endpoint URL
     const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-    
+
     return downloadUrl;
   } catch (error) {
     console.warn('Failed to convert to download URL, using original:', error.message);
