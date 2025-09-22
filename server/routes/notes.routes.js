@@ -74,7 +74,7 @@ router.get('/download-test', (req, res) => {
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
 // Express 5 / path-to-regexp v6 compatible wildcard using a named splat
 // Matches any filename including dots and subpaths
-router.get('/download/:filename(*)', (req, res) => {
+router.get('/download/:filename(.*)', (req, res) => {
   try {
     // Extract filename from named wildcard parameter
     const storedFilename = req.params.filename; // stored in uploads
