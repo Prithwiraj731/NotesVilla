@@ -72,12 +72,12 @@ router.get('/download-test', (req, res) => {
 });
 
 // IMPORTANT: Download route must be FIRST to avoid conflicts with other routes
-// Fixed download endpoint - uses stored filename but serves with original name
-// Use wildcard to properly match filenames with dots and extensions
-router.get('/download/*', (req, res) => {
+// Express 5 / path-to-regexp v6 compatible wildcard using a named splat
+// Matches any filename including dots and subpaths
+router.get('/download/:filename(*)', (req, res) => {
   try {
-    // Extract filename from wildcard parameter
-    const storedFilename = req.params[0]; // stored in uploads
+    // Extract filename from named wildcard parameter
+    const storedFilename = req.params.filename; // stored in uploads
     console.log('📥 GET /api/notes/download/:filename called with:', storedFilename);
     console.log('📁 Looking for file at:', uploadsDir);
     const originalName = req.query.name || storedFilename;
