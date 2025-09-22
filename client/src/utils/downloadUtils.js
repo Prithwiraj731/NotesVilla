@@ -35,7 +35,7 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
 
   // Convert static file URL to download endpoint URL if needed
   const downloadUrl = useDownloadEndpoint ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
-  const originalUrl = fileUrl; // keep original for fallback attempts
+  const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost -> production in prod
 
   if (enableLogging && downloadUrl !== fileUrl) {
     console.log('🔄 Converted URL:', { original: fileUrl, download: downloadUrl });
@@ -343,5 +343,27 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
   } catch (error) {
     console.warn('Failed to convert to download URL, using original:', error.message);
     return fileUrl;
+  }
+};
+
+/**
+ * Normalize file URLs saved with localhost into production backend host
+ * - If we're running in production (not localhost) and the URL points to localhost,
+ *   rewrite it to the production backend base.
+ */
+const normalizeFileUrl = (url) => {
+  try {
+    const u = new URL(url, window.location.origin);
+    const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+    const isBrowserLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (!isBrowserLocal && isLocalhost) {
+      // We are on production frontend but URL points to localhost backend; rewrite
+      const prodBase = 'https://notesvilla.onrender.com';
+      return prodBase + u.pathname + u.search + u.hash;
+    }
+    return u.toString();
+  } catch (e) {
+    return url;
   }
 };
