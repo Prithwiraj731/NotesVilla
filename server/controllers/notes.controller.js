@@ -10,55 +10,77 @@ exports.uploadNote = async (req, res) => {
     console.log('Upload request received');
     console.log('Body:', req.body);
     console.log('Files:', req.files);
-    
+
     // Check if files were uploaded
     if (!req.files || req.files.length === 0) {
       console.log('No files uploaded');
       return res.status(400).json({ msg: 'No files uploaded' });
     }
-    
+
     const files = req.files;
     const { title, description, subjectName, topicName, date } = req.body;
-    
+
     // Validate required fields
     if (!title || !subjectName || !topicName || !date) {
       console.log('Missing required fields');
-      return res.status(400).json({ 
+      return res.status(400).json({
         msg: 'Missing required fields',
-        received: { 
-          title: !!title, 
-          subjectName: !!subjectName, 
-          topicName: !!topicName, 
+        received: {
+          title: !!title,
+          subjectName: !!subjectName,
+          topicName: !!topicName,
           date: !!date,
-          filesCount: files.length 
+          filesCount: files.length
         }
       });
     }
 
     console.log('Creating notes in database...');
     console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
-    
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️  MongoDB not connected, returning early without saving to DB');
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: `${files.length} files uploaded successfully! (Database temporarily unavailable)`,
         filesCount: files.length
       });
     }
-    
+
     console.log('✅ MongoDB is connected, proceeding to save note...');
-    
+
     // Create file array for multiple files
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://notesvilla.onrender.com' 
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://notesvilla.onrender.com'
       : 'http://localhost:5000';
-    const filesArray = files.map(file => ({
+    let filesArray = files.map(file => ({
       fileUrl: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
       originalName: file.originalname
     }));
-    
+
+    // Optional: upload to Firebase Storage if configured
+    try {
+      if (process.env.FIREBASE_BUCKET) {
+        const { uploadFile } = require('../utils/firebase');
+        const cloudResults = [];
+        for (const f of files) {
+          const destName = `notes/${Date.now()}-${f.filename}`;
+          const publicUrl = await uploadFile(require('path').join(__dirname, '..', 'uploads', f.filename), destName);
+          cloudResults.push({
+            fileUrl: publicUrl,
+            filename: f.filename,
+            originalName: f.originalname
+          });
+        }
+        if (cloudResults.length === files.length) {
+          filesArray = cloudResults;
+        }
+      }
+    } catch (cloudErr) {
+      console.log('⚠️ Cloud upload skipped:', cloudErr.message);
+    }
+
     // Create single note with multiple files
     const noteData = {
       title,
@@ -72,7 +94,7 @@ exports.uploadNote = async (req, res) => {
       filename: filesArray[0].originalName,
       uploadedBy: req.admin?.username || 'admin'
     };
-    
+
     console.log('📝 Note data to save:', noteData);
     const note = await Note.create(noteData);
 
@@ -80,14 +102,14 @@ exports.uploadNote = async (req, res) => {
     console.log('📌 Note ID:', note._id);
     console.log('📄 Files count:', filesArray.length);
 
-    res.json({ 
+    res.json({
       note,
       message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
       filesUploaded: files.length
     });
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       error: err.message,
       details: 'Check server console for more details'
     });
@@ -100,44 +122,56 @@ exports.uploadSingleNote = async (req, res) => {
     console.log('Single file upload request received');
     console.log('Body:', req.body);
     console.log('File:', req.file);
-    
+
     // Check if file was uploaded
     if (!req.file) {
       console.log('No file uploaded');
       return res.status(400).json({ msg: 'No file uploaded' });
     }
-    
+
     const file = req.file;
     const { title, description, subjectName, topicName, date } = req.body;
-    
+
     // Validate required fields
     if (!title || !subjectName || !topicName || !date) {
       console.log('Missing required fields');
-      return res.status(400).json({ 
+      return res.status(400).json({
         msg: 'Missing required fields',
-        received: { 
-          title: !!title, 
-          subjectName: !!subjectName, 
-          topicName: !!topicName, 
+        received: {
+          title: !!title,
+          subjectName: !!subjectName,
+          topicName: !!topicName,
           date: !!date,
-          hasFile: !!file 
+          hasFile: !!file
         }
       });
     }
 
     // Use appropriate base URL for file access
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://notesvilla.onrender.com' 
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://notesvilla.onrender.com'
       : 'http://localhost:5000';
-    const fileUrl = `${baseUrl}/uploads/${file.filename}`;
-    
+    let fileUrl = `${baseUrl}/uploads/${file.filename}`;
+
+    // Optional: upload to Firebase Storage if configured
+    try {
+      if (process.env.FIREBASE_BUCKET) {
+        const { uploadFile } = require('../utils/firebase');
+        const destName = `notes/${Date.now()}-${file.filename}`;
+        const publicUrl = await uploadFile(require('path').join(__dirname, '..', 'uploads', file.filename), destName);
+        if (publicUrl) fileUrl = publicUrl;
+      }
+    } catch (cloudErr) {
+      console.log('⚠️ Cloud upload skipped:', cloudErr.message);
+    }
+
     console.log('Creating note in database...');
     console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
-    
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️  MongoDB not connected, returning early without saving to DB');
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: 'File uploaded successfully! (Database temporarily unavailable)',
         fileUrl,
         note: {
@@ -152,9 +186,9 @@ exports.uploadSingleNote = async (req, res) => {
         }
       });
     }
-    
+
     console.log('✅ MongoDB is connected, proceeding to save note...');
-    
+
     // Create note record with direct subject/topic names in MongoDB
     const noteData = {
       title,
@@ -166,19 +200,19 @@ exports.uploadSingleNote = async (req, res) => {
       filename: file.originalname,
       uploadedBy: req.admin?.username || 'admin'
     };
-    
+
     console.log('📝 Note data to save:', noteData);
     const note = await Note.create(noteData);
 
     console.log('🎉 Note created successfully in MongoDB!');
     console.log('📌 Note ID:', note._id);
-    res.json({ 
+    res.json({
       note,
-      message: 'Note uploaded and saved to database successfully!' 
+      message: 'Note uploaded and saved to database successfully!'
     });
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       error: err.message,
       details: 'Check server console for more details'
     });
@@ -188,13 +222,13 @@ exports.uploadSingleNote = async (req, res) => {
 exports.listSubjects = async (req, res) => {
   try {
     console.log('📋 Fetching subjects...');
-    
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️ MongoDB not connected for subjects fetch');
       return res.json([]); // Return empty array if DB not connected
     }
-    
+
     // Get unique subject names from notes in MongoDB
     const subjects = await Note.distinct('subjectName');
     const subjectList = subjects.map(name => ({ name }));
@@ -244,13 +278,13 @@ exports.listNotesBySubject = async (req, res) => {
 exports.getAllNotes = async (req, res) => {
   try {
     console.log('📋 Fetching all notes...');
-    
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️ MongoDB not connected for notes fetch');
       return res.json([]); // Return empty array if DB not connected
     }
-    
+
     const notes = await Note.find().sort({ date: -1, createdAt: -1 });
     console.log('✅ Notes found:', notes.length);
     res.json(notes);
@@ -264,19 +298,19 @@ exports.getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
     console.log('📋 Fetching note by ID:', id);
-    
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️ MongoDB not connected for single note fetch');
       return res.status(503).json({ error: 'Database not available' });
     }
-    
+
     const note = await Note.findById(id);
     if (!note) {
       console.log('❌ Note not found with ID:', id);
       return res.status(404).json({ error: 'Note not found' });
     }
-    
+
     console.log('✅ Note found:', note.title);
     res.json(note);
   } catch (err) {
