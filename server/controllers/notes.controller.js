@@ -56,12 +56,30 @@ exports.uploadNote = async (req, res) => {
     let filesArray = files.map(file => ({
       fileUrl: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
-      originalName: file.originalname
+      originalName: file.originalname,
+      publicId: undefined
     }));
 
     // Optional: upload to Firebase Storage if configured
     try {
-      if (process.env.FIREBASE_BUCKET) {
+      // Prefer Cloudinary if available
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        const { uploadLocalFile } = require('../utils/cloudinary');
+        const pathLib = require('path');
+        const cloudResults = [];
+        for (const f of files) {
+          const localPath = pathLib.join(__dirname, '..', 'uploads', f.filename);
+          const publicIdBase = `${Date.now()}-${f.filename.replace(/\.[^.]+$/, '')}`;
+          const cloud = await uploadLocalFile(localPath, publicIdBase, 'auto');
+          cloudResults.push({
+            fileUrl: cloud.url,
+            filename: f.filename,
+            originalName: f.originalname,
+            publicId: cloud.publicId
+          });
+        }
+        if (cloudResults.length === files.length) filesArray = cloudResults;
+      } else if (process.env.FIREBASE_BUCKET) {
         const { uploadFile } = require('../utils/firebase');
         const cloudResults = [];
         for (const f of files) {
@@ -73,9 +91,7 @@ exports.uploadNote = async (req, res) => {
             originalName: f.originalname
           });
         }
-        if (cloudResults.length === files.length) {
-          filesArray = cloudResults;
-        }
+        if (cloudResults.length === files.length) filesArray = cloudResults;
       }
     } catch (cloudErr) {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
@@ -155,7 +171,13 @@ exports.uploadSingleNote = async (req, res) => {
 
     // Optional: upload to Firebase Storage if configured
     try {
-      if (process.env.FIREBASE_BUCKET) {
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        const { uploadLocalFile } = require('../utils/cloudinary');
+        const pathLib = require('path');
+        const publicIdBase = `${Date.now()}-${file.filename.replace(/\.[^.]+$/, '')}`;
+        const cloud = await uploadLocalFile(pathLib.join(__dirname, '..', 'uploads', file.filename), publicIdBase, 'auto');
+        if (cloud?.url) fileUrl = cloud.url;
+      } else if (process.env.FIREBASE_BUCKET) {
         const { uploadFile } = require('../utils/firebase');
         const destName = `notes/${Date.now()}-${file.filename}`;
         const publicUrl = await uploadFile(require('path').join(__dirname, '..', 'uploads', file.filename), destName);

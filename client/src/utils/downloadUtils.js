@@ -34,7 +34,9 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   }
 
   // Convert static file URL to download endpoint URL if needed
-  const downloadUrl = useDownloadEndpoint ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
+  // If Cloudinary URL, don't convert to API endpoint; use as-is
+  const isCloudinary = /res\.cloudinary\.com|\.cloudinary\.com/.test(fileUrl);
+  const downloadUrl = (!isCloudinary && useDownloadEndpoint) ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
   const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost -> production in prod
 
   if (enableLogging && downloadUrl !== fileUrl) {
