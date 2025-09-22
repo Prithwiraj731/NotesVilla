@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { downloadFile } from '../utils/downloadUtils';
 
 import { Search, Download, Share2, Calendar, BookOpen, Tag, FileText, Filter, Grid, List } from 'lucide-react';
 
@@ -179,80 +180,41 @@ export default function Notes() {
     setSearchTerm('');
   };
 
-  // Fixed download function - extract stored filename from fileUrl
+  // Robust download using shared utility
   const handleDownload = async (note) => {
-    console.log('🔽 handleDownload called with note:', note);
-
-    let storedFilename;
-    let originalName;
-
-    if (note.files && note.files.length > 0) {
-      // Multi-file note - use first file
-      const firstFile = note.files[0];
-      storedFilename = firstFile.fileUrl ? firstFile.fileUrl.split('/').pop() : firstFile.filename;
-      originalName = firstFile.originalName || firstFile.filename || storedFilename;
-    } else {
-      // Single file note - extract stored filename from fileUrl
-      storedFilename = note.fileUrl ? note.fileUrl.split('/').pop() : note.filename;
-      originalName = note.originalName || note.filename || storedFilename;
-    }
-
-    console.log('🔽 Stored filename (server):', storedFilename);
-    console.log('🔽 Original name (user-friendly):', originalName);
-
-    if (!storedFilename) {
-      console.error('🔽 No stored filename found');
-      alert('Error: No filename found for this note');
-      return;
-    }
-
-    // Create download endpoint URL
-    const baseUrl = window.location.hostname === 'localhost'
-      ? 'http://localhost:5000'
-      : 'https://notesvilla.onrender.com';
-
-    const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-
-    console.log('🔽 Download URL:', downloadUrl);
-
-    // Use downloadViaFetch for reliable downloads
-    downloadViaFetch(downloadUrl, originalName);
-  };
-
-  // Reliable download helper function that works across different environments
-  const downloadViaFetch = async (url, suggestedName) => {
     try {
-      // First try the direct anchor approach with download attribute
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', suggestedName || 'download');
-      link.setAttribute('target', '_blank'); // Prevent navigation
-      link.style.display = 'none';
-      document.body.appendChild(link);
-
-      // Trigger download
-      link.click();
-
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
-
-      console.log('🔽 Download initiated via direct link');
-    } catch (err) {
-      console.error('❌ Download failed:', err);
-      // Final fallback - open in new tab with download intent
-      const newWindow = window.open(url, '_blank');
-      if (newWindow) {
-        // Try to close the window after a short delay if download starts
-        setTimeout(() => {
-          try {
-            newWindow.close();
-          } catch (e) {
-            // Ignore if window already closed or blocked
-          }
-        }, 2000);
+      console.log('🔽 handleDownload called with note:', note);
+      if (note.files && note.files.length > 1) {
+        // For multiple files, navigate to details page for explicit downloads
+        handleCardClick(note);
+        return;
       }
+
+      // Single-file path (or first file fallback)
+      const fileUrl = note.files && note.files.length > 0
+        ? note.files[0].fileUrl
+        : note.fileUrl;
+      const filename = note.files && note.files.length > 0
+        ? (note.files[0].originalName || note.files[0].filename || 'download')
+        : (note.originalName || note.filename || 'download');
+
+      if (!fileUrl) {
+        alert('Error: No file URL found for this note');
+        return;
+      }
+
+      const ok = await downloadFile(fileUrl, filename, {
+        enableLogging: true,
+        retryAttempts: 2,
+        timeout: 45000,
+      });
+
+      if (!ok) {
+        alert('Download failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Download error:', error);
+      alert('Download failed due to an unexpected error.');
     }
   };
 

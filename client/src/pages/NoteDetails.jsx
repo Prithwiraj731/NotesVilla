@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText } from 'lucide-react';
 import API from '../services/api';
+import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 
 
 export default function NoteDetails() {
@@ -29,74 +30,42 @@ export default function NoteDetails() {
     }
   };
 
-  // Fixed download function - extract stored filename from fileUrl
+  // Robust download using shared utility
   const handleDownload = async () => {
-    if (note?.files && note.files.length > 1) {
-      // For multiple files, download each one
-      for (const file of note.files) {
-        const storedFilename = file.fileUrl ? file.fileUrl.split('/').pop() : file.filename;
-        const originalName = file.originalName || file.filename || storedFilename;
-        
-        const baseUrl = window.location.hostname === 'localhost'
-          ? 'http://localhost:5000'
-          : 'https://notesvilla.onrender.com';
-        
-        const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-        
-        // Stagger downloads to avoid overwhelming the browser
-        setTimeout(() => {
-          downloadViaFetch(downloadUrl, originalName);
-        }, note.files.indexOf(file) * 500);
-      }
-    } else if (note?.fileUrl) {
-      // For single file
-      const storedFilename = note.fileUrl.split('/').pop();
-      const originalName = note.originalName || note.filename || storedFilename;
-      
-      const baseUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : 'https://notesvilla.onrender.com';
-      
-      const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-      
-      downloadViaFetch(downloadUrl, originalName);
-    }
-  };
-
-  // Reliable download helper function that works across different environments
-  const downloadViaFetch = async (url, suggestedName) => {
     try {
-      // First try the direct anchor approach with download attribute
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', suggestedName || 'download');
-      link.setAttribute('target', '_blank'); // Prevent navigation
-      link.style.display = 'none';
-      document.body.appendChild(link);
-
-      // Trigger download
-      link.click();
-
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
-
-      console.log('🔽 Download initiated via direct link');
-    } catch (err) {
-      console.error('❌ Download failed:', err);
-      // Final fallback - open in new tab with download intent
-      const newWindow = window.open(url, '_blank');
-      if (newWindow) {
-        // Try to close the window after a short delay if download starts
-        setTimeout(() => {
-          try {
-            newWindow.close();
-          } catch (e) {
-            // Ignore if window already closed or blocked
-          }
-        }, 2000);
+      if (note?.files && note.files.length > 1) {
+        // Batch download multiple files
+        const files = note.files.map(f => ({
+          fileUrl: f.fileUrl,
+          filename: f.originalName || f.filename || 'download'
+        }));
+        const result = await downloadMultipleFiles(files, {
+          staggerDelay: 600,
+          retryAttempts: 2,
+          timeout: 45000,
+          enableLogging: true
+        });
+        if (result.failed > 0) {
+          alert(`Some files failed to download (${result.failed}/${result.total}).`);
+        }
+        return;
       }
+
+      if (note?.fileUrl) {
+        const fileUrl = note.fileUrl;
+        const filename = note.originalName || note.filename || 'download';
+        const ok = await downloadFile(fileUrl, filename, {
+          enableLogging: true,
+          retryAttempts: 2,
+          timeout: 45000
+        });
+        if (!ok) {
+          alert('Download failed. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Download error:', error);
+      alert('Download failed due to an unexpected error.');
     }
   };
 
@@ -405,17 +374,13 @@ export default function NoteDetails() {
                     {file.originalName || `File ${index + 1}`}
                   </h4>
                   <button
-                    onClick={() => {
-                      const storedFilename = file.fileUrl ? file.fileUrl.split('/').pop() : file.filename;
-                      const originalName = file.originalName || file.filename || storedFilename;
-                      
-                      const baseUrl = window.location.hostname === 'localhost'
-                        ? 'http://localhost:5000'
-                        : 'https://notesvilla.onrender.com';
-                      
-                      const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-                      
-                      downloadViaFetch(downloadUrl, originalName);
+                    onClick={async () => {
+                      const ok = await downloadFile(
+                        file.fileUrl,
+                        file.originalName || file.filename || 'download',
+                        { enableLogging: true, retryAttempts: 2, timeout: 45000 }
+                      );
+                      if (!ok) alert('Download failed. Please try again.');
                     }}
                     style={{
                       display: 'inline-flex',
