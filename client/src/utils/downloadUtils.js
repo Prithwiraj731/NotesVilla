@@ -49,13 +49,15 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   // 3) original static URL via fetch (fallback for 404s on endpoint)
   // 4) original static URL via anchor
   // 5) optional new tab (last resort)
+  // If Cloudinary, prefer fl_attachment link to force download and bypass 401s on HEAD
+  const cloudUrlWithAttachment = isCloudinary ? buildCloudinaryAttachmentUrl(originalUrl, filename) : originalUrl;
+
   const strategies = [
     () => downloadViaFetch(downloadUrl, filename, enableLogging, timeout),
     () => downloadViaAnchor(downloadUrl, filename, enableLogging),
-    () => downloadViaFetch(originalUrl, filename, enableLogging, timeout),
-    () => downloadViaAnchor(originalUrl, filename, enableLogging),
-    // For Cloudinary raw files (e.g., PDFs), allow safe new tab fallback
-    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(originalUrl, enableLogging) : null
+    () => downloadViaFetch(cloudUrlWithAttachment, filename, enableLogging, timeout),
+    () => downloadViaAnchor(cloudUrlWithAttachment, filename, enableLogging),
+    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(cloudUrlWithAttachment, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
@@ -181,48 +183,20 @@ export const downloadMultipleFiles = async (files, options = {}) => {
 const downloadViaAnchor = (fileUrl, filename, enableLogging) => {
   return new Promise((resolve) => {
     try {
-      // First, check if the URL is accessible
-      fetch(fileUrl, { method: 'HEAD' })
-        .then(response => {
-          if (!response.ok) {
-            if (enableLogging) {
-              console.warn(`🔗 File not accessible (${response.status}):`, fileUrl);
-            }
-            resolve(false);
-            return;
-          }
-
-          // File exists, proceed with download
-          const link = document.createElement('a');
-          link.href = fileUrl;
-          link.download = filename;
-          link.style.display = 'none';
-
-          // Add to DOM temporarily
-          document.body.appendChild(link);
-
-          // Trigger download
-          link.click();
-
-          // Clean up
-          document.body.removeChild(link);
-
-          if (enableLogging) {
-            console.log('🔗 Anchor download initiated for:', filename);
-          }
-
-          resolve(true);
-        })
-        .catch(error => {
-          if (enableLogging) {
-            console.warn('🔗 File accessibility check failed:', error.message);
-          }
-          resolve(false);
-        });
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      if (filename) link.download = filename;
+      link.style.display = 'none';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        try { document.body.removeChild(link); } catch (_) { }
+      }, 100);
+      if (enableLogging) console.log('🔗 Anchor download initiated for:', filename || fileUrl);
+      resolve(true);
     } catch (error) {
-      if (enableLogging) {
-        console.warn('🔗 Anchor download failed:', error.message);
-      }
+      if (enableLogging) console.warn('🔗 Anchor download failed:', error.message);
       resolve(false);
     }
   });
@@ -286,9 +260,10 @@ const downloadViaFetch = async (fileUrl, filename, enableLogging, timeout) => {
 const downloadViaNewTab = (fileUrl, enableLogging) => {
   return new Promise((resolve) => {
     if (enableLogging) {
-      console.warn('🪟 New tab fallback disabled to prevent unwanted redirects');
+      console.warn('🪟 New tab fallback used');
     }
-    resolve(false); // Always return false to prevent redirects
+    const w = window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    if (w) resolve(true); else resolve(false);
   });
 };
 
@@ -346,6 +321,31 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
   } catch (error) {
     console.warn('Failed to convert to download URL, using original:', error.message);
     return fileUrl;
+  }
+};
+
+// Cloudinary helpers
+const buildCloudinaryAttachmentUrl = (url, filename) => {
+  try {
+    // Ensure we operate on the path; insert fl_attachment after '/upload/' or '/raw/upload/'
+    const markerRaw = '/raw/upload/';
+    const markerImg = '/image/upload/';
+    const safeName = filename || 'download';
+    // Determine extension; if it's a document (pdf/doc/...), prefer raw delivery
+    const lower = url.toLowerCase();
+    const ext = lower.split('?')[0].split('#')[0].split('.').pop() || '';
+    const needsRaw = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'txt'].includes(ext);
+
+    let adjusted = url;
+    if (needsRaw && url.includes(markerImg)) {
+      adjusted = url.replace(markerImg, markerRaw);
+    }
+
+    if (adjusted.includes(markerRaw)) return adjusted.replace(markerRaw, `${markerRaw}fl_attachment:${encodeURIComponent(safeName)}/`);
+    if (adjusted.includes(markerImg)) return adjusted.replace(markerImg, `${markerImg}fl_attachment:${encodeURIComponent(safeName)}/`);
+    return adjusted;
+  } catch (_) {
+    return url;
   }
 };
 
