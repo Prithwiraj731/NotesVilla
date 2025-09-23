@@ -333,7 +333,7 @@ const buildCloudinaryAttachmentUrl = (url, filename) => {
     // Ensure we operate on the path; insert fl_attachment after '/upload/' or '/raw/upload/'
     const markerRaw = '/raw/upload/';
     const markerImg = '/image/upload/';
-    const safeName = filename || 'download';
+    // Use generic attachment to avoid name-related 400s
     // Determine extension; if it's a document (pdf/doc/...), prefer raw delivery
     const lower = url.toLowerCase();
     const ext = lower.split('?')[0].split('#')[0].split('.').pop() || '';
@@ -344,8 +344,8 @@ const buildCloudinaryAttachmentUrl = (url, filename) => {
       adjusted = url.replace(markerImg, markerRaw);
     }
 
-    if (adjusted.includes(markerRaw)) return adjusted.replace(markerRaw, `${markerRaw}fl_attachment:${encodeURIComponent(safeName)}/`);
-    if (adjusted.includes(markerImg)) return adjusted.replace(markerImg, `${markerImg}fl_attachment:${encodeURIComponent(safeName)}/`);
+    if (adjusted.includes(markerRaw)) return adjusted.replace(markerRaw, `${markerRaw}fl_attachment/`);
+    if (adjusted.includes(markerImg)) return adjusted.replace(markerImg, `${markerImg}fl_attachment/`);
     return adjusted;
   } catch (_) {
     return url;
