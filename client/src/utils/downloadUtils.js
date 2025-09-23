@@ -36,8 +36,12 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   // Convert static file URL to download endpoint URL if needed
   // If Cloudinary URL, don't convert to API endpoint; use as-is
   const isCloudinary = /res\.cloudinary\.com|\.cloudinary\.com/.test(fileUrl);
-  const downloadUrl = (!isCloudinary && useDownloadEndpoint) ? convertToDownloadUrl(fileUrl, filename) : fileUrl;
   const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost -> production in prod
+  // If Cloudinary, prefer attachment URL as primary download target
+  const cloudAttachment = isCloudinary ? buildCloudinaryAttachmentUrl(originalUrl, filename) : originalUrl;
+  const downloadUrl = (!isCloudinary && useDownloadEndpoint)
+    ? convertToDownloadUrl(originalUrl, filename)
+    : cloudAttachment;
 
   if (enableLogging && downloadUrl !== fileUrl) {
     console.log('🔄 Converted URL:', { original: fileUrl, download: downloadUrl });
@@ -50,14 +54,13 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   // 4) original static URL via anchor
   // 5) optional new tab (last resort)
   // If Cloudinary, prefer fl_attachment link to force download and bypass 401s on HEAD
-  const cloudUrlWithAttachment = isCloudinary ? buildCloudinaryAttachmentUrl(originalUrl, filename) : originalUrl;
-
   const strategies = [
     () => downloadViaFetch(downloadUrl, filename, enableLogging, timeout),
     () => downloadViaAnchor(downloadUrl, filename, enableLogging),
-    () => downloadViaFetch(cloudUrlWithAttachment, filename, enableLogging, timeout),
-    () => downloadViaAnchor(cloudUrlWithAttachment, filename, enableLogging),
-    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(cloudUrlWithAttachment, enableLogging) : null
+    // Use originalUrl as further fallback in case attachment path is blocked
+    () => downloadViaFetch(originalUrl, filename, enableLogging, timeout),
+    () => downloadViaAnchor(originalUrl, filename, enableLogging),
+    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(downloadUrl, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
