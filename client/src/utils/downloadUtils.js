@@ -54,7 +54,8 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
     () => downloadViaAnchor(downloadUrl, filename, enableLogging),
     () => downloadViaFetch(originalUrl, filename, enableLogging, timeout),
     () => downloadViaAnchor(originalUrl, filename, enableLogging),
-    fallbackToNewTab ? () => downloadViaNewTab(originalUrl, enableLogging) : null
+    // For Cloudinary raw files (e.g., PDFs), allow safe new tab fallback
+    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(originalUrl, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
