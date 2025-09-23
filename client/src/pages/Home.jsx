@@ -21,7 +21,7 @@ export default function Home() {
           background: "linear-gradient(to top, rgba(109, 40, 217, 0.08), transparent)",
         }}></div>
       </div>
-      
+
       {/* Subtle grid pattern */}
       <div style={{
         position: "absolute",
@@ -29,7 +29,7 @@ export default function Home() {
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)'/%3E%3C/svg%3E")`,
         opacity: 0.5,
       }}></div>
-      
+
       {/* Floating orbs for depth - responsive */}
       <div style={{
         position: "absolute",
@@ -54,7 +54,7 @@ export default function Home() {
         animation: "pulse 4s ease-in-out infinite",
         animationDelay: "2s",
       }}></div>
-      
+
       {/* Main content */}
       <div style={{
         position: "relative",
@@ -64,7 +64,7 @@ export default function Home() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "clamp(2rem, 8vh, 6rem) clamp(1rem, 4vw, 2rem) clamp(1rem, 4vh, 2rem)", // Better mobile padding
+        padding: "clamp(2rem, 8vh, 6rem) clamp(1rem, 4vw, 2rem) clamp(1rem, 4vh, 2rem)",
       }}>
         <div style={{
           textAlign: "center",
@@ -84,78 +84,78 @@ export default function Home() {
             flexWrap: "wrap",
           }}>
           </div>
-          
-{/* Main title */}
-<div style={{ position: "relative", marginBottom: "clamp(1rem, 4vw, 2rem)" }}>
-  <h1 style={{
-    fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
-    fontWeight: "900",
-    letterSpacing: "-0.05em",
-    lineHeight: "0.9", // Tighter for mobile
-    margin: 0,
-    fontFamily: "'Orbitron', 'Bebas Neue', monospace",
-    textTransform: "uppercase",
-    background: "linear-gradient(180deg, #ffffff 0%, #94a3b8 50%, #475569 100%)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    backgroundClip: "text",
-    textShadow: "0 0 40px rgba(148, 163, 184, 0.3)",
-    transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
-    textAlign: "center",
-  }}>
-    NOTES
-  </h1>
-  <h1 style={{
-    fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
-    fontWeight: "900",
-    letterSpacing: "-0.05em",
-    lineHeight: "0.9", // Tighter for mobile
-    margin: 0,
-    marginTop: "clamp(-0.3rem, -1.5vw, -1rem)",
-    fontFamily: "'Orbitron', 'Bebas Neue', monospace",
-    textTransform: "uppercase",
-    background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    backgroundClip: "text",
-    textShadow: "0 0 60px rgba(139, 92, 246, 0.5)",
-    transform: window.innerWidth > 768 ? "perspective(400px) rotateX(10deg)" : "none",
-    position: "relative",
-    textAlign: "center",
-  }}>
-    VILLA
-    {/* Add a scanning line effect */}
-    <div style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "2px",
-      background: "linear-gradient(90deg, transparent, #a855f7, transparent)",
-      animation: "scan 3s linear infinite",
-    }}></div>
-  </h1>
-  {/* Subtle glow effect */}
-  <div style={{
-    position: "absolute",
-    inset: 0,
-    background: "radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 60%)",
-    filter: "blur(60px)",
-    zIndex: -1,
-  }}></div>
-  {/* Additional glow layers for depth */}
-  <div style={{
-    position: "absolute",
-    inset: "-20px",
-    background: "radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
-    filter: "blur(80px)",
-    zIndex: -2,
-    animation: "glow 4s ease-in-out infinite alternate",
-  }}></div>
-</div>
 
-{/* CSS animations */}
-<style jsx>{`
+          {/* Main title */}
+          <div style={{ position: "relative", marginBottom: "clamp(1rem, 4vw, 2rem)" }}>
+            <h1 style={{
+              fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
+              fontWeight: "900",
+              letterSpacing: "-0.05em",
+              lineHeight: "0.9", // Tighter for mobile
+              margin: 0,
+              fontFamily: "'Orbitron', 'Bebas Neue', monospace",
+              textTransform: "uppercase",
+              background: "linear-gradient(180deg, #ffffff 0%, #94a3b8 50%, #475569 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              textShadow: "0 0 40px rgba(148, 163, 184, 0.3)",
+              transform: "none",
+              textAlign: "center",
+            }}>
+              NOTES
+            </h1>
+            <h1 style={{
+              fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
+              fontWeight: "900",
+              letterSpacing: "-0.05em",
+              lineHeight: "0.9", // Tighter for mobile
+              margin: 0,
+              marginTop: "clamp(-0.3rem, -1.5vw, -1rem)",
+              fontFamily: "'Orbitron', 'Bebas Neue', monospace",
+              textTransform: "uppercase",
+              background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              textShadow: "0 0 60px rgba(139, 92, 246, 0.5)",
+              transform: "none",
+              position: "relative",
+              textAlign: "center",
+            }}>
+              VILLA
+              {/* Add a scanning line effect */}
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "2px",
+                background: "linear-gradient(90deg, transparent, #a855f7, transparent)",
+                animation: "scan 3s linear infinite",
+              }}></div>
+            </h1>
+            {/* Subtle glow effect */}
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              background: "radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 60%)",
+              filter: "blur(60px)",
+              zIndex: -1,
+            }}></div>
+            {/* Additional glow layers for depth */}
+            <div style={{
+              position: "absolute",
+              inset: "-20px",
+              background: "radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
+              filter: "blur(80px)",
+              zIndex: -2,
+              animation: "glow 4s ease-in-out infinite alternate",
+            }}></div>
+          </div>
+
+          {/* CSS animations */}
+          <style jsx>{`
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
   
   @keyframes pulse {
@@ -196,8 +196,14 @@ export default function Home() {
       opacity: 0.8;
     }
   }
+
+  /* Responsive enhancements without altering design */
+  @media (min-width: 768px) {
+    .nv-tilt-1 { transform: perspective(400px) rotateX(10deg); }
+    .nv-tilt-2 { transform: perspective(400px) rotateX(10deg); }
+  }
 `}</style>
-          
+
           {/* Tagline - responsive */}
           <p style={{
             fontSize: "clamp(1rem, 4vw, 1.25rem)",
@@ -212,7 +218,7 @@ export default function Home() {
               Upload, explore & share notes with the world.
             </span>
           </p>
-          
+
           {/* CTA Button - responsive */}
           <div style={{ paddingTop: "clamp(1rem, 4vw, 2rem)", width: "100%", display: "flex", justifyContent: "center" }}>
             <button
@@ -252,7 +258,7 @@ export default function Home() {
               <ArrowRight size={20} />
             </button>
           </div>
-          
+
           {/* Bottom accent - responsive */}
           <div style={{
             display: "flex",
@@ -300,7 +306,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-      
+
       {/* CSS animations */}
       <style jsx>{`
         @keyframes pulse {
@@ -312,6 +318,10 @@ export default function Home() {
             opacity: 1;
             transform: scale(1.2);
           }
+        }
+        /* Safe area padding for small screens */
+        @media (max-width: 380px) {
+          .cta-wrap { padding-top: 1.25rem !important; }
         }
       `}</style>
     </div>
