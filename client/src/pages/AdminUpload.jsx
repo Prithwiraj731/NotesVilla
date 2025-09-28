@@ -68,22 +68,22 @@ export default function AdminUpload() {
     setLoading(true);
     setError('');
     setSuccess('');
-    
+
     // Debug token information
     const token = localStorage.getItem('token');
     console.log('🔐 Upload attempt with token:', token ? token.substring(0, 20) + '...' : 'null');
-    
+
     if (!token) {
       setError('No authentication token found. Please login as admin first.');
       setLoading(false);
       return;
     }
-    
+
     // Decode token to check if it's an admin token
     try {
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
       console.log('🎫 Token payload:', tokenPayload);
-      
+
       if (!tokenPayload.isAdmin) {
         setError('Not an admin token. Please login via Admin Login.');
         setLoading(false);
@@ -95,7 +95,7 @@ export default function AdminUpload() {
       setLoading(false);
       return;
     }
-    
+
     try {
       const data = new FormData();
       data.append('title', form.title);
@@ -103,44 +103,44 @@ export default function AdminUpload() {
       data.append('subjectName', form.subjectName);
       data.append('topicName', form.topicName);
       data.append('date', form.date);
-      
+
       // Append all files
       form.files.forEach((file, index) => {
         data.append('files', file);
       });
-      
+
       setAuthToken(token);
       console.log(`🚀 Sending upload request for ${form.files.length} files...`);
-      
+
       const response = await API.post('/notes/upload', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
+
       console.log('✅ Upload successful:', response.data);
       const filesCount = response.data.filesUploaded || form.files.length;
       setSuccess(`${filesCount} note(s) uploaded successfully!`);
-      setForm({ 
-        title: '', 
-        description: '', 
-        subjectName: '', 
-        topicName: '', 
+      setForm({
+        title: '',
+        description: '',
+        subjectName: '',
+        topicName: '',
         date: new Date().toISOString().split('T')[0],
-        files: [] 
+        files: []
       });
       setFilePreview([]);
     } catch (err) {
       console.log('❌ Upload error:', err);
       console.log('Error response:', err.response?.data);
-      
+
       let errorMessage = err.response?.data?.msg || err.message;
-      
+
       // Handle specific JWT signature errors
       if (err.response?.data?.error === 'invalid signature') {
         errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login to get a fresh token.';
       } else if (err.response?.data?.errorType === 'JsonWebTokenError') {
         errorMessage = 'Authentication token is corrupted. Please log out and log back in via Admin Login.';
       }
-      
+
       setError(errorMessage);
     }
     setLoading(false);
@@ -172,7 +172,7 @@ export default function AdminUpload() {
           <Upload size={20} style={{ color: '#a855f7' }} />
           <span style={{ color: '#e2e8f0', fontWeight: '500', letterSpacing: '0.05em' }}>ADMIN PORTAL</span>
         </div>
-        
+
         <h1 style={{
           fontSize: 'clamp(2.5rem, 5vw, 4rem)',
           fontWeight: '900',
@@ -183,7 +183,7 @@ export default function AdminUpload() {
           margin: '0 0 1rem',
           letterSpacing: '-0.02em'
         }}>Upload Note</h1>
-        
+
         <p style={{
           color: '#94a3b8',
           fontSize: '1.125rem',
@@ -194,35 +194,35 @@ export default function AdminUpload() {
       </div>
 
       {/* Admin Login Notice */}
-      {(!localStorage.getItem('token') || 
-        (localStorage.getItem('token') && 
+      {(!localStorage.getItem('token') ||
+        (localStorage.getItem('token') &&
           !JSON.parse(atob(localStorage.getItem('token').split('.')[1])).isAdmin)) && (
-        <div style={{
-          maxWidth: '800px',
-          margin: '0 auto 2rem',
-          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
-          border: '1px solid rgba(251, 191, 36, 0.2)',
-          borderRadius: '1rem',
-          padding: '1.5rem',
-          textAlign: 'center'
-        }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            marginBottom: '0.75rem'
+            maxWidth: '800px',
+            margin: '0 auto 2rem',
+            background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
+            border: '1px solid rgba(251, 191, 36, 0.2)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            textAlign: 'center'
           }}>
-            <AlertCircle size={20} style={{ color: '#f59e0b' }} />
-            <span style={{ color: '#f59e0b', fontWeight: '600' }}>Admin Access Required</span>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              marginBottom: '0.75rem'
+            }}>
+              <AlertCircle size={20} style={{ color: '#f59e0b' }} />
+              <span style={{ color: '#f59e0b', fontWeight: '600' }}>Admin Access Required</span>
+            </div>
+            <p style={{ color: '#fbbf24', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
+              This page requires admin privileges. Please use
+              <a href="/admin/login" style={{ color: '#fbbf24', textDecoration: 'underline' }}> Admin Login </a>
+              to access the upload functionality.
+            </p>
           </div>
-          <p style={{ color: '#fbbf24', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
-            This page requires admin privileges. Please use 
-            <a href="/admin/login" style={{ color: '#fbbf24', textDecoration: 'underline' }}> Admin Login </a>
-            to access the upload functionality.
-          </p>
-        </div>
-      )}
+        )}
       {/* Main Upload Form */}
       <div style={{
         maxWidth: '800px',
@@ -463,7 +463,7 @@ export default function AdminUpload() {
               <Folder size={18} style={{ color: '#a855f7' }} />
               Upload Files (Multiple supported)
             </label>
-            
+
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -490,7 +490,7 @@ export default function AdminUpload() {
                 required
                 style={{ display: 'none' }}
               />
-              
+
               {filePreview.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ color: '#a855f7', fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
@@ -543,8 +543,8 @@ export default function AdminUpload() {
             type="submit"
             disabled={loading}
             style={{
-              background: loading 
-                ? 'rgba(100, 116, 139, 0.5)' 
+              background: loading
+                ? 'rgba(100, 116, 139, 0.5)'
                 : 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)',
               border: 'none',
               borderRadius: '0.75rem',
@@ -581,23 +581,104 @@ export default function AdminUpload() {
               <><Upload size={20} /> Upload Note(s) ({form.files.length || 0} file(s))</>
             )}
           </button>
-          {/* Success/Error Messages */}
+          {/* Modern Animated Success Popup */}
           {success && (
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '1rem 1.25rem',
-              background: 'rgba(34, 197, 94, 0.1)',
-              border: '1px solid rgba(34, 197, 94, 0.3)',
-              borderRadius: '0.75rem',
-              color: '#4ade80'
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1000,
+              backgroundColor: '#ffffff',
+              borderRadius: '1rem',
+              padding: '2rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e5e7eb',
+              maxWidth: '400px',
+              width: '90%',
+              textAlign: 'center',
+              animation: 'slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              backdropFilter: 'blur(10px)'
             }}>
-              <CheckCircle size={20} />
-              <span style={{ fontWeight: '500' }}>{success}</span>
+              {/* Success Icon with Animation */}
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                backgroundColor: '#f0fdf4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1.5rem',
+                animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                border: '3px solid #4ade80'
+              }}>
+                <CheckCircle size={40} color="#4ade80" />
+              </div>
+
+              {/* Success Message */}
+              <h3 style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: '0 0 0.5rem 0',
+                animation: 'fadeInUp 0.5s ease-out 0.2s both'
+              }}>
+                Upload Successful! 🎉
+              </h3>
+
+              <p style={{
+                fontSize: '1rem',
+                color: '#6b7280',
+                margin: '0 0 1.5rem 0',
+                animation: 'fadeInUp 0.5s ease-out 0.3s both'
+              }}>
+                {success}
+              </p>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setSuccess('')}
+                style={{
+                  backgroundColor: '#4ade80',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.75rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  animation: 'fadeInUp 0.5s ease-out 0.4s both'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#22c55e';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = '#4ade80';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                Awesome! ✨
+              </button>
             </div>
           )}
-          
+
+          {/* Overlay */}
+          {success && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 999,
+              animation: 'fadeIn 0.3s ease-out'
+            }} />
+          )}
+
           {error && (
             <div>
               <div style={{
@@ -614,7 +695,7 @@ export default function AdminUpload() {
                 <AlertCircle size={20} />
                 <span style={{ fontWeight: '500' }}>{error}</span>
               </div>
-              
+
               {/* Show re-login button for authentication errors */}
               {(error.includes('signature') || error.includes('token') || error.includes('authentication')) && (
                 <button
@@ -650,7 +731,7 @@ export default function AdminUpload() {
           )}
         </form>
       </div>
-      
+
       {/* CSS for spinner animation */}
       <style jsx>{`
         @keyframes spin {

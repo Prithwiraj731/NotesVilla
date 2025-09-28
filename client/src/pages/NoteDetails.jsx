@@ -74,7 +74,6 @@ export default function NoteDetails() {
       try {
         await navigator.share({
           title: note.title,
-          text: note.description,
           url: window.location.href
         });
       } catch (err) {
