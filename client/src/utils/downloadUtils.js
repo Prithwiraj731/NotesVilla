@@ -37,11 +37,10 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   // If Cloudinary URL, don't convert to API endpoint; use as-is
   const isCloudinary = /res\.cloudinary\.com|\.cloudinary\.com/.test(fileUrl);
   const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost -> production in prod
-  // If Cloudinary, prefer attachment URL as primary download target
-  const cloudAttachment = isCloudinary ? buildCloudinaryAttachmentUrl(originalUrl, filename) : originalUrl;
+  // For Cloudinary, use original URL directly - no transformation needed
   const downloadUrl = (!isCloudinary && useDownloadEndpoint)
     ? convertToDownloadUrl(originalUrl, filename)
-    : cloudAttachment;
+    : originalUrl;
 
   if (enableLogging && downloadUrl !== fileUrl) {
     console.log('🔄 Converted URL:', { original: fileUrl, download: downloadUrl });
@@ -53,14 +52,13 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   // 3) original static URL via fetch (fallback for 404s on endpoint)
   // 4) original static URL via anchor
   // 5) optional new tab (last resort)
-  // If Cloudinary, prefer fl_attachment link to force download and bypass 401s on HEAD
   const strategies = [
     () => downloadViaFetch(downloadUrl, filename, enableLogging, timeout),
     () => downloadViaAnchor(downloadUrl, filename, enableLogging),
     // Use originalUrl as further fallback in case attachment path is blocked
     () => downloadViaFetch(originalUrl, filename, enableLogging, timeout),
     () => downloadViaAnchor(originalUrl, filename, enableLogging),
-    (isCloudinary && fallbackToNewTab) ? () => downloadViaNewTab(downloadUrl, enableLogging) : null
+    fallbackToNewTab ? () => downloadViaNewTab(downloadUrl, enableLogging) : null
   ].filter(Boolean);
 
   for (let attempt = 0; attempt < retryAttempts; attempt++) {
@@ -327,38 +325,6 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
   }
 };
 
-// Cloudinary helpers
-const buildCloudinaryAttachmentUrl = (url, filename) => {
-  try {
-    // For Cloudinary downloads, we need to use the correct transformation syntax
-    // The fl_attachment should be added as a transformation parameter, not in the path
-    const markerRaw = '/raw/upload/';
-    const markerImg = '/image/upload/';
-
-    // Determine extension; if it's a document (pdf/doc/...), prefer raw delivery
-    const lower = url.toLowerCase();
-    const ext = lower.split('?')[0].split('#')[0].split('.').pop() || '';
-    const needsRaw = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'txt'].includes(ext);
-
-    let adjusted = url;
-    if (needsRaw && url.includes(markerImg)) {
-      adjusted = url.replace(markerImg, markerRaw);
-    }
-
-    // Add fl_attachment transformation parameter correctly
-    // Format: /raw/upload/fl_attachment/v123/filename or /image/upload/fl_attachment/v123/filename
-    // We need to insert fl_attachment right after /upload/ and before the version
-    if (adjusted.includes(markerRaw)) {
-      return adjusted.replace(markerRaw, `${markerRaw}fl_attachment/`);
-    }
-    if (adjusted.includes(markerImg)) {
-      return adjusted.replace(markerImg, `${markerImg}fl_attachment/`);
-    }
-    return adjusted;
-  } catch (_) {
-    return url;
-  }
-};
 
 /**
  * Normalize file URLs saved with localhost into production backend host

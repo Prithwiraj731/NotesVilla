@@ -70,7 +70,11 @@ exports.uploadNote = async (req, res) => {
         for (const f of files) {
           const localPath = pathLib.join(__dirname, '..', 'uploads', f.filename);
           const publicIdBase = `${Date.now()}-${f.filename.replace(/\.[^.]+$/, '')}`;
-          const cloud = await uploadLocalFile(localPath, publicIdBase, 'auto');
+          // Explicitly set resource type for PDFs and other documents
+          const ext = f.filename.split('.').pop()?.toLowerCase();
+          const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
+          const resourceType = isDocument ? 'raw' : 'auto';
+          const cloud = await uploadLocalFile(localPath, publicIdBase, resourceType);
           cloudResults.push({
             fileUrl: cloud.url,
             filename: f.filename,
@@ -175,7 +179,11 @@ exports.uploadSingleNote = async (req, res) => {
         const { uploadLocalFile } = require('../utils/cloudinary');
         const pathLib = require('path');
         const publicIdBase = `${Date.now()}-${file.filename.replace(/\.[^.]+$/, '')}`;
-        const cloud = await uploadLocalFile(pathLib.join(__dirname, '..', 'uploads', file.filename), publicIdBase, 'auto');
+        // Explicitly set resource type for PDFs and other documents
+        const ext = file.filename.split('.').pop()?.toLowerCase();
+        const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
+        const resourceType = isDocument ? 'raw' : 'auto';
+        const cloud = await uploadLocalFile(pathLib.join(__dirname, '..', 'uploads', file.filename), publicIdBase, resourceType);
         if (cloud?.url) fileUrl = cloud.url;
       } else if (process.env.FIREBASE_BUCKET) {
         const { uploadFile } = require('../utils/firebase');
