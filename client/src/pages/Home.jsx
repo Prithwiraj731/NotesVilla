@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Sparkles } from "lucide-react";
+import StarButton from "../components/StarButton";
 
 export default function Home() {
   const nav = useNavigate();
@@ -221,42 +222,10 @@ export default function Home() {
 
           {/* CTA Button - responsive */}
           <div style={{ paddingTop: "clamp(1rem, 4vw, 2rem)", width: "100%", display: "flex", justifyContent: "center" }}>
-            <button
-              onClick={handleDive}
-              style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.75rem",
-                padding: "clamp(1rem, 4vw, 1.25rem) clamp(1.5rem, 6vw, 2rem)",
-                fontSize: "clamp(1rem, 4vw, 1.125rem)",
-                fontWeight: "500",
-                color: "white",
-                background: "linear-gradient(to right, #27272a, #18181b)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "9999px",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
-                width: "100%",
-                maxWidth: "320px", // Touch-friendly max width
-                minHeight: "48px", // Touch-friendly minimum height
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-                e.currentTarget.style.boxShadow = "0 20px 35px -5px rgba(139, 92, 246, 0.3)";
-                e.currentTarget.style.background = "linear-gradient(to right, #7c3aed, #6366f1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(0, 0, 0, 0.5)";
-                e.currentTarget.style.background = "linear-gradient(to right, #27272a, #18181b)";
-              }}
-            >
+            <StarButton onClick={handleDive}>
               <span>Dive into NotesVilla</span>
               <ArrowRight size={20} />
-            </button>
+            </StarButton>
           </div>
 
           {/* Bottom accent - responsive */}
