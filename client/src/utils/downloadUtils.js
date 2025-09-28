@@ -331,7 +331,7 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
 const buildCloudinaryAttachmentUrl = (url, filename) => {
   try {
     // For Cloudinary downloads, we need to use the correct transformation syntax
-    // The fl_attachment should be added as a transformation parameter
+    // The fl_attachment should be added as a transformation parameter, not in the path
     const markerRaw = '/raw/upload/';
     const markerImg = '/image/upload/';
 
@@ -346,15 +346,13 @@ const buildCloudinaryAttachmentUrl = (url, filename) => {
     }
 
     // Add fl_attachment transformation parameter correctly
-    // Format: /raw/upload/v123/fl_attachment/filename or /image/upload/v123/fl_attachment/filename
-    // We need to insert fl_attachment after the version number
+    // Format: /raw/upload/fl_attachment/v123/filename or /image/upload/fl_attachment/v123/filename
+    // We need to insert fl_attachment right after /upload/ and before the version
     if (adjusted.includes(markerRaw)) {
-      // Find the version pattern (v followed by numbers) and insert fl_attachment after it
-      return adjusted.replace(/(\/raw\/upload\/v\d+\/)/, '$1fl_attachment/');
+      return adjusted.replace(markerRaw, `${markerRaw}fl_attachment/`);
     }
     if (adjusted.includes(markerImg)) {
-      // Find the version pattern (v followed by numbers) and insert fl_attachment after it
-      return adjusted.replace(/(\/image\/upload\/v\d+\/)/, '$1fl_attachment/');
+      return adjusted.replace(markerImg, `${markerImg}fl_attachment/`);
     }
     return adjusted;
   } catch (_) {
