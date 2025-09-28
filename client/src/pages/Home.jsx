@@ -65,7 +65,7 @@ export default function Home() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "clamp(2rem, 8vh, 6rem) clamp(1rem, 4vw, 2rem) clamp(1rem, 4vh, 2rem)",
+        padding: "clamp(1.5rem, 6vh, 4rem) clamp(0.75rem, 3vw, 1.5rem) clamp(1rem, 4vh, 2rem)",
       }}>
         <div style={{
           textAlign: "center",
@@ -87,12 +87,12 @@ export default function Home() {
           </div>
 
           {/* Main title */}
-          <div style={{ position: "relative", marginBottom: "clamp(1rem, 4vw, 2rem)" }}>
+          <div style={{ position: "relative", marginBottom: "clamp(1.5rem, 5vw, 2.5rem)" }}>
             <h1 style={{
-              fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
+              fontSize: "clamp(2rem, 10vw, 8rem)", // Better mobile scaling
               fontWeight: "900",
-              letterSpacing: "-0.05em",
-              lineHeight: "0.9", // Tighter for mobile
+              letterSpacing: "-0.02em",
+              lineHeight: "0.85", // Tighter for mobile
               margin: 0,
               fontFamily: "'Orbitron', 'Bebas Neue', monospace",
               textTransform: "uppercase",
@@ -107,12 +107,12 @@ export default function Home() {
               NOTES
             </h1>
             <h1 style={{
-              fontSize: "clamp(2.5rem, 12vw, 10rem)", // Better mobile scaling
+              fontSize: "clamp(2rem, 10vw, 8rem)", // Better mobile scaling
               fontWeight: "900",
-              letterSpacing: "-0.05em",
-              lineHeight: "0.9", // Tighter for mobile
+              letterSpacing: "-0.02em",
+              lineHeight: "0.85", // Tighter for mobile
               margin: 0,
-              marginTop: "clamp(-0.3rem, -1.5vw, -1rem)",
+              marginTop: "clamp(-0.2rem, -1vw, -0.8rem)",
               fontFamily: "'Orbitron', 'Bebas Neue', monospace",
               textTransform: "uppercase",
               background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
@@ -207,15 +207,15 @@ export default function Home() {
 
           {/* Tagline - responsive */}
           <p style={{
-            fontSize: "clamp(1rem, 4vw, 1.25rem)",
+            fontSize: "clamp(0.875rem, 3.5vw, 1.125rem)",
             color: "#a1a1aa",
-            maxWidth: "42rem",
-            margin: "0 auto clamp(2rem, 6vw, 3rem)",
-            lineHeight: "1.6",
-            padding: "0 1rem",
+            maxWidth: "38rem",
+            margin: "0 auto clamp(1.5rem, 5vw, 2.5rem)",
+            lineHeight: "1.5",
+            padding: "0 clamp(0.5rem, 3vw, 1rem)",
           }}>
             Your futuristic repository for knowledge.
-            <span style={{ display: "block", marginTop: "0.5rem", color: "#71717a" }}>
+            <span style={{ display: "block", marginTop: "0.375rem", color: "#71717a", fontSize: "clamp(0.75rem, 3vw, 1rem)" }}>
               Upload, explore & share notes with the world.
             </span>
           </p>
@@ -233,12 +233,12 @@ export default function Home() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "clamp(1rem, 4vw, 2rem)",
-            marginTop: "clamp(2rem, 8vw, 4rem)",
+            gap: "clamp(0.75rem, 3vw, 1.5rem)",
+            marginTop: "clamp(1.5rem, 6vw, 3rem)",
             color: "#52525b",
-            fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)",
+            fontSize: "clamp(0.7rem, 2.2vw, 0.8rem)",
             flexWrap: "wrap",
-            padding: "0 1rem",
+            padding: "0 clamp(0.5rem, 3vw, 1rem)",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <div style={{

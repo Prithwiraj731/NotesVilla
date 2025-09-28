@@ -2,89 +2,96 @@ import React from 'react';
 import styled from 'styled-components';
 
 const StarButton = ({ onClick, children }) => {
-    return (
-        <StyledWrapper>
-            <button onClick={onClick}>
-                {children}
-                <div className="star-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-                <div className="star-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-                <div className="star-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-                <div className="star-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-                <div className="star-5">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-                <div className="star-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
-                        <defs />
-                        <g id="Layer_x0020_1">
-                            <metadata id="CorelCorpID_0Corel-Layer" />
-                            <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
-                        </g>
-                    </svg>
-                </div>
-            </button>
-        </StyledWrapper>
-    );
+  return (
+    <StyledWrapper>
+      <button onClick={onClick}>
+        {children}
+        <div className="star-1">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+        <div className="star-2">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+        <div className="star-3">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+        <div className="star-4">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+        <div className="star-5">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+        <div className="star-6">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" version="1.1" style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd', clipRule: 'evenodd' }} viewBox="0 0 784.11 815.53" xmlnsXlink="http://www.w3.org/1999/xlink">
+            <defs />
+            <g id="Layer_x0020_1">
+              <metadata id="CorelCorpID_0Corel-Layer" />
+              <path className="fil0" d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </g>
+          </svg>
+        </div>
+      </button>
+    </StyledWrapper>
+  );
 }
 
 const StyledWrapper = styled.div`
   button {
     position: relative;
-    padding: clamp(1rem, 4vw, 1.25rem) clamp(1.5rem, 6vw, 2rem);
+    padding: clamp(0.875rem, 3vw, 1.25rem) clamp(1.25rem, 5vw, 2rem);
     background: linear-gradient(to right, #7c3aed, #6366f1);
-    font-size: clamp(1rem, 4vw, 1.125rem);
+    font-size: clamp(0.875rem, 3.5vw, 1.125rem);
     font-weight: 500;
     color: white;
-    border: 3px solid #7c3aed;
-    border-radius: 8px;
-    box-shadow: 0 0 0 rgba(124, 58, 237, 0.3);
+    border: 2px solid #7c3aed;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
     transition: all 0.3s ease-in-out;
     cursor: pointer;
     width: 100%;
-    max-width: 320px;
-    min-height: 48px;
+    max-width: 280px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: clamp(0.5rem, 2vw, 0.75rem);
+    
+    @media (max-width: 480px) {
+      max-width: 260px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      border-radius: 10px;
+    }
   }
 
   .star-1 {
