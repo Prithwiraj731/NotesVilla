@@ -12,7 +12,6 @@ const LoadingScreen = ({ isLoading }) => {
                     <Loader />
                 </div>
                 <div className="loading-text">
-                    <h2>NotesVilla</h2>
                     <p>Loading your knowledge repository...</p>
                 </div>
             </div>
