@@ -9,7 +9,6 @@ export default function AdminUpload() {
     title: '',
     description: '',
     subjectName: '',
-    topicName: '',
     date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
     files: [] // Changed from file to files array
   });
@@ -101,7 +100,6 @@ export default function AdminUpload() {
       data.append('title', form.title);
       data.append('description', form.description);
       data.append('subjectName', form.subjectName);
-      data.append('topicName', form.topicName);
       data.append('date', form.date);
 
       // Append all files
@@ -123,7 +121,6 @@ export default function AdminUpload() {
         title: '',
         description: '',
         subjectName: '',
-        topicName: '',
         date: new Date().toISOString().split('T')[0],
         files: []
       });
@@ -320,91 +317,47 @@ export default function AdminUpload() {
               }}
             />
           </div>
-          {/* Subject and Topic Input Fields */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-            <div>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
+          {/* Subject Input Field */}
+          <div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#e2e8f0',
+              fontWeight: '600',
+              marginBottom: '0.75rem',
+              fontSize: '0.95rem'
+            }}>
+              <BookOpen size={18} style={{ color: '#a855f7' }} />
+              Subject Name
+            </label>
+            <input
+              type="text"
+              placeholder="Enter subject name (e.g., Mathematics, Physics)"
+              value={form.subjectName}
+              onChange={e => setForm({ ...form, subjectName: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                background: 'rgba(30, 41, 59, 0.5)',
+                border: '2px solid rgba(148, 163, 184, 0.1)',
+                borderRadius: '0.75rem',
+                padding: '1rem 1.25rem',
                 color: '#e2e8f0',
-                fontWeight: '600',
-                marginBottom: '0.75rem',
-                fontSize: '0.95rem'
-              }}>
-                <BookOpen size={18} style={{ color: '#a855f7' }} />
-                Subject Name
-              </label>
-              <input
-                type="text"
-                placeholder="Enter subject name (e.g., Mathematics, Physics)"
-                value={form.subjectName}
-                onChange={e => setForm({ ...form, subjectName: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '2px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '0.75rem',
-                  padding: '1rem 1.25rem',
-                  color: '#e2e8f0',
-                  fontSize: '1rem',
-                  outline: 'none',
-                  transition: 'all 0.3s ease',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#e2e8f0',
-                fontWeight: '600',
-                marginBottom: '0.75rem',
-                fontSize: '0.95rem'
-              }}>
-                <Tag size={18} style={{ color: '#a855f7' }} />
-                Topic Name
-              </label>
-              <input
-                type="text"
-                placeholder="Enter topic name (e.g., Calculus, Quantum Mechanics)"
-                value={form.topicName}
-                onChange={e => setForm({ ...form, topicName: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '2px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '0.75rem',
-                  padding: '1rem 1.25rem',
-                  color: '#e2e8f0',
-                  fontSize: '1rem',
-                  outline: 'none',
-                  transition: 'all 0.3s ease',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'all 0.3s ease',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
           </div>
 
           {/* Date Input Field */}

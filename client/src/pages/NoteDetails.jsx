@@ -282,21 +282,6 @@ export default function NoteDetails() {
               {note.subjectName}
             </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              borderRadius: '1rem',
-              padding: '0.5rem 1rem',
-              color: '#6366f1',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}>
-              <Tag size={16} />
-              {note.topicName}
-            </div>
 
             <div style={{
               display: 'flex',

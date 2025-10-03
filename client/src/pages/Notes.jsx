@@ -11,7 +11,6 @@ export default function Notes() {
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [loading, setLoading] = useState(false);
@@ -25,7 +24,7 @@ export default function Notes() {
 
   useEffect(() => {
     filterNotes();
-  }, [notes, selectedSubject, selectedTopic, searchTerm]);
+  }, [notes, selectedSubject, searchTerm]);
 
   const loadSubjects = async () => {
     try {
@@ -126,26 +125,18 @@ export default function Notes() {
       filtered = filtered.filter(note => note.subjectName === selectedSubject);
     }
 
-    if (selectedTopic) {
-      filtered = filtered.filter(note => note.topicName === selectedTopic);
-    }
 
     if (searchTerm) {
       filtered = filtered.filter(note =>
         note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.topicName.toLowerCase().includes(searchTerm.toLowerCase())
+        note.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredNotes(filtered);
   };
 
-  const getUniqueTopics = () => {
-    if (!selectedSubject) return [];
-    return [...new Set(notes.filter(note => note.subjectName === selectedSubject).map(note => note.topicName))];
-  };
 
   const share = async (note) => {
     const shareUrl = `${window.location.origin}/note/${note._id}`;
@@ -176,7 +167,6 @@ export default function Notes() {
 
   const clearFilters = () => {
     setSelectedSubject('');
-    setSelectedTopic('');
     setSearchTerm('');
   };
 
@@ -338,28 +328,6 @@ export default function Notes() {
             {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
           </select>
 
-          {/* Topic Filter */}
-          <select
-            value={selectedTopic}
-            onChange={e => setSelectedTopic(e.target.value)}
-            disabled={!selectedSubject}
-            style={{
-              flex: window.innerWidth < 768 ? '1' : 'none',
-              minWidth: '150px',
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: '0.5rem',
-              padding: 'clamp(0.75rem, 3vw, 1rem)',
-              color: selectedSubject ? '#e2e8f0' : '#64748b',
-              fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-              outline: 'none',
-              cursor: selectedSubject ? 'pointer' : 'not-allowed',
-              minHeight: '48px' // Touch-friendly
-            }}
-          >
-            <option value="">All Topics</option>
-            {getUniqueTopics().map(topic => <option key={topic} value={topic}>{topic}</option>)}
-          </select>
 
           {/* View Mode Toggle */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -407,7 +375,7 @@ export default function Notes() {
         </div>
 
         {/* Clear Filters */}
-        {(selectedSubject || selectedTopic || searchTerm) && (
+        {(selectedSubject || searchTerm) && (
           <button
             onClick={clearFilters}
             style={{
@@ -522,7 +490,7 @@ export default function Notes() {
                   }}>{note.description}</p>
                 )}
 
-                {/* Subject and Topic Tags */}
+                {/* Subject Tag */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{
                     display: 'inline-flex',
@@ -538,21 +506,6 @@ export default function Notes() {
                   }}>
                     <BookOpen size={12} />
                     {note.subjectName}
-                  </span>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                    borderRadius: '1rem',
-                    padding: '0.25rem 0.75rem',
-                    fontSize: '0.75rem',
-                    color: '#6366f1',
-                    fontWeight: '500'
-                  }}>
-                    <Tag size={12} />
-                    {note.topicName}
                   </span>
                   {/* File count indicator for multiple files */}
                   {note.files && note.files.length > 1 && (

@@ -158,10 +158,6 @@ router.get('/subjects', (req, res, next) => {
   next();
 }, notesCtrl.listSubjects);
 
-router.get('/topics/:subjectName', (req, res, next) => {
-  console.log('📋 GET /api/notes/topics/:subjectName called with:', req.params.subjectName);
-  next();
-}, notesCtrl.listTopics);
 
 // Single note by ID - needs to be before other routes that might conflict
 router.get('/note/:id', (req, res, next) => {
@@ -175,10 +171,6 @@ router.get('/', (req, res, next) => {
   next();
 }, notesCtrl.getAllNotes);
 
-router.get('/subject/:subjectName/topic/:topicName', (req, res, next) => {
-  console.log('📋 GET /api/notes/subject/:subjectName/topic/:topicName called');
-  next();
-}, notesCtrl.listNotesByTopic);
 
 router.get('/subject/:subjectName', (req, res, next) => {
   console.log('📋 GET /api/notes/subject/:subjectName called');
@@ -193,7 +185,6 @@ router.get('/debug', (req, res) => {
     availableEndpoints: [
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
-      'GET /api/notes/topics/:subjectName',
       'GET /api/notes/download/:filename (download files)',
       'GET /api/notes/download-test (test download route)',
       'POST /api/notes/upload (admin only)'

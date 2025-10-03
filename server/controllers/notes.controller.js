@@ -1,5 +1,4 @@
 const Subject = require('../models/Subject');
-const Topic = require('../models/Topic');
 const Note = require('../models/Note');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -18,17 +17,16 @@ exports.uploadNote = async (req, res) => {
     }
 
     const files = req.files;
-    const { title, description, subjectName, topicName, date } = req.body;
+    const { title, description, subjectName, date } = req.body;
 
     // Validate required fields
-    if (!title || !subjectName || !topicName || !date) {
+    if (!title || !subjectName || !date) {
       console.log('Missing required fields');
       return res.status(400).json({
         msg: 'Missing required fields',
         received: {
           title: !!title,
           subjectName: !!subjectName,
-          topicName: !!topicName,
           date: !!date,
           filesCount: files.length
         }
@@ -106,7 +104,6 @@ exports.uploadNote = async (req, res) => {
       title,
       description,
       subjectName,
-      topicName,
       date: new Date(date),
       files: filesArray,
       // For backward compatibility, use first file as primary
@@ -150,17 +147,16 @@ exports.uploadSingleNote = async (req, res) => {
     }
 
     const file = req.file;
-    const { title, description, subjectName, topicName, date } = req.body;
+    const { title, description, subjectName, date } = req.body;
 
     // Validate required fields
-    if (!title || !subjectName || !topicName || !date) {
+    if (!title || !subjectName || !date) {
       console.log('Missing required fields');
       return res.status(400).json({
         msg: 'Missing required fields',
         received: {
           title: !!title,
           subjectName: !!subjectName,
-          topicName: !!topicName,
           date: !!date,
           hasFile: !!file
         }
@@ -224,7 +220,6 @@ exports.uploadSingleNote = async (req, res) => {
       title,
       description,
       subjectName,
-      topicName,
       date: new Date(date),
       fileUrl,
       filename: file.originalname,
@@ -270,29 +265,6 @@ exports.listSubjects = async (req, res) => {
   }
 };
 
-exports.listTopics = async (req, res) => {
-  try {
-    const { subjectName } = req.params;
-    // Get unique topic names for the given subject from MongoDB
-    const topics = await Note.distinct('topicName', { subjectName });
-    const topicList = topics.map(name => ({ name }));
-    res.json(topicList);
-  } catch (err) {
-    console.error('Error fetching topics:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.listNotesByTopic = async (req, res) => {
-  try {
-    const { subjectName, topicName } = req.params;
-    const notes = await Note.find({ subjectName, topicName }).sort({ date: -1, createdAt: -1 });
-    res.json(notes);
-  } catch (err) {
-    console.error('Error fetching notes by topic:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.listNotesBySubject = async (req, res) => {
   try {
