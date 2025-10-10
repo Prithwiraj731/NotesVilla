@@ -30,21 +30,45 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit per file
-    files: 10 // Allow up to 10 files
+    fileCount: 10 // Allow up to 10 files
   },
   fileFilter: (req, file, cb) => {
+    console.log('📁 Multer file filter - Processing file:', file.originalname, 'Type:', file.mimetype);
     // Accept specific file types - prioritizing PNG for multiple uploads
     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
+      console.log('✅ File accepted:', file.originalname);
       return cb(null, true);
     } else {
+      console.log('❌ File rejected:', file.originalname, 'Mimetype:', file.mimetype, 'Extension:', path.extname(file.originalname));
       cb(new Error('Only PDF, DOC, DOCX, JPG, PNG files are allowed!'));
     }
   }
 });
+
+// Error handling middleware for multer
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.log('❌ Multer error:', err.message);
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ msg: 'File too large. Maximum size is 10MB.' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ msg: 'Too many files. Maximum is 10 files.' });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ msg: 'Unexpected field name for file upload.' });
+    }
+    return res.status(400).json({ msg: 'File upload error: ' + err.message });
+  }
+  if (err.message === 'Only PDF, DOC, DOCX, JPG, PNG files are allowed!') {
+    return res.status(400).json({ msg: err.message });
+  }
+  next(err);
+};
 
 // Need to add middleware to allow authentication but not require admin for getting notes
 const requireAuth = (req, res, next) => {
@@ -149,8 +173,14 @@ router.get('/download/:filename', (req, res) => {
 });
 
 // Admin upload (only admin) - support both single and multiple files
-router.post('/upload', adminMiddleware, upload.array('files', 10), notesCtrl.uploadNote);
-router.post('/upload-single', adminMiddleware, upload.single('file'), notesCtrl.uploadSingleNote);
+router.post('/upload', (req, res, next) => {
+  console.log('📤 POST /api/notes/upload - Route hit');
+  console.log('📤 Headers:', req.headers);
+  console.log('📤 Body keys:', Object.keys(req.body || {}));
+  console.log('📤 Files:', req.files);
+  next();
+}, adminMiddleware, upload.array('files', 10), handleMulterError, notesCtrl.uploadNote);
+router.post('/upload-single', adminMiddleware, upload.single('file'), handleMulterError, notesCtrl.uploadSingleNote);
 
 // Public endpoints - no authentication required for viewing notes
 router.get('/subjects', (req, res, next) => {

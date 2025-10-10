@@ -19,16 +19,27 @@ exports.uploadNote = async (req, res) => {
     const files = req.files;
     const { title, description, subjectName, date } = req.body;
 
+    // Debug logging
+    console.log('📝 Received request body:', req.body);
+    console.log('📁 Received files:', files);
+    console.log('🔍 Parsed fields:', { title, description, subjectName, date });
+
     // Validate required fields
     if (!title || !subjectName || !date) {
-      console.log('Missing required fields');
+      console.log('❌ Missing required fields');
+      console.log('📊 Field validation:', {
+        title: !!title,
+        subjectName: !!subjectName,
+        date: !!date,
+        filesCount: files ? files.length : 0
+      });
       return res.status(400).json({
         msg: 'Missing required fields',
         received: {
           title: !!title,
           subjectName: !!subjectName,
           date: !!date,
-          filesCount: files.length
+          filesCount: files ? files.length : 0
         }
       });
     }
@@ -149,9 +160,20 @@ exports.uploadSingleNote = async (req, res) => {
     const file = req.file;
     const { title, description, subjectName, date } = req.body;
 
+    // Debug logging
+    console.log('📝 Single file upload - Received request body:', req.body);
+    console.log('📁 Single file upload - Received file:', file);
+    console.log('🔍 Single file upload - Parsed fields:', { title, description, subjectName, date });
+
     // Validate required fields
     if (!title || !subjectName || !date) {
-      console.log('Missing required fields');
+      console.log('❌ Single file upload - Missing required fields');
+      console.log('📊 Single file upload - Field validation:', {
+        title: !!title,
+        subjectName: !!subjectName,
+        date: !!date,
+        hasFile: !!file
+      });
       return res.status(400).json({
         msg: 'Missing required fields',
         received: {
