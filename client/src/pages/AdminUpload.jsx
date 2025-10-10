@@ -78,6 +78,19 @@ export default function AdminUpload() {
       return;
     }
 
+    // Validate required fields
+    if (!form.title || !form.subjectName || !form.date) {
+      setError('Please fill in all required fields: Title, Subject Name, and Date.');
+      setLoading(false);
+      return;
+    }
+
+    if (!form.files || form.files.length === 0) {
+      setError('Please select at least one file to upload.');
+      setLoading(false);
+      return;
+    }
+
     // Decode token to check if it's an admin token
     try {
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
@@ -107,12 +120,20 @@ export default function AdminUpload() {
         data.append('files', file);
       });
 
+      // Debug FormData contents
+      console.log('📝 FormData contents:');
+      for (let [key, value] of data.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
+
       setAuthToken(token);
       console.log(`🚀 Sending upload request for ${form.files.length} files...`);
 
-      const response = await API.post('/notes/upload', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await API.post('/notes/upload', data);
 
       console.log('✅ Upload successful:', response.data);
       const filesCount = response.data.filesUploaded || form.files.length;
