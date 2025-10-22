@@ -154,8 +154,14 @@ export default function AdminUpload() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.msg || `HTTP ${response.status}: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        throw new Error(errorData.msg || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const responseData = await response.json();

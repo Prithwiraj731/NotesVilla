@@ -226,7 +226,6 @@ exports.uploadSingleNote = async (req, res) => {
           title,
           description,
           subjectName,
-          topicName,
           date: new Date(date),
           fileUrl,
           filename: file.originalname,

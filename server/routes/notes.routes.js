@@ -185,7 +185,18 @@ router.post('/upload', (req, res, next) => {
   console.log('📤 Body after multer:', req.body);
   next();
 }, handleMulterError, notesCtrl.uploadNote);
-router.post('/upload-single', adminMiddleware, upload.single('file'), handleMulterError, notesCtrl.uploadSingleNote);
+router.post('/upload-single', (req, res, next) => {
+  console.log('📤 POST /api/notes/upload-single - Route hit');
+  console.log('📤 Headers:', req.headers);
+  console.log('📤 Content-Type:', req.headers['content-type']);
+  console.log('📤 Body keys:', Object.keys(req.body || {}));
+  console.log('📤 Files before multer:', req.files);
+  next();
+}, adminMiddleware, upload.single('file'), (req, res, next) => {
+  console.log('📤 File after multer:', req.file);
+  console.log('📤 Body after multer:', req.body);
+  next();
+}, handleMulterError, notesCtrl.uploadSingleNote);
 
 // Public endpoints - no authentication required for viewing notes
 router.get('/subjects', (req, res, next) => {
