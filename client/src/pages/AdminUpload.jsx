@@ -64,6 +64,7 @@ export default function AdminUpload() {
 
   const submit = async (e) => {
     e.preventDefault();
+    console.log('🚀 SUBMIT FUNCTION CALLED!');
     setLoading(true);
     setError('');
     setSuccess('');
@@ -86,6 +87,13 @@ export default function AdminUpload() {
 
     if (form.files.length === 0) {
       setError('Please select at least one file to upload');
+      setLoading(false);
+      return;
+    }
+
+    // Additional validation - check for empty strings
+    if (form.title.trim() === '' || form.subjectName.trim() === '' || form.date.trim() === '') {
+      setError('Please fill in all required fields: Title, Subject, and Date');
       setLoading(false);
       return;
     }
@@ -134,6 +142,12 @@ export default function AdminUpload() {
       // Debug FormData contents
       console.log('📝 FormData contents:');
       console.log('📝 Form state:', form);
+      console.log('📝 Form field values:', {
+        title: form.title,
+        subjectName: form.subjectName,
+        date: form.date,
+        description: form.description
+      });
       for (let [key, value] of data.entries()) {
         if (value instanceof File) {
           console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
