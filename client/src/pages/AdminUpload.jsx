@@ -85,6 +85,13 @@ export default function AdminUpload() {
     if (!form.subjectName || form.subjectName.trim() === '') missingFields.push('Subject');
     if (!form.date || form.date.trim() === '') missingFields.push('Date');
 
+    console.log('🔍 Field validation:', {
+      title: form.title,
+      subjectName: form.subjectName,
+      date: form.date,
+      missingFields
+    });
+
     if (missingFields.length > 0) {
       setError(`Please fill in: ${missingFields.join(', ')}`);
       setLoading(false);
@@ -321,6 +328,10 @@ export default function AdminUpload() {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Debug form state */}
+          <div style={{ color: 'white', fontSize: '12px', marginBottom: '10px' }}>
+            Debug: Title="{form.title}", Subject="{form.subjectName}", Date="{form.date}", Files={form.files.length}
+          </div>
           {/* Title Input */}
           <div style={{ position: 'relative' }}>
             <label style={{
@@ -339,7 +350,10 @@ export default function AdminUpload() {
               type="text"
               placeholder="Enter a descriptive title for your note"
               value={form.title}
-              onChange={e => setForm({ ...form, title: e.target.value })}
+              onChange={e => {
+                console.log('📝 Title changed:', e.target.value);
+                setForm({ ...form, title: e.target.value });
+              }}
               required
               style={{
                 width: '100%',
@@ -424,7 +438,10 @@ export default function AdminUpload() {
               type="text"
               placeholder="Enter subject name (e.g., Mathematics, Physics)"
               value={form.subjectName}
-              onChange={e => setForm({ ...form, subjectName: e.target.value })}
+              onChange={e => {
+                console.log('📚 Subject changed:', e.target.value);
+                setForm({ ...form, subjectName: e.target.value });
+              }}
               required
               style={{
                 width: '100%',
@@ -584,6 +601,11 @@ export default function AdminUpload() {
           <button
             type="submit"
             disabled={loading}
+            onClick={(e) => {
+              console.log('🔘 BUTTON CLICKED!');
+              console.log('🔘 Form state on click:', form);
+              // Don't prevent default - let form handle it
+            }}
             style={{
               background: loading
                 ? 'rgba(100, 116, 139, 0.5)'
