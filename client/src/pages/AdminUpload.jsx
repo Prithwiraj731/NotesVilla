@@ -68,6 +68,16 @@ export default function AdminUpload() {
     setError('');
     setSuccess('');
 
+    // Debug form state
+    console.log('🔍 Form state at submit:', form);
+    console.log('🔍 Form field values:', {
+      title: form.title,
+      subjectName: form.subjectName,
+      date: form.date,
+      description: form.description,
+      files: form.files.length
+    });
+
     // Validate required fields
     const missingFields = [];
     if (!form.title?.trim()) missingFields.push('Title');
@@ -122,6 +132,19 @@ export default function AdminUpload() {
         date: form.date,
         description: form.description
       });
+
+      // Test FormData construction
+      console.log('🔍 Testing FormData construction:');
+      const testData = new FormData();
+      testData.append('title', 'Test Title');
+      testData.append('subjectName', 'Test Subject');
+      testData.append('date', '2025-01-27');
+      testData.append('description', 'Test Description');
+
+      console.log('🔍 Test FormData contents:');
+      for (let [key, value] of testData.entries()) {
+        console.log(`  ${key}: ${value}`);
+      }
 
       // Determine endpoint and file field name
       const isSingleFile = form.files.length === 1;
