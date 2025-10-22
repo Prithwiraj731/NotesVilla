@@ -64,33 +64,15 @@ export default function AdminUpload() {
 
   const submit = async (e) => {
     e.preventDefault();
-    console.log('🚀 SUBMIT FUNCTION CALLED!');
-    console.log('🚀 Event:', e);
     setLoading(true);
     setError('');
     setSuccess('');
 
-    // Debug form state before upload
-    console.log('🔍 Form state before upload:', form);
-    console.log('🔍 Required fields check:', {
-      title: form.title,
-      subjectName: form.subjectName,
-      date: form.date,
-      files: form.files.length
-    });
-
-    // Check if required fields are filled
+    // Validate required fields
     const missingFields = [];
-    if (!form.title || form.title.trim() === '') missingFields.push('Title');
-    if (!form.subjectName || form.subjectName.trim() === '') missingFields.push('Subject');
-    if (!form.date || form.date.trim() === '') missingFields.push('Date');
-
-    console.log('🔍 Field validation:', {
-      title: form.title,
-      subjectName: form.subjectName,
-      date: form.date,
-      missingFields
-    });
+    if (!form.title?.trim()) missingFields.push('Title');
+    if (!form.subjectName?.trim()) missingFields.push('Subject');
+    if (!form.date?.trim()) missingFields.push('Date');
 
     if (missingFields.length > 0) {
       setError(`Please fill in: ${missingFields.join(', ')}`);
@@ -104,96 +86,56 @@ export default function AdminUpload() {
       return;
     }
 
-
-    // Debug token information
+    // Get and validate token
     const token = localStorage.getItem('token');
-    console.log('🔐 Upload attempt with token:', token ? token.substring(0, 20) + '...' : 'null');
-
     if (!token) {
       setError('No authentication token found. Please login as admin first.');
       setLoading(false);
       return;
     }
 
-
-
-    // Decode token to check if it's an admin token
+    // Validate admin token
     try {
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-      console.log('🎫 Token payload:', tokenPayload);
-
       if (!tokenPayload.isAdmin) {
         setError('Not an admin token. Please login via Admin Login.');
         setLoading(false);
         return;
       }
     } catch (decodeError) {
-      console.log('❌ Token decode error:', decodeError);
       setError('Invalid token format. Please login again.');
       setLoading(false);
       return;
     }
 
     try {
+      // Create FormData with metadata
       const data = new FormData();
       data.append('title', form.title);
-      data.append('description', form.description);
+      data.append('description', form.description || '');
       data.append('subjectName', form.subjectName);
       data.append('date', form.date);
 
-      // Append all files
-      form.files.forEach((file, index) => {
-        data.append('files', file);
-      });
-
-      // Debug FormData contents
-      console.log('📝 FormData contents:');
-      console.log('📝 Form state:', form);
-      console.log('📝 Form field values:', {
-        title: form.title,
-        subjectName: form.subjectName,
-        date: form.date,
-        description: form.description
-      });
-      for (let [key, value] of data.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`  ${key}: ${value}`);
-        }
-      }
-
-
-      setAuthToken(token);
-      console.log(`🚀 Sending upload request for ${form.files.length} files...`);
-
-      // Use fetch instead of axios for FormData to ensure proper Content-Type handling
-      const uploadUrl = form.files.length === 1
+      // Determine endpoint and file field name
+      const isSingleFile = form.files.length === 1;
+      const uploadUrl = isSingleFile
         ? `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload-single`
         : `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload`;
 
-      // For single file, use 'file' field name instead of 'files'
-      if (form.files.length === 1) {
-        data.delete('files'); // Remove the 'files' field
-        data.append('file', form.files[0]); // Add 'file' field for single upload
-        console.log('📁 Single file upload - Added file:', form.files[0].name);
+      // Append files with correct field name
+      if (isSingleFile) {
+        data.append('file', form.files[0]);
+      } else {
+        form.files.forEach(file => data.append('files', file));
       }
 
-      // Final FormData check
-      console.log('📝 Final FormData before sending:');
-      for (let [key, value] of data.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`  ${key}: ${value}`);
-        }
-      }
+      console.log(`🚀 Uploading ${form.files.length} file(s) to ${isSingleFile ? 'upload-single' : 'upload'}`);
 
+      // Send request
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
-          // Don't set Content-Type - let browser set it automatically for FormData
         },
         body: data
       });
@@ -203,17 +145,19 @@ export default function AdminUpload() {
         try {
           errorData = await response.json();
         } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
         throw new Error(errorData.msg || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const responseData = await response.json();
-
       console.log('✅ Upload successful:', responseData);
+
+      // Show success and reset form
       const filesCount = responseData.filesUploaded || form.files.length;
       setSuccess(`${filesCount} note(s) uploaded successfully!`);
+
+      // Clear form and file previews
       setForm({
         title: '',
         description: '',
@@ -222,20 +166,20 @@ export default function AdminUpload() {
         files: []
       });
       setFilePreview([]);
+
     } catch (err) {
-      console.log('❌ Upload error:', err);
+      console.error('❌ Upload error:', err);
 
       let errorMessage = err.message;
-
-      // Handle specific error messages
       if (errorMessage.includes('invalid signature')) {
-        errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login to get a fresh token.';
+        errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login.';
       } else if (errorMessage.includes('JsonWebTokenError')) {
         errorMessage = 'Authentication token is corrupted. Please log out and log back in via Admin Login.';
       }
 
       setError(errorMessage);
     }
+
     setLoading(false);
   };
 
@@ -348,6 +292,7 @@ export default function AdminUpload() {
             </label>
             <input
               type="text"
+              name="title"
               placeholder="Enter a descriptive title for your note"
               value={form.title}
               onChange={e => {
@@ -392,6 +337,7 @@ export default function AdminUpload() {
               Description
             </label>
             <textarea
+              name="description"
               placeholder="Provide a detailed description of the note content"
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
@@ -436,6 +382,7 @@ export default function AdminUpload() {
             </label>
             <input
               type="text"
+              name="subjectName"
               placeholder="Enter subject name (e.g., Mathematics, Physics)"
               value={form.subjectName}
               onChange={e => {
@@ -482,6 +429,7 @@ export default function AdminUpload() {
             </label>
             <input
               type="date"
+              name="date"
               value={form.date}
               onChange={e => setForm({ ...form, date: e.target.value })}
               required
