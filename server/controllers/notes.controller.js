@@ -150,6 +150,7 @@ exports.uploadSingleNote = async (req, res) => {
     console.log('Single file upload request received');
     console.log('Body:', req.body);
     console.log('File:', req.file);
+    console.log('Admin user:', req.admin);
 
     // Check if file was uploaded
     if (!req.file) {
@@ -258,9 +259,11 @@ exports.uploadSingleNote = async (req, res) => {
     });
   } catch (err) {
     console.error('Upload error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({
       error: err.message,
-      details: 'Check server console for more details'
+      details: 'Check server console for more details',
+      type: err.name || 'UnknownError'
     });
   }
 };

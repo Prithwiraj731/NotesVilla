@@ -29,13 +29,13 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    fileSize: 50 * 1024 * 1024, // 50MB limit per file (increased from 10MB)
     fileCount: 10 // Allow up to 10 files
   },
   fileFilter: (req, file, cb) => {
     console.log('📁 Multer file filter - Processing file:', file.originalname, 'Type:', file.mimetype);
-    // Accept specific file types - prioritizing PNG for multiple uploads
-    const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
+    // Accept a wide range of file types for notes
+    const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|ppt|pptx|xls|xlsx|txt|zip|rar|mp4|mp3|wav|avi|mov|gif|bmp|tiff|svg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
@@ -44,7 +44,7 @@ const upload = multer({
       return cb(null, true);
     } else {
       console.log('❌ File rejected:', file.originalname, 'Mimetype:', file.mimetype, 'Extension:', path.extname(file.originalname));
-      cb(new Error('Only PDF, DOC, DOCX, JPG, PNG files are allowed!'));
+      cb(new Error('File type not supported. Allowed: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR, Images, Videos, Audio files'));
     }
   }
 });
@@ -54,7 +54,7 @@ const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     console.log('❌ Multer error:', err.message);
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ msg: 'File too large. Maximum size is 10MB.' });
+      return res.status(400).json({ msg: 'File too large. Maximum size is 50MB.' });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({ msg: 'Too many files. Maximum is 10 files.' });
@@ -64,7 +64,7 @@ const handleMulterError = (err, req, res, next) => {
     }
     return res.status(400).json({ msg: 'File upload error: ' + err.message });
   }
-  if (err.message === 'Only PDF, DOC, DOCX, JPG, PNG files are allowed!') {
+  if (err.message && err.message.includes('files are allowed')) {
     return res.status(400).json({ msg: err.message });
   }
   next(err);

@@ -489,7 +489,7 @@ export default function AdminUpload() {
                 id="file-input"
                 type="file"
                 multiple
-                accept=".pdf,.doc,.docx,.jpg,.png"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.svg,.mp4,.mp3,.wav,.avi,.mov"
                 onChange={(e) => handleFiles(e.target.files)}
                 required
                 style={{ display: 'none' }}
