@@ -65,6 +65,7 @@ export default function AdminUpload() {
   const submit = async (e) => {
     e.preventDefault();
     console.log('🚀 SUBMIT FUNCTION CALLED!');
+    console.log('🚀 Event:', e);
     setLoading(true);
     setError('');
     setSuccess('');
@@ -79,8 +80,13 @@ export default function AdminUpload() {
     });
 
     // Check if required fields are filled
-    if (!form.title || !form.subjectName || !form.date) {
-      setError('Please fill in all required fields: Title, Subject, and Date');
+    const missingFields = [];
+    if (!form.title || form.title.trim() === '') missingFields.push('Title');
+    if (!form.subjectName || form.subjectName.trim() === '') missingFields.push('Subject');
+    if (!form.date || form.date.trim() === '') missingFields.push('Date');
+
+    if (missingFields.length > 0) {
+      setError(`Please fill in: ${missingFields.join(', ')}`);
       setLoading(false);
       return;
     }
@@ -91,12 +97,6 @@ export default function AdminUpload() {
       return;
     }
 
-    // Additional validation - check for empty strings
-    if (form.title.trim() === '' || form.subjectName.trim() === '' || form.date.trim() === '') {
-      setError('Please fill in all required fields: Title, Subject, and Date');
-      setLoading(false);
-      return;
-    }
 
     // Debug token information
     const token = localStorage.getItem('token');
@@ -169,6 +169,17 @@ export default function AdminUpload() {
       if (form.files.length === 1) {
         data.delete('files'); // Remove the 'files' field
         data.append('file', form.files[0]); // Add 'file' field for single upload
+        console.log('📁 Single file upload - Added file:', form.files[0].name);
+      }
+
+      // Final FormData check
+      console.log('📝 Final FormData before sending:');
+      for (let [key, value] of data.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
       }
 
       const response = await fetch(uploadUrl, {

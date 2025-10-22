@@ -191,10 +191,18 @@ router.post('/upload-single', (req, res, next) => {
   console.log('📤 Content-Type:', req.headers['content-type']);
   console.log('📤 Body keys:', Object.keys(req.body || {}));
   console.log('📤 Files before multer:', req.files);
+  console.log('📤 Raw body before multer:', req.body);
   next();
 }, adminMiddleware, upload.single('file'), (req, res, next) => {
   console.log('📤 File after multer:', req.file);
   console.log('📤 Body after multer:', req.body);
+  console.log('📤 Body keys after multer:', Object.keys(req.body || {}));
+  console.log('📤 Body values after multer:', {
+    title: req.body.title,
+    subjectName: req.body.subjectName,
+    date: req.body.date,
+    description: req.body.description
+  });
   next();
 }, handleMulterError, notesCtrl.uploadSingleNote);
 
