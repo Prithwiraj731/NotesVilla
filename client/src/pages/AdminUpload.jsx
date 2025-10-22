@@ -116,6 +116,13 @@ export default function AdminUpload() {
       data.append('subjectName', form.subjectName);
       data.append('date', form.date);
 
+      console.log('🔍 Form values being sent:', {
+        title: form.title,
+        subjectName: form.subjectName,
+        date: form.date,
+        description: form.description
+      });
+
       // Determine endpoint and file field name
       const isSingleFile = form.files.length === 1;
       const uploadUrl = isSingleFile
@@ -130,6 +137,16 @@ export default function AdminUpload() {
       }
 
       console.log(`🚀 Uploading ${form.files.length} file(s) to ${isSingleFile ? 'upload-single' : 'upload'}`);
+
+      // Debug FormData contents
+      console.log('📝 FormData contents:');
+      for (let [key, value] of data.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
 
       // Send request
       const response = await fetch(uploadUrl, {
