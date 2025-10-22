@@ -68,6 +68,28 @@ export default function AdminUpload() {
     setError('');
     setSuccess('');
 
+    // Debug form state before upload
+    console.log('🔍 Form state before upload:', form);
+    console.log('🔍 Required fields check:', {
+      title: form.title,
+      subjectName: form.subjectName,
+      date: form.date,
+      files: form.files.length
+    });
+
+    // Check if required fields are filled
+    if (!form.title || !form.subjectName || !form.date) {
+      setError('Please fill in all required fields: Title, Subject, and Date');
+      setLoading(false);
+      return;
+    }
+
+    if (form.files.length === 0) {
+      setError('Please select at least one file to upload');
+      setLoading(false);
+      return;
+    }
+
     // Debug token information
     const token = localStorage.getItem('token');
     console.log('🔐 Upload attempt with token:', token ? token.substring(0, 20) + '...' : 'null');
@@ -78,18 +100,7 @@ export default function AdminUpload() {
       return;
     }
 
-    // Validate required fields
-    if (!form.title || !form.subjectName || !form.date) {
-      setError('Please fill in all required fields: Title, Subject Name, and Date.');
-      setLoading(false);
-      return;
-    }
 
-    if (!form.files || form.files.length === 0) {
-      setError('Please select at least one file to upload.');
-      setLoading(false);
-      return;
-    }
 
     // Decode token to check if it's an admin token
     try {
@@ -122,6 +133,7 @@ export default function AdminUpload() {
 
       // Debug FormData contents
       console.log('📝 FormData contents:');
+      console.log('📝 Form state:', form);
       for (let [key, value] of data.entries()) {
         if (value instanceof File) {
           console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
@@ -129,6 +141,7 @@ export default function AdminUpload() {
           console.log(`  ${key}: ${value}`);
         }
       }
+
 
       setAuthToken(token);
       console.log(`🚀 Sending upload request for ${form.files.length} files...`);

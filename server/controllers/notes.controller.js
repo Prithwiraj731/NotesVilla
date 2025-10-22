@@ -165,6 +165,13 @@ exports.uploadSingleNote = async (req, res) => {
     console.log('📝 Single file upload - Received request body:', req.body);
     console.log('📁 Single file upload - Received file:', file);
     console.log('🔍 Single file upload - Parsed fields:', { title, description, subjectName, date });
+    console.log('🔍 Single file upload - Raw body keys:', Object.keys(req.body));
+    console.log('🔍 Single file upload - Body values:', {
+      title: req.body.title,
+      subjectName: req.body.subjectName,
+      date: req.body.date,
+      description: req.body.description
+    });
 
     // Validate required fields
     if (!title || !subjectName || !date) {
