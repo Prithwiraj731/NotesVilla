@@ -79,7 +79,9 @@ export default function Notes() {
         console.log('✅ Notes response:', r.data);
       }
 
+      // Handle both new pagination format and old format for backward compatibility
       if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
+        // New pagination format
         if (append && page > 1) {
           setNotes(prev => [...prev, ...r.data.notes]);
         } else {
@@ -90,6 +92,22 @@ export default function Notes() {
         setDebugInfo(prev => prev + `Notes: ${r.data.notes.length} loaded (page ${page}). `);
 
         if (r.data.notes.length === 0 && page === 1) {
+          setError('No notes found in the database. Upload some notes first!');
+        }
+      } else if (Array.isArray(r.data)) {
+        // Old format - direct array of notes
+        setNotes(r.data);
+        setPaginationInfo({
+          currentPage: 1,
+          totalPages: 1,
+          totalNotes: r.data.length,
+          hasNextPage: false,
+          hasPrevPage: false,
+          limit: r.data.length
+        });
+        setDebugInfo(prev => prev + `Notes: ${r.data.length} loaded (legacy format). `);
+
+        if (r.data.length === 0) {
           setError('No notes found in the database. Upload some notes first!');
         }
       } else {
