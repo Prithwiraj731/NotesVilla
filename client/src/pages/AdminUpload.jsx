@@ -133,10 +133,35 @@ export default function AdminUpload() {
       setAuthToken(token);
       console.log(`🚀 Sending upload request for ${form.files.length} files...`);
 
-      const response = await API.post('/notes/upload', data);
+      // Use fetch instead of axios for FormData to ensure proper Content-Type handling
+      const uploadUrl = form.files.length === 1
+        ? `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload-single`
+        : `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload`;
 
-      console.log('✅ Upload successful:', response.data);
-      const filesCount = response.data.filesUploaded || form.files.length;
+      // For single file, use 'file' field name instead of 'files'
+      if (form.files.length === 1) {
+        data.delete('files'); // Remove the 'files' field
+        data.append('file', form.files[0]); // Add 'file' field for single upload
+      }
+
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type - let browser set it automatically for FormData
+        },
+        body: data
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+
+      console.log('✅ Upload successful:', responseData);
+      const filesCount = responseData.filesUploaded || form.files.length;
       setSuccess(`${filesCount} note(s) uploaded successfully!`);
       setForm({
         title: '',
@@ -148,14 +173,13 @@ export default function AdminUpload() {
       setFilePreview([]);
     } catch (err) {
       console.log('❌ Upload error:', err);
-      console.log('Error response:', err.response?.data);
 
-      let errorMessage = err.response?.data?.msg || err.message;
+      let errorMessage = err.message;
 
-      // Handle specific JWT signature errors
-      if (err.response?.data?.error === 'invalid signature') {
+      // Handle specific error messages
+      if (errorMessage.includes('invalid signature')) {
         errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login to get a fresh token.';
-      } else if (err.response?.data?.errorType === 'JsonWebTokenError') {
+      } else if (errorMessage.includes('JsonWebTokenError')) {
         errorMessage = 'Authentication token is corrupted. Please log out and log back in via Admin Login.';
       }
 
