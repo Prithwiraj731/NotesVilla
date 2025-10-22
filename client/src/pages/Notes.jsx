@@ -16,6 +16,14 @@ export default function Notes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
+  const [paginationInfo, setPaginationInfo] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalNotes: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+    limit: 20
+  });
 
   useEffect(() => {
     loadSubjects();
@@ -55,47 +63,51 @@ export default function Notes() {
     }
   };
 
-  const loadAllNotes = async () => {
+  const loadAllNotes = async (page = 1, append = false) => {
     try {
-      console.log('🔍 Loading all notes...');
-      console.log('🌐 API base URL:', import.meta.env.VITE_API_BASE || 'http://localhost:5000/api');
-      console.log('📡 Making request to: /api/notes');
+      const isDevelopment = import.meta.env.DEV;
+      if (isDevelopment) {
+        console.log(`🔍 Loading notes (page ${page})...`);
+      }
+
       setLoading(true);
       setError('');
 
-      const r = await API.get('/notes');
-      console.log('✅ Raw response:', r);
-      console.log('✅ Response status:', r.status);
-      console.log('✅ Response headers:', r.headers);
-      console.log('✅ Notes loaded:', r.data);
-      console.log('📝 Number of notes:', r.data.length);
+      const r = await API.get(`/notes?page=${page}&limit=20`);
 
-      if (Array.isArray(r.data)) {
-        setNotes(r.data);
-        setDebugInfo(prev => prev + `Notes: ${r.data.length} loaded. `);
+      if (isDevelopment) {
+        console.log('✅ Notes response:', r.data);
+      }
 
-        if (r.data.length === 0) {
+      if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
+        if (append && page > 1) {
+          setNotes(prev => [...prev, ...r.data.notes]);
+        } else {
+          setNotes(r.data.notes);
+        }
+
+        setPaginationInfo(r.data.pagination);
+        setDebugInfo(prev => prev + `Notes: ${r.data.notes.length} loaded (page ${page}). `);
+
+        if (r.data.notes.length === 0 && page === 1) {
           setError('No notes found in the database. Upload some notes first!');
         }
       } else {
-        console.error('❌ Response is not an array:', typeof r.data);
+        console.error('❌ Invalid response format:', r.data);
         setError('Invalid response format from server.');
       }
     } catch (err) {
       console.error('❌ Error loading notes:', err);
-      console.error('❌ Error config:', err.config);
-      console.error('❌ Error response:', err.response);
-      console.error('❌ Error request:', err.request);
-      console.error('❌ Error status:', err.response?.status);
-      console.error('❌ Error data:', err.response?.data);
 
       let errorMessage = 'Failed to load notes.';
       if (err.response?.status === 404) {
-        errorMessage += ' Endpoint not found (404). Check if server is running on localhost:5000.';
+        errorMessage += ' Endpoint not found (404). Check if server is running.';
       } else if (err.response?.status >= 500) {
         errorMessage += ' Server error. Check server console for details.';
       } else if (!err.response) {
         errorMessage += ' Cannot connect to server. Make sure server is running.';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage += ' Request timed out. Please try again.';
       } else {
         errorMessage += ' ' + (err.response?.data?.msg || err.message);
       }
@@ -615,6 +627,76 @@ export default function Notes() {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && filteredNotes.length > 0 && paginationInfo.totalPages > 1 && (
+        <div style={{
+          maxWidth: '1200px',
+          margin: '2rem auto 0',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap'
+        }}>
+          {/* Previous Button */}
+          <button
+            onClick={() => loadAllNotes(paginationInfo.currentPage - 1)}
+            disabled={!paginationInfo.hasPrevPage}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: paginationInfo.hasPrevPage
+                ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)'
+                : 'rgba(100, 116, 139, 0.3)',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: paginationInfo.hasPrevPage ? 'pointer' : 'not-allowed',
+              transition: 'all 0.3s ease',
+              opacity: paginationInfo.hasPrevPage ? 1 : 0.5
+            }}
+          >
+            ← Previous
+          </button>
+
+          {/* Page Info */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: '#94a3b8',
+            fontSize: '0.875rem'
+          }}>
+            <span>Page {paginationInfo.currentPage} of {paginationInfo.totalPages}</span>
+            <span style={{ opacity: 0.5 }}>•</span>
+            <span>{paginationInfo.totalNotes} total notes</span>
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={() => loadAllNotes(paginationInfo.currentPage + 1)}
+            disabled={!paginationInfo.hasNextPage}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: paginationInfo.hasNextPage
+                ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)'
+                : 'rgba(100, 116, 139, 0.3)',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: paginationInfo.hasNextPage ? 'pointer' : 'not-allowed',
+              transition: 'all 0.3s ease',
+              opacity: paginationInfo.hasNextPage ? 1 : 0.5
+            }}
+          >
+            Next →
+          </button>
+        </div>
+      )}
 
       {/* CSS Animations */}
       <style jsx>{`

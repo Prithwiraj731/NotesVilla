@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
+  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:5000/api',
+  timeout: 15000, // 15 second timeout for all requests
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 export const setAuthToken = (token) => {
@@ -17,7 +21,7 @@ API.interceptors.response.use(
       status: response.status,
       data: response.data
     });
-    
+
     // Add additional validation for non-200 responses
     if (response.status >= 400) {
       console.warn(`⚠️ API request failed with status ${response.status}:`, {
@@ -26,7 +30,7 @@ API.interceptors.response.use(
         data: response.data
       });
     }
-    
+
     return response;
   },
   error => {
@@ -36,12 +40,12 @@ API.interceptors.response.use(
       data: error.response?.data,
       message: error.message
     });
-    
+
     // Add network error handling
     if (!error.response) {
       console.error('🔌 Network error - could not reach server');
     }
-    
+
     return Promise.reject(error);
   }
 );

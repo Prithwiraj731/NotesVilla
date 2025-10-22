@@ -17,4 +17,10 @@ const noteSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Add database indexes for optimal performance
+noteSchema.index({ date: -1, createdAt: -1 }); // Compound index for sorting notes
+noteSchema.index({ subjectName: 1 }); // Index for subject filtering
+noteSchema.index({ subjectName: 1, date: -1, createdAt: -1 }); // Compound index for subject queries with sorting
+noteSchema.index({ title: 'text', description: 'text' }); // Text search index for search functionality
+
 module.exports = mongoose.model('Note', noteSchema);

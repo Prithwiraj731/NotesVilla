@@ -268,18 +268,27 @@ exports.uploadSingleNote = async (req, res) => {
 
 exports.listSubjects = async (req, res) => {
   try {
-    console.log('📋 Fetching subjects...');
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      console.log('📋 Fetching subjects...');
+    }
 
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB not connected for subjects fetch');
+      if (isDevelopment) {
+        console.log('⚠️ MongoDB not connected for subjects fetch');
+      }
       return res.json([]); // Return empty array if DB not connected
     }
 
     // Get unique subject names from notes in MongoDB
     const subjects = await Note.distinct('subjectName');
     const subjectList = subjects.map(name => ({ name }));
-    console.log('✅ Subjects found:', subjectList.length);
+
+    if (isDevelopment) {
+      console.log('✅ Subjects found:', subjectList.length);
+    }
+
     res.json(subjectList);
   } catch (err) {
     console.error('❌ Error fetching subjects:', err);
@@ -291,8 +300,44 @@ exports.listSubjects = async (req, res) => {
 exports.listNotesBySubject = async (req, res) => {
   try {
     const { subjectName } = req.params;
-    const notes = await Note.find({ subjectName }).sort({ date: -1, createdAt: -1 });
-    res.json(notes);
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isDevelopment) {
+      console.log(`📋 Fetching notes for subject: ${subjectName}`);
+    }
+
+    // Add pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count for this subject
+    const total = await Note.countDocuments({ subjectName });
+
+    // Fetch notes with pagination
+    const notes = await Note.find({ subjectName })
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const totalPages = Math.ceil(total / limit);
+
+    if (isDevelopment) {
+      console.log(`✅ Found ${notes.length}/${total} notes for subject: ${subjectName}`);
+    }
+
+    res.json({
+      notes,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalNotes: total,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (err) {
     console.error('Error fetching notes by subject:', err);
     res.status(500).json({ error: err.message });
@@ -301,41 +346,104 @@ exports.listNotesBySubject = async (req, res) => {
 
 exports.getAllNotes = async (req, res) => {
   try {
-    console.log('📋 Fetching all notes...');
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      console.log('📋 Fetching notes with pagination...');
+    }
 
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB not connected for notes fetch');
-      return res.json([]); // Return empty array if DB not connected
+      if (isDevelopment) {
+        console.log('⚠️ MongoDB not connected for notes fetch');
+      }
+      return res.json({
+        notes: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalNotes: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      });
     }
 
-    const notes = await Note.find().sort({ date: -1, createdAt: -1 });
-    console.log('✅ Notes found:', notes.length);
-    res.json(notes);
+    // Add pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; // Default 20 notes per page
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const total = await Note.countDocuments();
+
+    // Fetch notes with pagination and lean() for better performance
+    const notes = await Note.find()
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(); // Use lean() for better performance
+
+    const totalPages = Math.ceil(total / limit);
+
+    if (isDevelopment) {
+      console.log(`✅ Notes found: ${notes.length}/${total} (page ${page}/${totalPages})`);
+    }
+
+    res.json({
+      notes,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalNotes: total,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (err) {
-    console.error('❌ Error fetching all notes:', err);
-    res.json([]); // Return empty array on error instead of 500
+    console.error('❌ Error fetching notes:', err);
+    res.json({
+      notes: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalNotes: 0,
+        hasNextPage: false,
+        hasPrevPage: false
+      }
+    });
   }
 };
 
 exports.getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('📋 Fetching note by ID:', id);
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (isDevelopment) {
+      console.log('📋 Fetching note by ID:', id);
+    }
 
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB not connected for single note fetch');
+      if (isDevelopment) {
+        console.log('⚠️ MongoDB not connected for single note fetch');
+      }
       return res.status(503).json({ error: 'Database not available' });
     }
 
     const note = await Note.findById(id);
     if (!note) {
-      console.log('❌ Note not found with ID:', id);
+      if (isDevelopment) {
+        console.log('❌ Note not found with ID:', id);
+      }
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    console.log('✅ Note found:', note.title);
+    if (isDevelopment) {
+      console.log('✅ Note found:', note.title);
+    }
+
     res.json(note);
   } catch (err) {
     console.error('❌ Error fetching note by ID:', err);
