@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import AdminLogin from './pages/AdminLogin';
 import Notes from './pages/Notes';
@@ -48,8 +47,7 @@ export default function App() {
             </Routes>
           </main>
           <Footer />
-          {/* Vercel Analytics & Speed Insights - monitors performance improvements */}
-          <Analytics />
+          {/* Vercel Speed Insights - monitors performance improvements */}
           <SpeedInsights />
         </>
       )}
