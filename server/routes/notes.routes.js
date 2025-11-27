@@ -37,9 +37,10 @@ const upload = multer({
     // Accept a wide range of file types for notes
     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|ppt|pptx|xls|xlsx|txt|zip|rar|mp4|mp3|wav|avi|mov|gif|bmp|tiff|svg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Mimetype check is unreliable with this regex as it contains extensions not mimetypes
+    // e.g. 'text/plain' does not match /txt/
 
-    if (mimetype && extname) {
+    if (extname) {
       console.log('✅ File accepted:', file.originalname);
       return cb(null, true);
     } else {
