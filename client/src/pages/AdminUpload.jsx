@@ -297,7 +297,6 @@ export default function AdminUpload() {
                 border: '2px solid rgba(148, 163, 184, 0.1)',
                 borderRadius: '0.75rem',
                 padding: '1rem 1.25rem',
-                color: '#e2e8f0',
                 fontSize: '1rem',
                 outline: 'none',
                 color: 'white'
@@ -321,7 +320,6 @@ export default function AdminUpload() {
                 border: '2px solid rgba(148, 163, 184, 0.1)',
                 borderRadius: '0.75rem',
                 padding: '1rem 1.25rem',
-                color: '#e2e8f0',
                 fontSize: '1rem',
                 outline: 'none',
                 resize: 'vertical',
@@ -348,7 +346,6 @@ export default function AdminUpload() {
                   border: '2px solid rgba(148, 163, 184, 0.1)',
                   borderRadius: '0.75rem',
                   padding: '1rem 1.25rem',
-                  color: '#e2e8f0',
                   fontSize: '1rem',
                   outline: 'none',
                   color: 'white'
