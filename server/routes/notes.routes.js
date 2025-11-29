@@ -226,7 +226,7 @@ router.put('/note/:id', (req, res, next) => {
   next();
 }, adminMiddleware, notesCtrl.updateNote);
 
-// Delete note (Admin only)
+// Delete note (Admin only) - Route for deleting notes
 router.delete('/note/:id', (req, res, next) => {
   console.log('🗑️ DELETE /api/notes/note/:id called with ID:', req.params.id);
   next();
