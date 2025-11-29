@@ -65,7 +65,7 @@ export default function Home() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "clamp(1.5rem, 6vh, 4rem) clamp(0.75rem, 3vw, 1.5rem) clamp(1rem, 4vh, 2rem)",
+        padding: "clamp(2rem, 6vh, 4rem) clamp(1.25rem, 5vw, 2rem) clamp(1rem, 4vh, 2rem)",
       }}>
         <div style={{
           textAlign: "center",
@@ -89,7 +89,7 @@ export default function Home() {
           {/* Main title */}
           <div style={{ position: "relative", marginBottom: "clamp(1.5rem, 5vw, 2.5rem)" }}>
             <h1 style={{
-              fontSize: "clamp(2rem, 10vw, 8rem)", // Better mobile scaling
+              fontSize: "clamp(3.5rem, 15vw, 8rem)", // Increased for mobile impact
               fontWeight: "900",
               letterSpacing: "-0.02em",
               lineHeight: "0.85", // Tighter for mobile
@@ -107,7 +107,7 @@ export default function Home() {
               NOTES
             </h1>
             <h1 style={{
-              fontSize: "clamp(2rem, 10vw, 8rem)", // Better mobile scaling
+              fontSize: "clamp(3.5rem, 15vw, 8rem)", // Increased for mobile impact
               fontWeight: "900",
               letterSpacing: "-0.02em",
               lineHeight: "0.85", // Tighter for mobile
@@ -207,7 +207,7 @@ export default function Home() {
 
           {/* Tagline - responsive */}
           <p style={{
-            fontSize: "clamp(0.875rem, 3.5vw, 1.125rem)",
+            fontSize: "clamp(1rem, 4vw, 1.25rem)",
             color: "#a1a1aa",
             maxWidth: "38rem",
             margin: "0 auto clamp(1.5rem, 5vw, 2.5rem)",
@@ -215,7 +215,7 @@ export default function Home() {
             padding: "0 clamp(0.5rem, 3vw, 1rem)",
           }}>
             Your futuristic repository for knowledge.
-            <span style={{ display: "block", marginTop: "0.375rem", color: "#71717a", fontSize: "clamp(0.75rem, 3vw, 1rem)" }}>
+            <span style={{ display: "block", marginTop: "0.5rem", color: "#71717a", fontSize: "clamp(0.875rem, 3.5vw, 1.125rem)" }}>
               Upload, explore & share notes with the world.
             </span>
           </p>
@@ -236,7 +236,7 @@ export default function Home() {
             gap: "clamp(0.75rem, 3vw, 1.5rem)",
             marginTop: "clamp(1.5rem, 6vw, 3rem)",
             color: "#52525b",
-            fontSize: "clamp(0.7rem, 2.2vw, 0.8rem)",
+            fontSize: "clamp(0.8rem, 2.5vw, 0.9rem)",
             flexWrap: "wrap",
             padding: "0 clamp(0.5rem, 3vw, 1rem)",
           }}>
