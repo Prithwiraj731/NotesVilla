@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API, { setAuthToken } from '../services/api';
-import { Upload, FileText, BookOpen, Tag, Folder, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Upload, FileText, BookOpen, Tag, Folder, CheckCircle, AlertCircle, Loader, Edit, Trash2, X, RefreshCw } from 'lucide-react';
 
 export default function AdminUpload() {
   const navigate = useNavigate();
@@ -9,8 +9,8 @@ export default function AdminUpload() {
     title: '',
     description: '',
     subjectName: '',
-    date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-    files: [] // Changed from file to files array
+    date: new Date().toISOString().split('T')[0],
+    files: []
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -18,13 +18,37 @@ export default function AdminUpload() {
   const [dragActive, setDragActive] = useState(false);
   const [filePreview, setFilePreview] = useState([]);
 
+  // New state for note management
+  const [notes, setNotes] = useState([]);
+  const [fetchingNotes, setFetchingNotes] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    try {
+      setFetchingNotes(true);
+      const response = await API.get('/notes');
+      // Handle both array and paginated response structures
+      const notesData = Array.isArray(response.data) ? response.data : (response.data.notes || []);
+      setNotes(notesData);
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      // Don't show error to user for fetch, just log it
+    } finally {
+      setFetchingNotes(false);
+    }
+  };
+
   const forceRelogin = () => {
     localStorage.removeItem('token');
     setAuthToken(null);
     navigate('/admin/login');
   };
-
-
 
   const handleFiles = (files) => {
     const fileArray = Array.from(files);
@@ -37,10 +61,6 @@ export default function AdminUpload() {
       }));
       setFilePreview(previews);
     }
-  };
-
-  const handleSingleFile = (file) => {
-    handleFiles([file]);
   };
 
   const handleDrag = (e) => {
@@ -62,21 +82,60 @@ export default function AdminUpload() {
     }
   };
 
+  const startEditing = (note) => {
+    setEditingId(note._id);
+    setForm({
+      title: note.title,
+      description: note.description || '',
+      subjectName: note.subjectName,
+      date: new Date(note.date).toISOString().split('T')[0],
+      files: [] // We don't pre-fill files for security/complexity reasons
+    });
+    setFilePreview([]);
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setForm({
+      title: '',
+      description: '',
+      subjectName: '',
+      date: new Date().toISOString().split('T')[0],
+      files: []
+    });
+    setFilePreview([]);
+  };
+
+  const confirmDelete = (note) => {
+    setNoteToDelete(note);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!noteToDelete) return;
+
+    try {
+      setLoading(true);
+      await API.delete(`/notes/note/${noteToDelete._id}`);
+      setSuccess('Note deleted successfully');
+      setDeleteModalOpen(false);
+      setNoteToDelete(null);
+      fetchNotes(); // Refresh list
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError(err.response?.data?.msg || 'Failed to delete note');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
-
-    // Debug form state
-    console.log('🔍 Form state at submit:', form);
-    console.log('🔍 Form field values:', {
-      title: form.title,
-      subjectName: form.subjectName,
-      date: form.date,
-      description: form.description,
-      files: form.files.length
-    });
 
     // Validate required fields
     const missingFields = [];
@@ -90,13 +149,13 @@ export default function AdminUpload() {
       return;
     }
 
-    if (form.files.length === 0) {
+    // If creating new note, require file
+    if (!editingId && form.files.length === 0) {
       setError('Please select at least one file to upload');
       setLoading(false);
       return;
     }
 
-    // Get and validate token
     const token = localStorage.getItem('token');
     if (!token) {
       setError('No authentication token found. Please login as admin first.');
@@ -104,100 +163,41 @@ export default function AdminUpload() {
       return;
     }
 
-    // Validate admin token
     try {
-      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-      if (!tokenPayload.isAdmin) {
-        setError('Not an admin token. Please login via Admin Login.');
-        setLoading(false);
-        return;
-      }
-    } catch (decodeError) {
-      setError('Invalid token format. Please login again.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Create FormData with metadata
-      const data = new FormData();
-      data.append('title', form.title);
-      data.append('description', form.description || '');
-      data.append('subjectName', form.subjectName);
-      data.append('date', form.date);
-
-      console.log('🔍 Form values being sent:', {
-        title: form.title,
-        subjectName: form.subjectName,
-        date: form.date,
-        description: form.description
-      });
-
-      // Test FormData construction
-      console.log('🔍 Testing FormData construction:');
-      const testData = new FormData();
-      testData.append('title', 'Test Title');
-      testData.append('subjectName', 'Test Subject');
-      testData.append('date', '2025-01-27');
-      testData.append('description', 'Test Description');
-
-      console.log('🔍 Test FormData contents:');
-      for (let [key, value] of testData.entries()) {
-        console.log(`  ${key}: ${value}`);
-      }
-
-      // Determine endpoint and file field name
-      const isSingleFile = form.files.length === 1;
-      const uploadUrl = isSingleFile
-        ? `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload-single`
-        : `${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/notes/upload`;
-
-      // Append files with correct field name
-      if (isSingleFile) {
-        data.append('file', form.files[0]);
+      if (editingId) {
+        // Update existing note
+        await API.put(`/notes/note/${editingId}`, {
+          title: form.title,
+          description: form.description,
+          subjectName: form.subjectName,
+          date: form.date
+        });
+        setSuccess('Note updated successfully!');
+        setEditingId(null);
       } else {
-        form.files.forEach(file => data.append('files', file));
-      }
+        // Create new note
+        const data = new FormData();
+        data.append('title', form.title);
+        data.append('description', form.description || '');
+        data.append('subjectName', form.subjectName);
+        data.append('date', form.date);
 
-      console.log(`🚀 Uploading ${form.files.length} file(s) to ${isSingleFile ? 'upload-single' : 'upload'}`);
+        const isSingleFile = form.files.length === 1;
+        const uploadUrl = isSingleFile ? '/notes/upload-single' : '/notes/upload';
 
-      // Debug FormData contents
-      console.log('📝 FormData contents:');
-      for (let [key, value] of data.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        if (isSingleFile) {
+          data.append('file', form.files[0]);
         } else {
-          console.log(`  ${key}: ${value}`);
+          form.files.forEach(file => data.append('files', file));
         }
+
+        await API.post(uploadUrl, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setSuccess(`${form.files.length} note(s) uploaded successfully!`);
       }
 
-      // Send request
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: data
-      });
-
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
-        throw new Error(errorData.msg || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const responseData = await response.json();
-      console.log('✅ Upload successful:', responseData);
-
-      // Show success and reset form
-      const filesCount = responseData.filesUploaded || form.files.length;
-      setSuccess(`${filesCount} note(s) uploaded successfully!`);
-
-      // Clear form and file previews
+      // Reset form and refresh list
       setForm({
         title: '',
         description: '',
@@ -206,21 +206,18 @@ export default function AdminUpload() {
         files: []
       });
       setFilePreview([]);
+      fetchNotes();
 
     } catch (err) {
-      console.error('❌ Upload error:', err);
+      console.error('Operation error:', err);
+      setError(err.response?.data?.msg || err.message || 'Operation failed');
 
-      let errorMessage = err.message;
-      if (errorMessage.includes('invalid signature')) {
-        errorMessage = 'Token signature invalid. Please log out and log back in via Admin Login.';
-      } else if (errorMessage.includes('JsonWebTokenError')) {
-        errorMessage = 'Authentication token is corrupted. Please log out and log back in via Admin Login.';
+      if (err.response?.status === 401 || err.message.includes('token')) {
+        setTimeout(forceRelogin, 2000);
       }
-
-      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -259,7 +256,9 @@ export default function AdminUpload() {
           backgroundClip: 'text',
           margin: '0 0 1rem',
           letterSpacing: '-0.02em'
-        }}>Upload Note</h1>
+        }}>
+          {editingId ? 'Edit Note' : 'Upload Note'}
+        </h1>
 
         <p style={{
           color: '#94a3b8',
@@ -267,43 +266,13 @@ export default function AdminUpload() {
           maxWidth: '600px',
           margin: '0 auto',
           lineHeight: '1.6'
-        }}>Share knowledge with students by uploading educational content to the platform</p>
+        }}>Manage your educational content: upload new notes, or edit and delete existing ones.</p>
       </div>
 
-      {/* Admin Login Notice */}
-      {(!localStorage.getItem('token') ||
-        (localStorage.getItem('token') &&
-          !JSON.parse(atob(localStorage.getItem('token').split('.')[1])).isAdmin)) && (
-          <div style={{
-            maxWidth: '800px',
-            margin: '0 auto 2rem',
-            background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
-            border: '1px solid rgba(251, 191, 36, 0.2)',
-            borderRadius: '1rem',
-            padding: '1.5rem',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.75rem'
-            }}>
-              <AlertCircle size={20} style={{ color: '#f59e0b' }} />
-              <span style={{ color: '#f59e0b', fontWeight: '600' }}>Admin Access Required</span>
-            </div>
-            <p style={{ color: '#fbbf24', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
-              This page requires admin privileges. Please use
-              <a href="/admin/login" style={{ color: '#fbbf24', textDecoration: 'underline' }}> Admin Login </a>
-              to access the upload functionality.
-            </p>
-          </div>
-        )}
-      {/* Main Upload Form */}
+      {/* Main Form */}
       <div style={{
         maxWidth: '800px',
-        margin: '0 auto',
+        margin: '0 auto 4rem',
         background: 'rgba(15, 23, 42, 0.6)',
         backdropFilter: 'blur(20px)',
         border: '1px solid rgba(148, 163, 184, 0.1)',
@@ -312,33 +281,15 @@ export default function AdminUpload() {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Debug form state */}
-          <div style={{ color: 'white', fontSize: '12px', marginBottom: '10px' }}>
-            Debug: Title="{form.title}", Subject="{form.subjectName}", Date="{form.date}", Files={form.files.length}
-          </div>
           {/* Title Input */}
-          <div style={{ position: 'relative' }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#e2e8f0',
-              fontWeight: '600',
-              marginBottom: '0.75rem',
-              fontSize: '0.95rem'
-            }}>
-              <FileText size={18} style={{ color: '#a855f7' }} />
-              Note Title
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
+              <FileText size={18} style={{ color: '#a855f7' }} /> Note Title
             </label>
             <input
               type="text"
-              name="title"
-              placeholder="Enter a descriptive title for your note"
               value={form.title}
-              onChange={e => {
-                console.log('📝 Title changed:', e.target.value);
-                setForm({ ...form, title: e.target.value });
-              }}
+              onChange={e => setForm({ ...form, title: e.target.value })}
               required
               style={{
                 width: '100%',
@@ -349,36 +300,18 @@ export default function AdminUpload() {
                 color: '#e2e8f0',
                 fontSize: '1rem',
                 outline: 'none',
-                transition: 'all 0.3s ease',
-                boxSizing: 'border-box'
+                color: 'white'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
+              placeholder="Enter note title"
             />
           </div>
-          {/* Description Textarea */}
-          <div style={{ position: 'relative' }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#e2e8f0',
-              fontWeight: '600',
-              marginBottom: '0.75rem',
-              fontSize: '0.95rem'
-            }}>
-              <FileText size={18} style={{ color: '#a855f7' }} />
-              Description
+
+          {/* Description */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
+              <FileText size={18} style={{ color: '#a855f7' }} /> Description
             </label>
             <textarea
-              name="description"
-              placeholder="Provide a detailed description of the note content"
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               rows={4}
@@ -391,404 +324,359 @@ export default function AdminUpload() {
                 color: '#e2e8f0',
                 fontSize: '1rem',
                 outline: 'none',
-                transition: 'all 0.3s ease',
                 resize: 'vertical',
-                minHeight: '100px',
-                boxSizing: 'border-box'
+                color: 'white'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-          {/* Subject Input Field */}
-          <div>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#e2e8f0',
-              fontWeight: '600',
-              marginBottom: '0.75rem',
-              fontSize: '0.95rem'
-            }}>
-              <BookOpen size={18} style={{ color: '#a855f7' }} />
-              Subject Name
-            </label>
-            <input
-              type="text"
-              name="subjectName"
-              placeholder="Enter subject name (e.g., Mathematics, Physics)"
-              value={form.subjectName}
-              onChange={e => {
-                console.log('📚 Subject changed:', e.target.value);
-                setForm({ ...form, subjectName: e.target.value });
-              }}
-              required
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '2px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '0.75rem',
-                padding: '1rem 1.25rem',
-                color: '#e2e8f0',
-                fontSize: '1rem',
-                outline: 'none',
-                transition: 'all 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
+              placeholder="Enter description"
             />
           </div>
 
-          {/* Date Input Field */}
-          <div>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#e2e8f0',
-              fontWeight: '600',
-              marginBottom: '0.75rem',
-              fontSize: '0.95rem'
-            }}>
-              <Tag size={18} style={{ color: '#a855f7' }} />
-              Date
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={e => setForm({ ...form, date: e.target.value })}
-              required
-              style={{
-                width: '100%',
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '2px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '0.75rem',
-                padding: '1rem 1.25rem',
-                color: '#e2e8f0',
-                fontSize: '1rem',
-                outline: 'none',
-                transition: 'all 0.3s ease',
-                boxSizing: 'border-box',
-                colorScheme: 'dark'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(168, 85, 247, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-          {/* File Upload Area */}
-          <div>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#e2e8f0',
-              fontWeight: '600',
-              marginBottom: '0.75rem',
-              fontSize: '0.95rem'
-            }}>
-              <Folder size={18} style={{ color: '#a855f7' }} />
-              Upload Files (Multiple supported)
-            </label>
-
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              style={{
-                border: `2px dashed ${dragActive ? 'rgba(168, 85, 247, 0.6)' : 'rgba(148, 163, 184, 0.3)'}`,
-                borderRadius: '1rem',
-                padding: '2rem',
-                textAlign: 'center',
-                background: dragActive ? 'rgba(168, 85, 247, 0.05)' : 'rgba(30, 41, 59, 0.3)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                position: 'relative'
-              }}
-              onClick={() => document.getElementById('file-input').click()}
-            >
+          {/* Subject & Date */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
+                <BookOpen size={18} style={{ color: '#a855f7' }} /> Subject
+              </label>
               <input
-                id="file-input"
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.svg,.mp4,.mp3,.wav,.avi,.mov"
-                onChange={(e) => handleFiles(e.target.files)}
+                type="text"
+                value={form.subjectName}
+                onChange={e => setForm({ ...form, subjectName: e.target.value })}
                 required
-                style={{ display: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.5)',
+                  border: '2px solid rgba(148, 163, 184, 0.1)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem 1.25rem',
+                  color: '#e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  color: 'white'
+                }}
+                placeholder="e.g. Mathematics"
               />
-
-              {filePreview.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ color: '#a855f7', fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
-                    {filePreview.length} file(s) selected:
-                  </div>
-                  {filePreview.map((file, index) => (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '0.5rem', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'rgba(168, 85, 247, 0.1)',
-                        borderRadius: '0.5rem',
-                        border: '1px solid rgba(168, 85, 247, 0.3)'
-                      }}>
-                        <FileText size={20} style={{ color: '#a855f7' }} />
-                      </div>
-                      <div style={{ textAlign: 'left', flex: 1 }}>
-                        <div style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '0.95rem' }}>{file.name}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{file.size} • {file.type}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div>
-                  <div style={{
-                    width: '3rem',
-                    height: '3rem',
-                    background: 'rgba(168, 85, 247, 0.1)',
-                    borderRadius: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 1rem',
-                    border: '1px solid rgba(168, 85, 247, 0.3)'
-                  }}>
-                    <Upload size={24} style={{ color: '#a855f7' }} />
-                  </div>
-                  <div style={{ color: '#e2e8f0', fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                    Drag & drop your files here
-                  </div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-                    or click to browse • Multiple files supported • PDF, DOC, DOCX, JPG, PNG
-                  </div>
-                </div>
-              )}
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
+                <Tag size={18} style={{ color: '#a855f7' }} /> Date
+              </label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={e => setForm({ ...form, date: e.target.value })}
+                required
+                style={{
+                  width: '100%',
+                  background: 'rgba(30, 41, 59, 0.5)',
+                  border: '2px solid rgba(148, 163, 184, 0.1)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem 1.25rem',
+                  color: '#e2e8f0',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  colorScheme: 'dark'
+                }}
+              />
             </div>
           </div>
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            onClick={(e) => {
-              console.log('🔘 BUTTON CLICKED!');
-              console.log('🔘 Form state on click:', form);
-              // Don't prevent default - let form handle it
-            }}
-            style={{
-              background: loading
-                ? 'rgba(100, 116, 139, 0.5)'
-                : 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)',
-              border: 'none',
-              borderRadius: '0.75rem',
-              padding: '1.25rem 2rem',
-              color: 'white',
-              fontSize: '1.125rem',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.75rem',
-              boxShadow: loading ? 'none' : '0 10px 25px -5px rgba(139, 92, 246, 0.4)',
-              transform: loading ? 'none' : 'translateY(0)',
-              marginTop: '1rem'
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 15px 35px -5px rgba(139, 92, 246, 0.5)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 10px 25px -5px rgba(139, 92, 246, 0.4)';
-              }
-            }}
-          >
-            {loading ? (
-              <><Loader size={20} style={{ animation: 'spin 1s linear infinite' }} /> Uploading {form.files.length} file(s)...</>
-            ) : (
-              <><Upload size={20} /> Upload Note(s) ({form.files.length || 0} file(s))</>
-            )}
-          </button>
-          {/* Modern Animated Success Popup */}
-          {success && (
-            <div style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1000,
-              backgroundColor: '#ffffff',
-              borderRadius: '1rem',
-              padding: '2rem',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid #e5e7eb',
-              maxWidth: '400px',
-              width: '90%',
-              textAlign: 'center',
-              animation: 'slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              {/* Success Icon with Animation */}
-              <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                backgroundColor: '#f0fdf4',
+
+          {/* File Upload (Only show if not editing or if we want to allow file replacement later) */}
+          {!editingId && (
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
+                <Folder size={18} style={{ color: '#a855f7' }} /> Upload Files
+              </label>
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('file-input').click()}
+                style={{
+                  border: `2px dashed ${dragActive ? 'rgba(168, 85, 247, 0.6)' : 'rgba(148, 163, 184, 0.3)'}`,
+                  borderRadius: '1rem',
+                  padding: '2rem',
+                  textAlign: 'center',
+                  background: dragActive ? 'rgba(168, 85, 247, 0.05)' : 'rgba(30, 41, 59, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  onChange={(e) => handleFiles(e.target.files)}
+                  style={{ display: 'none' }}
+                />
+                {filePreview.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ color: '#a855f7', fontWeight: '600' }}>{filePreview.length} file(s) selected</div>
+                    {filePreview.map((f, i) => (
+                      <div key={i} style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{f.name}</div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#94a3b8' }}>Drag & drop files or click to browse</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                flex: 1,
+                background: loading ? 'rgba(100, 116, 139, 0.5)' : 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)',
+                border: 'none',
+                borderRadius: '0.75rem',
+                padding: '1.25rem',
+                color: 'white',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-                border: '3px solid #4ade80'
-              }}>
-                <CheckCircle size={40} color="#4ade80" />
-              </div>
+                gap: '0.75rem',
+                transition: 'all 0.3s'
+              }}
+            >
+              {loading ? <Loader size={20} className="animate-spin" /> : (editingId ? <RefreshCw size={20} /> : <Upload size={20} />)}
+              {loading ? 'Processing...' : (editingId ? 'Update Note' : 'Upload Note')}
+            </button>
 
-              {/* Success Message */}
-              <h3 style={{
-                fontSize: '1.5rem',
-                fontWeight: '700',
-                color: '#1f2937',
-                margin: '0 0 0.5rem 0',
-                animation: 'fadeInUp 0.5s ease-out 0.2s both'
-              }}>
-                Upload Successful! 🎉
-              </h3>
-
-              <p style={{
-                fontSize: '1rem',
-                color: '#6b7280',
-                margin: '0 0 1.5rem 0',
-                animation: 'fadeInUp 0.5s ease-out 0.3s both'
-              }}>
-                {success}
-              </p>
-
-              {/* Close Button */}
+            {editingId && (
               <button
-                onClick={() => setSuccess('')}
+                type="button"
+                onClick={cancelEditing}
                 style={{
-                  backgroundColor: '#4ade80',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  padding: '0.75rem 2rem',
-                  fontSize: '1rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '0.75rem',
+                  padding: '1.25rem',
+                  color: '#f87171',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  animation: 'fadeInUp 0.5s ease-out 0.4s both'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = '#22c55e';
-                  e.target.style.transform = 'translateY(-2px)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = '#4ade80';
-                  e.target.style.transform = 'translateY(0)';
+                  transition: 'all 0.3s'
                 }}
               >
-                Awesome! ✨
+                Cancel
               </button>
-            </div>
-          )}
-
-          {/* Overlay */}
-          {success && (
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              zIndex: 999,
-              animation: 'fadeIn 0.3s ease-out'
-            }} />
-          )}
-
-          {error && (
-            <div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1rem 1.25rem',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '0.75rem',
-                color: '#f87171',
-                marginBottom: '1rem'
-              }}>
-                <AlertCircle size={20} />
-                <span style={{ fontWeight: '500' }}>{error}</span>
-              </div>
-
-              {/* Show re-login button for authentication errors */}
-              {(error.includes('signature') || error.includes('token') || error.includes('authentication')) && (
-                <button
-                  onClick={forceRelogin}
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #dc2626 100%)',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    padding: '0.75rem 1.5rem',
-                    color: 'white',
-                    fontSize: '0.95rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    margin: '0 auto'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 5px 15px -3px rgba(245, 158, 11, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                >
-                  🔑 Go to Admin Login
-                </button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </form>
       </div>
 
-      {/* CSS for spinner animation */}
+      {/* Notes List Section */}
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <h2 style={{ color: '#e2e8f0', fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <BookOpen size={24} style={{ color: '#a855f7' }} /> Manage Notes
+        </h2>
+
+        {fetchingNotes ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+            <Loader size={32} className="animate-spin" style={{ margin: '0 auto 1rem' }} />
+            Loading notes...
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {notes.map(note => (
+              <div key={note._id} style={{
+                background: 'rgba(30, 41, 59, 0.4)',
+                border: '1px solid rgba(148, 163, 184, 0.1)',
+                borderRadius: '1rem',
+                padding: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <h3 style={{ color: '#e2e8f0', fontWeight: '600', marginBottom: '0.25rem', fontSize: '1.1rem' }}>{note.title}</h3>
+                  <div style={{ display: 'flex', gap: '1rem', color: '#94a3b8', fontSize: '0.9rem', alignItems: 'center' }}>
+                    <span style={{ background: 'rgba(168, 85, 247, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', color: '#a855f7' }}>{note.subjectName}</span>
+                    <span>•</span>
+                    <span>{new Date(note.date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => startEditing(note)}
+                    style={{
+                      padding: '0.75rem',
+                      background: 'rgba(168, 85, 247, 0.1)',
+                      border: '1px solid rgba(168, 85, 247, 0.2)',
+                      borderRadius: '0.5rem',
+                      color: '#a855f7',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    title="Edit Note"
+                  >
+                    <Edit size={18} />
+                    <span style={{ fontSize: '0.9rem' }}>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(note)}
+                    style={{
+                      padding: '0.75rem',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      borderRadius: '0.5rem',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    title="Delete Note"
+                  >
+                    <Trash2 size={18} />
+                    <span style={{ fontSize: '0.9rem' }}>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {notes.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: 'rgba(30, 41, 59, 0.2)', borderRadius: '1rem' }}>
+                No notes found. Upload your first note above!
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Success/Error Messages */}
+      {success && (
+        <div style={{
+          position: 'fixed',
+          top: '2rem',
+          right: '2rem',
+          background: '#f0fdf4',
+          color: '#166534',
+          padding: '1rem 1.5rem',
+          borderRadius: '0.75rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <CheckCircle size={20} />
+          {success}
+          <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#166534' }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div style={{
+          position: 'fixed',
+          top: '2rem',
+          right: '2rem',
+          background: '#fef2f2',
+          color: '#991b1b',
+          padding: '1rem 1.5rem',
+          borderRadius: '0.75rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <AlertCircle size={20} />
+          {error}
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: '#1e293b',
+            padding: '2rem',
+            borderRadius: '1rem',
+            maxWidth: '400px',
+            width: '90%',
+            border: '1px solid rgba(148, 163, 184, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}>
+            <h3 style={{ color: '#e2e8f0', fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem' }}>Delete Note?</h3>
+            <p style={{ color: '#94a3b8', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Are you sure you want to delete <strong>{noteToDelete?.title}</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteModalOpen(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'transparent',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '0.5rem',
+                  color: '#e2e8f0',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#ef4444',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
     </div>

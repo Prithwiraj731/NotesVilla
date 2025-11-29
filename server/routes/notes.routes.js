@@ -220,6 +220,18 @@ router.get('/note/:id', (req, res, next) => {
   next();
 }, notesCtrl.getNoteById);
 
+// Update note (Admin only)
+router.put('/note/:id', (req, res, next) => {
+  console.log('📝 PUT /api/notes/note/:id called with ID:', req.params.id);
+  next();
+}, adminMiddleware, notesCtrl.updateNote);
+
+// Delete note (Admin only)
+router.delete('/note/:id', (req, res, next) => {
+  console.log('🗑️ DELETE /api/notes/note/:id called with ID:', req.params.id);
+  next();
+}, adminMiddleware, notesCtrl.deleteNote);
+
 // FIXED: Move the main notes endpoint BEFORE the more specific routes
 router.get('/', (req, res, next) => {
   console.log('📋 GET /api/notes/ (root) called - fetching all notes');

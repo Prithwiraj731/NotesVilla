@@ -462,3 +462,67 @@ exports.getNoteById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, subjectName, date } = req.body;
+
+    console.log('📝 Update request for note ID:', id);
+    console.log('📝 Update data:', { title, description, subjectName, date });
+
+    const note = await Note.findById(id);
+    if (!note) {
+      return res.status(404).json({ msg: 'Note not found' });
+    }
+
+    // Update fields
+    if (title) note.title = title;
+    if (description) note.description = description;
+    if (subjectName) note.subjectName = subjectName;
+    if (date) note.date = new Date(date);
+
+    await note.save();
+    console.log('✅ Note updated successfully:', note._id);
+
+    res.json({
+      note,
+      message: 'Note updated successfully'
+    });
+  } catch (err) {
+    console.error('❌ Error updating note:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('🗑️ Delete request for note ID:', id);
+
+    const note = await Note.findById(id);
+    if (!note) {
+      return res.status(404).json({ msg: 'Note not found' });
+    }
+
+    // Delete from database
+    await Note.findByIdAndDelete(id);
+    console.log('✅ Note deleted from database:', id);
+
+    // Optional: Delete file from filesystem if it exists locally
+    // This is a basic implementation; for production, you'd want to handle Cloudinary/Firebase deletion too
+    if (note.fileUrl && note.fileUrl.includes('/uploads/')) {
+      const filename = note.filename || path.basename(note.fileUrl);
+      const filePath = path.join(__dirname, '..', 'uploads', filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log('✅ Local file deleted:', filePath);
+      }
+    }
+
+    res.json({ msg: 'Note deleted successfully' });
+  } catch (err) {
+    console.error('❌ Error deleting note:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
