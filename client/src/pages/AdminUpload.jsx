@@ -210,7 +210,8 @@ export default function AdminUpload() {
 
     } catch (err) {
       console.error('Operation error:', err);
-      setError(err.response?.data?.msg || err.message || 'Operation failed');
+      console.error('Error response data:', err.response?.data);
+      setError(err.response?.data?.msg || err.response?.data?.error || err.message || 'Operation failed');
 
       if (err.response?.status === 401 || err.message.includes('token')) {
         setTimeout(forceRelogin, 2000);
