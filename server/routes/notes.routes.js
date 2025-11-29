@@ -259,6 +259,27 @@ router.get('/debug', (req, res) => {
   });
 });
 
+// Dynamic route lister to verify deployment
+router.get('/debug-routes', (req, res) => {
+  const routes = [];
+  if (router.stack) {
+    router.stack.forEach(middleware => {
+      if (middleware.route) {
+        routes.push({
+          path: middleware.route.path,
+          methods: Object.keys(middleware.route.methods).join(', ').toUpperCase()
+        });
+      }
+    });
+  }
+  res.json({
+    message: 'Current Routes on Server',
+    base: '/api/notes',
+    timestamp: new Date().toISOString(),
+    routes: routes
+  });
+});
+
 // Catch-all route removed to avoid path-to-regexp issues
 
 module.exports = router;
