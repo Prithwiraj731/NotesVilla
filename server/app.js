@@ -12,9 +12,9 @@ const app = express();
 
 // Configure CORS for production and development
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? true // Temporarily allow all origins in production for debugging
-    : true, // Allow all origins in development
+  origin: process.env.NODE_ENV === 'production'
+    ? true
+    : true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -58,7 +58,7 @@ app.listen(PORT, () => {
 });
 
 // Try to connect to MongoDB (non-blocking)
-mongoose.connect(process.env.MONGO_URI, { 
+mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
   socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
 })
@@ -71,7 +71,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => {
     console.error('❌ MongoDB connection error:');
     console.error('Error message:', err.message);
-    
+
     if (err.message.includes('ECONNREFUSED')) {
       console.error('\n🔧 SOLUTION: Update your MONGO_URI in the .env file');
       console.error('   Get your connection string from MongoDB Atlas:');
@@ -80,7 +80,7 @@ mongoose.connect(process.env.MONGO_URI, {
       console.error('   3. Copy the connection string and update .env file');
       console.error('   Example: mongodb+srv://username:password@cluster.mongodb.net/notesvilla');
     }
-    
+
     console.error('\n⚠️  Server running WITHOUT DATABASE');
     console.error('   Admin login will work, but notes functionality may be limited');
   });
