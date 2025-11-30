@@ -98,7 +98,7 @@ export default function Home() {
           {/* Main title */}
           <div style={{ position: "relative", marginBottom: "clamp(1.5rem, 5vw, 2.5rem)" }}>
             <h1 style={{
-              fontSize: "clamp(4.5rem, 18vw, 9rem)", // Significantly increased for mobile
+              fontSize: "clamp(6rem, 20vw, 10rem)", // Maximum impact for mobile
               fontWeight: "900",
               letterSpacing: "-0.02em",
               lineHeight: "0.85", // Tighter for mobile
@@ -116,7 +116,7 @@ export default function Home() {
               NOTES
             </h1>
             <h1 style={{
-              fontSize: "clamp(4.5rem, 18vw, 9rem)", // Significantly increased for mobile
+              fontSize: "clamp(6rem, 20vw, 10rem)", // Maximum impact for mobile
               fontWeight: "900",
               letterSpacing: "-0.02em",
               lineHeight: "0.85", // Tighter for mobile
