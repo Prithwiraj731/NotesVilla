@@ -10,26 +10,33 @@ export default function Home() {
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
-      {/* Animated background gradient */}
+      {/* Video Background */}
       <div style={{
         position: "absolute",
         inset: 0,
-        background: "linear-gradient(to bottom right, #0f0f23 0%, #0a0a0a 50%, #141414 100%)",
+        zIndex: 0,
       }}>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        >
+          <source src="/background.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay for readability */}
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(to top, rgba(109, 40, 217, 0.08), transparent)",
+          background: "rgba(15, 15, 35, 0.7)", // Dark overlay
+          backdropFilter: "blur(2px)",
         }}></div>
       </div>
-
-      {/* Subtle grid pattern */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)'/%3E%3C/svg%3E")`,
-        opacity: 0.5,
-      }}></div>
 
       {/* Floating orbs for depth - responsive */}
       <div style={{
@@ -42,6 +49,7 @@ export default function Home() {
         borderRadius: "50%",
         filter: "blur(48px)",
         animation: "pulse 4s ease-in-out infinite",
+        zIndex: 1, // Ensure orbs are above video
       }}></div>
       <div style={{
         position: "absolute",
@@ -54,6 +62,7 @@ export default function Home() {
         filter: "blur(48px)",
         animation: "pulse 4s ease-in-out infinite",
         animationDelay: "2s",
+        zIndex: 1, // Ensure orbs are above video
       }}></div>
 
       {/* Main content */}
@@ -155,56 +164,6 @@ export default function Home() {
             }}></div>
           </div>
 
-          {/* CSS animations */}
-          <style jsx>{`
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-  
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.2);
-    }
-  }
-  
-  @keyframes scan {
-    0% {
-      transform: translateY(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(100px);
-      opacity: 0;
-    }
-  }
-  
-  @keyframes glow {
-    from {
-      transform: scale(0.9);
-      opacity: 0.5;
-    }
-    to {
-      transform: scale(1.1);
-      opacity: 0.8;
-    }
-  }
-
-  /* Responsive enhancements without altering design */
-  @media (min-width: 768px) {
-    .nv-tilt-1 { transform: perspective(400px) rotateX(10deg); }
-    .nv-tilt-2 { transform: perspective(400px) rotateX(10deg); }
-  }
-`}</style>
-
           {/* Tagline - responsive */}
           <p style={{
             fontSize: "clamp(1rem, 4vw, 1.25rem)",
@@ -278,6 +237,8 @@ export default function Home() {
 
       {/* CSS animations */}
       <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
         @keyframes pulse {
           0%, 100% {
             opacity: 0.6;
@@ -288,6 +249,41 @@ export default function Home() {
             transform: scale(1.2);
           }
         }
+        
+        @keyframes scan {
+          0% {
+            transform: translateY(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes glow {
+          from {
+            transform: scale(0.9);
+            opacity: 0.5;
+          }
+          to {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+        }
+
+        /* Responsive enhancements without altering design */
+        @media (min-width: 768px) {
+          .nv-tilt-1 { transform: perspective(400px) rotateX(10deg); }
+          .nv-tilt-2 { transform: perspective(400px) rotateX(10deg); }
+        }
+        
         /* Safe area padding for small screens */
         @media (max-width: 380px) {
           .cta-wrap { padding-top: 1.25rem !important; }
