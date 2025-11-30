@@ -95,72 +95,73 @@ export default function Home() {
           }}>
           </div>
 
-          {/* Main title */}
-          <div style={{ position: "relative", marginBottom: "clamp(1.5rem, 5vw, 2.5rem)" }}>
+          {/* Main title - FIXED for mobile */}
+          <div style={{
+            position: "relative",
+            marginBottom: "clamp(1rem, 4vw, 2rem)",
+            width: "100%"
+          }}>
+            {/* NOTES */}
             <h1 style={{
-              fontSize: "clamp(6rem, 20vw, 10rem)", // Maximum impact for mobile
+              fontSize: "clamp(4.5rem, 16vw, 10rem)",     // reduced min size
               fontWeight: "900",
-              letterSpacing: "-0.02em",
-              lineHeight: "0.85", // Tighter for mobile
+              letterSpacing: "-0.04em",
+              lineHeight: "0.9",
               margin: 0,
               fontFamily: "'Orbitron', 'Bebas Neue', monospace",
               textTransform: "uppercase",
-              background: "linear-gradient(180deg, #ffffff 0%, #94a3b8 50%, #475569 100%)",
+              background: "linear-gradient(180deg, #ffffff 0%, #cbd5e1 50%, #64748b 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              textShadow: "0 0 40px rgba(148, 163, 184, 0.3)",
-              transform: "none",
+              textShadow: "0 0 40px rgba(148, 163, 184, 0.4)",
               textAlign: "center",
             }}>
               NOTES
             </h1>
+
+            {/* VILLA - with better spacing & scan line */}
             <h1 style={{
-              fontSize: "clamp(6rem, 20vw, 10rem)", // Maximum impact for mobile
+              fontSize: "clamp(5rem, 18vw, 11rem)",       // slightly bigger than NOTES for hierarchy
               fontWeight: "900",
-              letterSpacing: "-0.02em",
-              lineHeight: "0.85", // Tighter for mobile
+              letterSpacing: "-0.03em",
+              lineHeight: "0.95",
               margin: 0,
-              marginTop: "clamp(-0.2rem, -1vw, -0.8rem)",
+              marginTop: "-0.5rem",                       // controlled overlap instead of clamp negative
               fontFamily: "'Orbitron', 'Bebas Neue', monospace",
               textTransform: "uppercase",
-              background: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%)",
+              background: "linear-gradient(135deg, #c084fc 0%, #a78bfa 30%, #8b5cf6 50%, #7c3aed 70%, #6366f1 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              textShadow: "0 0 60px rgba(139, 92, 246, 0.5)",
-              transform: "none",
+              textShadow: "0 0 0 80px rgba(139, 92, 246, 0.6)",
               position: "relative",
               textAlign: "center",
+              overflow: "hidden", // important for scan line
             }}>
               VILLA
-              {/* Add a scanning line effect */}
+
+              {/* Fixed scanning line - now works perfectly on mobile + desktop */}
               <div style={{
                 position: "absolute",
+                left: "-100%",
                 top: 0,
-                left: 0,
                 width: "100%",
-                height: "2px",
-                background: "linear-gradient(90deg, transparent, #a855f7, transparent)",
-                animation: "scan 3s linear infinite",
+                height: "4px",
+                background: "linear-gradient(90deg, transparent, #e879f9, #a855f7, transparent)",
+                boxShadow: "0 0 20px #c084fc",
+                animation: "scan 4s linear infinite",
               }}></div>
             </h1>
-            {/* Subtle glow effect */}
+
+            {/* Glow layers */}
             <div style={{
               position: "absolute",
-              inset: 0,
-              background: "radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 60%)",
-              filter: "blur(60px)",
-              zIndex: -1,
-            }}></div>
-            {/* Additional glow layers for depth */}
-            <div style={{
-              position: "absolute",
-              inset: "-20px",
-              background: "radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
+              inset: "-40px",
+              background: "radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 60%)",
               filter: "blur(80px)",
-              zIndex: -2,
-              animation: "glow 4s ease-in-out infinite alternate",
+              zIndex: -1,
+              animation: "glow 5s ease-in-out infinite alternate",
             }}></div>
           </div>
 
@@ -252,18 +253,10 @@ export default function Home() {
         
         @keyframes scan {
           0% {
-            transform: translateY(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
+            left: -100%;
           }
           100% {
-            transform: translateY(100px);
-            opacity: 0;
+            left: 100%;
           }
         }
         
