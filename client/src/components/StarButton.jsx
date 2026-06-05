@@ -69,13 +69,13 @@ const StyledWrapper = styled.div`
   button {
     position: relative;
     padding: clamp(0.875rem, 3vw, 1.25rem) clamp(1.25rem, 5vw, 2rem);
-    background: linear-gradient(to right, #7c3aed, #6366f1);
+    background: linear-gradient(to right, #FB3640, rgba(251, 54, 64, 0.75));
     font-size: clamp(0.875rem, 3.5vw, 1.125rem);
     font-weight: 500;
     color: white;
-    border: 2px solid #7c3aed;
+    border: 2px solid #FB3640;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
+    box-shadow: 0 4px 15px rgba(251, 54, 64, 0.2);
     transition: all 0.3s ease-in-out;
     cursor: pointer;
     width: 100%;
@@ -162,8 +162,8 @@ const StyledWrapper = styled.div`
 
   button:hover {
     background: transparent;
-    color: #7c3aed;
-    box-shadow: 0 0 25px rgba(124, 58, 237, 0.3);
+    color: #FB3640;
+    box-shadow: 0 0 25px rgba(251, 54, 64, 0.3);
   }
 
   button:hover .star-1 {

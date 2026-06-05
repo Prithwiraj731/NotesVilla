@@ -22,10 +22,11 @@ const StyledWrapper = styled.div`
   .box1,
   .box2,
   .box3 {
-    border: 16px solid #f5f5f5;
+    border: 16px solid #FB3640;
     box-sizing: border-box;
     position: absolute;
     display: block;
+    box-shadow: 0 0 10px rgba(251, 54, 64, 0.4);
   }
 
   .box1 {

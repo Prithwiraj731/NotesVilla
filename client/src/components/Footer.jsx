@@ -1,59 +1,62 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
-export default function Footer(){
+
+export default function Footer() {
   return (
     <footer
       style={{
-        position: "fixed",
-        left: 0,
-        bottom: 0,
         width: "100%",
-        background: "rgba(18,18,18,0.92)",
-        color: "#bdbdbd",
+        background: "rgba(0, 15, 8, 0.95)",
+        color: "var(--text-secondary)",
         textAlign: "center",
-        padding: "1rem 0",
-        fontSize: "1rem",
-        borderTop: "1px solid #232323",
-        zIndex: 99,
+        padding: "1.5rem 0",
+        fontSize: "0.95rem",
+        borderTop: "1px solid rgba(251, 54, 64, 0.1)",
+        marginTop: "auto", // Push to bottom in flex containers
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        gap: "1rem"
+        gap: "1.5rem",
+        fontFamily: "var(--font-tech)",
+        zIndex: 99,
+        flexWrap: "wrap"
       }}
     >
-      <small>© {new Date().getFullYear()} NotesVilla — Built for everyone</small>
+      <small style={{ letterSpacing: '0.05em' }}>
+        © {new Date().getFullYear()} NOTESVILLA.STUDY — FUTURISTIC ARCHIVE
+      </small>
       
-      {/* Small Admin Login Button */}
+      {/* Small Admin Login Link */}
       <Link
         to="/admin/login"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "0.25rem",
-          padding: "0.25rem 0.5rem",
-          background: "rgba(168, 85, 247, 0.1)",
-          border: "1px solid rgba(168, 85, 247, 0.2)",
-          borderRadius: "0.375rem",
-          color: "#a855f7",
-          fontSize: "0.75rem",
+          gap: "0.3rem",
+          padding: "0.3rem 0.75rem",
+          background: "rgba(251, 54, 64, 0.05)",
+          border: "1px solid rgba(251, 54, 64, 0.2)",
+          borderRadius: "4px",
+          color: "var(--accent-orange)",
+          fontSize: "0.8rem",
           textDecoration: "none",
           transition: "all 0.2s ease",
-          opacity: 0.7
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          fontWeight: '700'
         }}
         onMouseEnter={(e) => {
-          e.target.style.opacity = "1";
-          e.target.style.background = "rgba(168, 85, 247, 0.15)";
-          e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
+          e.currentTarget.style.background = "rgba(251, 54, 64, 0.15)";
+          e.currentTarget.style.borderColor = "var(--accent-orange)";
         }}
         onMouseLeave={(e) => {
-          e.target.style.opacity = "0.7";
-          e.target.style.background = "rgba(168, 85, 247, 0.1)";
-          e.target.style.borderColor = "rgba(168, 85, 247, 0.2)";
+          e.currentTarget.style.background = "rgba(251, 54, 64, 0.05)";
+          e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
         }}
       >
         <Shield size={12} />
-        Admin
+        PORTAL
       </Link>
     </footer>
   );

@@ -18,7 +18,7 @@ export default function AdminUpload() {
   const [dragActive, setDragActive] = useState(false);
   const [filePreview, setFilePreview] = useState([]);
 
-  // New state for note management
+  // Note management states
   const [notes, setNotes] = useState([]);
   const [fetchingNotes, setFetchingNotes] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -33,12 +33,10 @@ export default function AdminUpload() {
     try {
       setFetchingNotes(true);
       const response = await API.get('/notes');
-      // Handle both array and paginated response structures
       const notesData = Array.isArray(response.data) ? response.data : (response.data.notes || []);
       setNotes(notesData);
     } catch (err) {
       console.error('Error fetching notes:', err);
-      // Don't show error to user for fetch, just log it
     } finally {
       setFetchingNotes(false);
     }
@@ -89,10 +87,9 @@ export default function AdminUpload() {
       description: note.description || '',
       subjectName: note.subjectName,
       date: new Date(note.date).toISOString().split('T')[0],
-      files: [] // We don't pre-fill files for security/complexity reasons
+      files: []
     });
     setFilePreview([]);
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -122,7 +119,7 @@ export default function AdminUpload() {
       setSuccess('Note deleted successfully');
       setDeleteModalOpen(false);
       setNoteToDelete(null);
-      fetchNotes(); // Refresh list
+      fetchNotes();
     } catch (err) {
       console.error('Delete error:', err);
       setError(err.response?.data?.msg || 'Failed to delete note');
@@ -137,7 +134,7 @@ export default function AdminUpload() {
     setError('');
     setSuccess('');
 
-    // Validate required fields
+    // Validate fields
     const missingFields = [];
     if (!form.title?.trim()) missingFields.push('Title');
     if (!form.subjectName?.trim()) missingFields.push('Subject');
@@ -149,7 +146,6 @@ export default function AdminUpload() {
       return;
     }
 
-    // If creating new note, require file
     if (!editingId && form.files.length === 0) {
       setError('Please select at least one file to upload');
       setLoading(false);
@@ -165,7 +161,6 @@ export default function AdminUpload() {
 
     try {
       if (editingId) {
-        // Update existing note
         await API.put(`/notes/note/${editingId}`, {
           title: form.title,
           description: form.description,
@@ -175,7 +170,6 @@ export default function AdminUpload() {
         setSuccess('Note updated successfully!');
         setEditingId(null);
       } else {
-        // Create new note
         const data = new FormData();
         data.append('title', form.title);
         data.append('description', form.description || '');
@@ -197,7 +191,6 @@ export default function AdminUpload() {
         setSuccess(`${form.files.length} note(s) uploaded successfully!`);
       }
 
-      // Reset form and refresh list
       setForm({
         title: '',
         description: '',
@@ -210,7 +203,6 @@ export default function AdminUpload() {
 
     } catch (err) {
       console.error('Operation error:', err);
-      console.error('Error response data:', err.response?.data);
       setError(err.response?.data?.msg || err.response?.data?.error || err.message || 'Operation failed');
 
       if (err.response?.status === 401 || err.message.includes('token')) {
@@ -224,139 +216,151 @@ export default function AdminUpload() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
-      padding: '2rem 1rem',
-      paddingTop: '6rem'
+      background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
+      padding: '2rem 1.5rem',
+      paddingTop: '7rem',
+      boxSizing: 'border-box'
     }}>
-      {/* Header Section */}
+      {/* Header Info Section */}
       <div style={{
-        maxWidth: '900px',
+        maxWidth: '800px',
         margin: '0 auto 3rem',
         textAlign: 'center'
       }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.75rem',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1))',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          borderRadius: '2rem',
-          padding: '0.75rem 1.5rem',
-          marginBottom: '2rem'
+          gap: '0.5rem',
+          background: 'rgba(251, 54, 64, 0.08)',
+          border: '1px solid rgba(251, 54, 64, 0.25)',
+          borderRadius: '4px',
+          padding: '0.5rem 1.25rem',
+          marginBottom: '1.5rem'
         }}>
-          <Upload size={20} style={{ color: '#a855f7' }} />
-          <span style={{ color: '#e2e8f0', fontWeight: '500', letterSpacing: '0.05em' }}>ADMIN PORTAL</span>
+          <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
+          <span style={{ 
+            color: 'var(--text-primary)', 
+            fontFamily: 'var(--font-tech)', 
+            fontWeight: '700', 
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase'
+          }}>
+            Secure Admin Portal
+          </span>
         </div>
 
         <h1 style={{
-          fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+          fontSize: 'clamp(2rem, 4vw, 3rem)',
           fontWeight: '900',
-          background: 'linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #6366f1 100%)',
+          fontFamily: 'var(--font-cyber)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.02em',
+          background: 'linear-gradient(135deg, #ffffff 30%, var(--accent-orange) 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
-          margin: '0 0 1rem',
-          letterSpacing: '-0.02em'
+          margin: '0 0 1rem'
         }}>
-          {editingId ? 'Edit Note' : 'Upload Note'}
+          {editingId ? 'Edit Note System' : 'Upload Note System'}
         </h1>
 
         <p style={{
-          color: '#94a3b8',
-          fontSize: '1.125rem',
-          maxWidth: '600px',
+          color: 'var(--text-secondary)',
+          fontFamily: 'var(--font-body)',
+          fontSize: '1rem',
+          maxWidth: '560px',
           margin: '0 auto',
           lineHeight: '1.6'
-        }}>Manage your educational content: upload new notes, or edit and delete existing ones.</p>
+        }}>
+          Manage academic notes and upload new resources to the database portal.
+        </p>
       </div>
 
-      {/* Main Form */}
-      <div style={{
-        maxWidth: '800px',
-        margin: '0 auto 4rem',
-        background: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(148, 163, 184, 0.1)',
-        borderRadius: '1.5rem',
-        padding: '2.5rem',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-      }}>
-        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Title Input */}
+      {/* Main Staging Form */}
+      <div 
+        className="cyber-panel"
+        style={{
+          maxWidth: '800px',
+          margin: '0 auto 4rem',
+          borderRadius: '8px',
+          padding: '2.5rem 2rem'
+        }}
+      >
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Note Title */}
           <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
-              <FileText size={18} style={{ color: '#a855f7' }} /> Note Title
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+              <FileText size={16} style={{ color: 'var(--accent-orange)' }} /> Note Title
             </label>
             <input
               type="text"
               value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
               required
+              placeholder="ENTER NOTE TITLE"
               style={{
                 width: '100%',
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '2px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '0.75rem',
-                padding: '1rem 1.25rem',
-                fontSize: '1rem',
-                outline: 'none',
-                color: 'white'
+                fontFamily: 'var(--font-tech)'
               }}
-              placeholder="Enter note title"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
-              <FileText size={18} style={{ color: '#a855f7' }} /> Description
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+              <FileText size={16} style={{ color: 'var(--accent-orange)' }} /> Description
             </label>
             <textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               rows={4}
+              placeholder="ENTER NOTE DESCRIPTION DETAILS..."
               style={{
                 width: '100%',
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '2px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '0.75rem',
-                padding: '1rem 1.25rem',
+                background: 'rgba(0, 15, 8, 0.6)',
+                border: '1px solid rgba(251, 54, 64, 0.15)',
+                borderRadius: '4px',
+                color: 'var(--text-primary)',
+                padding: '0.8rem 1.2rem',
                 fontSize: '1rem',
                 outline: 'none',
                 resize: 'vertical',
-                color: 'white'
+                fontFamily: 'var(--font-body)',
+                transition: 'all 0.3s'
               }}
-              placeholder="Enter description"
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--accent-orange)';
+                e.target.style.boxShadow = '0 0 10px rgba(251, 54, 64, 0.25)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(251, 54, 64, 0.15)';
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
 
-          {/* Subject & Date */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          {/* Subject & Date Split Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 600 ? '1fr' : '1fr 1fr', gap: '1.2rem' }}>
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
-                <BookOpen size={18} style={{ color: '#a855f7' }} /> Subject
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                <BookOpen size={16} style={{ color: 'var(--accent-orange)' }} /> Subject Name
               </label>
               <input
                 type="text"
                 value={form.subjectName}
                 onChange={e => setForm({ ...form, subjectName: e.target.value })}
                 required
+                placeholder="e.g. DATA STRUCTURES"
                 style={{
                   width: '100%',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '2px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '0.75rem',
-                  padding: '1rem 1.25rem',
-                  fontSize: '1rem',
-                  outline: 'none',
-                  color: 'white'
+                  fontFamily: 'var(--font-tech)'
                 }}
-                placeholder="e.g. Mathematics"
               />
             </div>
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
-                <Tag size={18} style={{ color: '#a855f7' }} /> Date
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                <Tag size={16} style={{ color: 'var(--accent-orange)' }} /> Date Record
               </label>
               <input
                 type="date"
@@ -365,24 +369,18 @@ export default function AdminUpload() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '2px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '0.75rem',
-                  padding: '1rem 1.25rem',
-                  color: '#e2e8f0',
-                  fontSize: '1rem',
-                  outline: 'none',
+                  fontFamily: 'var(--font-tech)',
                   colorScheme: 'dark'
                 }}
               />
             </div>
           </div>
 
-          {/* File Upload (Only show if not editing or if we want to allow file replacement later) */}
+          {/* Drag & Drop File Zone */}
           {!editingId && (
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: '600', marginBottom: '0.75rem' }}>
-                <Folder size={18} style={{ color: '#a855f7' }} /> Upload Files
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                <Folder size={16} style={{ color: 'var(--accent-orange)' }} /> Note Files
               </label>
               <div
                 onDragEnter={handleDrag}
@@ -391,13 +389,21 @@ export default function AdminUpload() {
                 onDrop={handleDrop}
                 onClick={() => document.getElementById('file-input').click()}
                 style={{
-                  border: `2px dashed ${dragActive ? 'rgba(168, 85, 247, 0.6)' : 'rgba(148, 163, 184, 0.3)'}`,
-                  borderRadius: '1rem',
-                  padding: '2rem',
+                  border: `2px dashed ${dragActive ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.25)'}`,
+                  borderRadius: '6px',
+                  padding: '2.5rem 1.5rem',
                   textAlign: 'center',
-                  background: dragActive ? 'rgba(168, 85, 247, 0.05)' : 'rgba(30, 41, 59, 0.3)',
+                  background: dragActive ? 'rgba(251, 54, 64, 0.08)' : 'rgba(0, 15, 8, 0.4)',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'var(--font-tech)',
+                  letterSpacing: '0.05em'
+                }}
+                onMouseEnter={(e) => {
+                  if (!dragActive) e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!dragActive) e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.25)';
                 }}
               >
                 <input
@@ -408,203 +414,268 @@ export default function AdminUpload() {
                   style={{ display: 'none' }}
                 />
                 {filePreview.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ color: '#a855f7', fontWeight: '600' }}>{filePreview.length} file(s) selected</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div style={{ color: 'var(--accent-orange)', fontWeight: '700', textTransform: 'uppercase' }}>
+                      {filePreview.length} FILE(S) STAGED
+                    </div>
                     {filePreview.map((f, i) => (
-                      <div key={i} style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{f.name}</div>
+                      <div key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{f.name} ({f.size})</div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ color: '#94a3b8' }}>Drag & drop files or click to browse</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>
+                    DRAG & DROP FILES HERE OR CLICK TO BROWSE SYSTEM
+                  </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          {/* Form Action Controls */}
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
             <button
               type="submit"
               disabled={loading}
+              className="cyber-btn-orange"
               style={{
                 flex: 1,
-                background: loading ? 'rgba(100, 116, 139, 0.5)' : 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)',
-                border: 'none',
-                borderRadius: '0.75rem',
-                padding: '1.25rem',
-                color: 'white',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.75rem',
-                transition: 'all 0.3s'
+                clipPath: 'polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%)',
+                boxShadow: `0 0 15px rgba(251, 54, 64, 0.25)`
               }}
             >
-              {loading ? <Loader size={20} className="animate-spin" /> : (editingId ? <RefreshCw size={20} /> : <Upload size={20} />)}
-              {loading ? 'Processing...' : (editingId ? 'Update Note' : 'Upload Note')}
+              {loading ? (
+                <div style={{
+                  width: '18px',
+                  height: '18px',
+                  border: '2px solid rgba(0,0,0,0.2)',
+                  borderTop: '2px solid #000',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              ) : editingId ? (
+                <RefreshCw size={18} />
+              ) : (
+                <Upload size={18} />
+              )}
+              <span>{loading ? 'PROCESSING...' : editingId ? 'UPDATE NOTE' : 'UPLOAD NOTE'}</span>
             </button>
 
             {editingId && (
               <button
                 type="button"
                 onClick={cancelEditing}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '0.75rem',
-                  padding: '1.25rem',
-                  color: '#f87171',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
+                className="cyber-btn-wire"
+                style={{ borderColor: 'rgba(251, 54, 64, 0.4)', color: 'var(--accent-orange)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(251, 54, 64, 0.08)';
+                  e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.4)';
                 }}
               >
                 Cancel
               </button>
             )}
           </div>
+
         </form>
       </div>
 
-      {/* Notes List Section */}
+      {/* Database Notes Management List */}
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <h2 style={{ color: '#e2e8f0', fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <BookOpen size={24} style={{ color: '#a855f7' }} /> Manage Notes
+        <h2 style={{ 
+          color: '#ffffff', 
+          fontFamily: 'var(--font-cyber)', 
+          fontSize: '1.4rem', 
+          fontWeight: '700', 
+          marginBottom: '1.5rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.6rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          <BookOpen size={22} style={{ color: 'var(--accent-orange)' }} /> Note Records Management
         </h2>
 
         {fetchingNotes ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-            <Loader size={32} className="animate-spin" style={{ margin: '0 auto 1rem' }} />
-            Loading notes...
+          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              border: '3px solid rgba(251, 54, 64, 0.2)',
+              borderTop: '3px solid var(--accent-orange)',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 1rem'
+            }} />
+            <p style={{ fontFamily: 'var(--font-tech)' }}>SYNCING RECORDS...</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             {notes.map(note => (
-              <div key={note._id} style={{
-                background: 'rgba(30, 41, 59, 0.4)',
-                border: '1px solid rgba(148, 163, 184, 0.1)',
-                borderRadius: '1rem',
-                padding: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <h3 style={{ color: '#e2e8f0', fontWeight: '600', marginBottom: '0.25rem', fontSize: '1.1rem' }}>{note.title}</h3>
-                  <div style={{ display: 'flex', gap: '1rem', color: '#94a3b8', fontSize: '0.9rem', alignItems: 'center' }}>
-                    <span style={{ background: 'rgba(168, 85, 247, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', color: '#a855f7' }}>{note.subjectName}</span>
+              <div 
+                key={note._id}
+                className="cyber-panel"
+                style={{
+                  borderRadius: '6px',
+                  padding: '1.25rem 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ flex: 1, minWidth: '220px' }}>
+                  <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.3rem' }}>
+                    {note.title}
+                  </h3>
+                  
+                  <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', alignItems: 'center', fontFamily: 'var(--font-tech)' }}>
+                    <span style={{
+                      background: 'rgba(251, 54, 64, 0.08)',
+                      border: '1px solid rgba(251, 54, 64, 0.2)',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      color: 'var(--accent-orange)',
+                      fontWeight: '600',
+                      textTransform: 'uppercase'
+                    }}>
+                      {note.subjectName}
+                    </span>
                     <span>•</span>
                     <span>{new Date(note.date).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Edit & Delete CTA actions */}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
                     onClick={() => startEditing(note)}
+                    className="cyber-btn-wire"
                     style={{
-                      padding: '0.75rem',
-                      background: 'rgba(168, 85, 247, 0.1)',
-                      border: '1px solid rgba(168, 85, 247, 0.2)',
-                      borderRadius: '0.5rem',
-                      color: '#a855f7',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
+                      borderColor: 'rgba(251, 54, 64, 0.4)',
+                      color: 'var(--accent-orange)',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.9rem'
                     }}
-                    title="Edit Note"
                   >
-                    <Edit size={18} />
-                    <span style={{ fontSize: '0.9rem' }}>Edit</span>
+                    <Edit size={14} />
+                    <span>Edit</span>
                   </button>
                   <button
                     onClick={() => confirmDelete(note)}
+                    className="cyber-btn-wire"
                     style={{
-                      padding: '0.75rem',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                      borderRadius: '0.5rem',
-                      color: '#f87171',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
+                      borderColor: 'rgba(251, 54, 64, 0.4)',
+                      color: 'var(--accent-orange)',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.9rem'
                     }}
-                    title="Delete Note"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(251, 54, 64, 0.08)';
+                      e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.4)';
+                    }}
                   >
-                    <Trash2 size={18} />
-                    <span style={{ fontSize: '0.9rem' }}>Delete</span>
+                    <Trash2 size={14} />
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
             ))}
 
             {notes.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: 'rgba(30, 41, 59, 0.2)', borderRadius: '1rem' }}>
-                No notes found. Upload your first note above!
+              <div 
+                className="cyber-panel"
+                style={{
+                  textAlign: 'center',
+                  padding: '3rem 1.5rem',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '6px'
+                }}
+              >
+                No note records registered on the database server.
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Success/Error Messages */}
+      {/* Success Banner Notification */}
       {success && (
         <div style={{
           position: 'fixed',
           top: '2rem',
           right: '2rem',
-          background: '#f0fdf4',
-          color: '#166534',
+          background: 'rgba(0, 15, 8, 0.95)',
+          border: '1px solid rgba(251, 54, 64, 0.4)',
+          color: '#ffffff',
           padding: '1rem 1.5rem',
-          borderRadius: '0.75rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          borderRadius: '4px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem',
-          zIndex: 1000,
+          zIndex: 3000,
+          fontFamily: 'var(--font-tech)',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
           animation: 'slideIn 0.3s ease-out'
         }}>
-          <CheckCircle size={20} />
-          {success}
-          <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#166534' }}>
-            <X size={16} />
+          <CheckCircle size={18} style={{ color: 'var(--accent-orange)' }} />
+          <span>{success}</span>
+          <button 
+            onClick={() => setSuccess('')} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ffffff', padding: 0 }}
+          >
+            <X size={14} />
           </button>
         </div>
       )}
 
+      {/* Error Banner Notification */}
       {error && (
         <div style={{
           position: 'fixed',
           top: '2rem',
           right: '2rem',
-          background: '#fef2f2',
-          color: '#991b1b',
+          background: 'rgba(0, 15, 8, 0.95)',
+          border: '1px solid var(--accent-orange)',
+          color: 'var(--accent-orange)',
           padding: '1rem 1.5rem',
-          borderRadius: '0.75rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          borderRadius: '4px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem',
-          zIndex: 1000,
+          zIndex: 3000,
+          fontFamily: 'var(--font-tech)',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
           animation: 'slideIn 0.3s ease-out'
         }}>
-          <AlertCircle size={20} />
-          {error}
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}>
-            <X size={16} />
+          <AlertCircle size={18} />
+          <span>{error}</span>
+          <button 
+            onClick={() => setError('')} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-orange)', padding: 0 }}
+          >
+            <X size={14} />
           </button>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Secure Delete Confirmation Modal */}
       {deleteModalOpen && (
         <div style={{
           position: 'fixed',
@@ -612,65 +683,68 @@ export default function AdminUpload() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
+          background: 'rgba(0, 0, 0, 0.85)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 2000
         }}>
-          <div style={{
-            background: '#1e293b',
-            padding: '2rem',
-            borderRadius: '1rem',
-            maxWidth: '400px',
-            width: '90%',
-            border: '1px solid rgba(148, 163, 184, 0.1)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-          }}>
-            <h3 style={{ color: '#e2e8f0', fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem' }}>Delete Note?</h3>
-            <p style={{ color: '#94a3b8', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              Are you sure you want to delete <strong>{noteToDelete?.title}</strong>? This action cannot be undone.
+          <div 
+            className="cyber-panel"
+            style={{
+              padding: '2rem',
+              borderRadius: '8px',
+              maxWidth: '440px',
+              width: '90%',
+              background: '#000F08'
+            }}
+          >
+            <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem', textTransform: 'uppercase' }}>
+              Confirm Record Purge
+            </h3>
+            
+            <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Are you sure you want to delete note <strong>{noteToDelete?.title}</strong>? This will purge the file from database structures.
             </p>
+            
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setDeleteModalOpen(false)}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: 'transparent',
-                  border: '1px solid rgba(148, 163, 184, 0.3)',
-                  borderRadius: '0.5rem',
-                  color: '#e2e8f0',
-                  cursor: 'pointer'
-                }}
+                className="cyber-btn-wire"
+                style={{ padding: '0.6rem 1.2rem' }}
               >
                 Cancel
               </button>
+              
               <button
                 onClick={handleDelete}
+                className="cyber-btn-orange"
                 style={{
-                  padding: '0.75rem 1.5rem',
-                  background: '#ef4444',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: 'white',
-                  fontWeight: '600',
-                  cursor: 'pointer'
+                  background: 'var(--accent-orange)',
+                  boxShadow: '0 0 15px rgba(251, 54, 64, 0.3)',
+                  padding: '0.6rem 1.4rem',
+                  fontSize: '0.95rem',
+                  clipPath: 'polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(251, 54, 64, 0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--accent-orange)';
                 }}
               >
-                Delete
+                Purge Record
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Keyframe animation specs */}
       <style jsx>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
         }
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }

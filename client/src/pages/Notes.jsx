@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { downloadFile } from '../utils/downloadUtils';
-
-import { Search, Download, Share2, Calendar, BookOpen, Tag, FileText, Filter, Grid, List } from 'lucide-react';
+import { Search, Download, Share2, Calendar, BookOpen, FileText, Filter, Grid, List } from 'lucide-react';
 
 export default function Notes() {
   const navigate = useNavigate();
@@ -15,7 +14,6 @@ export default function Notes() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
   const [paginationInfo, setPaginationInfo] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -28,6 +26,13 @@ export default function Notes() {
   useEffect(() => {
     loadSubjects();
     loadAllNotes();
+    
+    // Parse URL subject parameter if coming from Homepage selector
+    const params = new URLSearchParams(window.location.search);
+    const subjectParam = params.get('subject');
+    if (subjectParam) {
+      setSelectedSubject(subjectParam);
+    }
   }, []);
 
   useEffect(() => {
@@ -36,66 +41,29 @@ export default function Notes() {
 
   const loadSubjects = async () => {
     try {
-      console.log('🔍 Loading subjects...');
-      console.log('📡 Making request to: /api/notes/subjects');
       const r = await API.get('/notes/subjects');
-      console.log('✅ Subjects response status:', r.status);
-      console.log('✅ Subjects loaded:', r.data);
-
       if (Array.isArray(r.data)) {
         setSubjects(r.data);
-        setDebugInfo(prev => prev + `Subjects: ${r.data.length} loaded. `);
-      } else {
-        console.error('❌ Subjects response is not an array:', typeof r.data);
-        setSubjects([]);
       }
     } catch (err) {
-      console.error('❌ Error loading subjects:', err);
-      console.error('❌ Error response:', err.response?.data);
-
-      let errorMessage = 'Failed to load subjects.';
-      if (err.response?.status === 404) {
-        errorMessage += ' Subjects endpoint not found (404).';
-      }
-
-      setError(errorMessage + ' ' + (err.response?.data?.msg || err.message));
-      setDebugInfo(prev => prev + `Subjects failed: ${err.message}. `);
+      console.error('Error loading subjects:', err);
+      setError('Failed to load subjects.');
     }
   };
 
-  const loadAllNotes = async (page = 1, append = false) => {
+  const loadAllNotes = async (page = 1) => {
     try {
-      const isDevelopment = import.meta.env.DEV;
-      if (isDevelopment) {
-        console.log(`🔍 Loading notes (page ${page})...`);
-      }
-
       setLoading(true);
       setError('');
-
       const r = await API.get(`/notes?page=${page}&limit=20`);
 
-      if (isDevelopment) {
-        console.log('✅ Notes response:', r.data);
-      }
-
-      // Handle both new pagination format and old format for backward compatibility
       if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
-        // New pagination format
-        if (append && page > 1) {
-          setNotes(prev => [...prev, ...r.data.notes]);
-        } else {
-          setNotes(r.data.notes);
-        }
-
+        setNotes(r.data.notes);
         setPaginationInfo(r.data.pagination);
-        setDebugInfo(prev => prev + `Notes: ${r.data.notes.length} loaded (page ${page}). `);
-
         if (r.data.notes.length === 0 && page === 1) {
-          setError('No notes found in the database. Upload some notes first!');
+          setError('No notes found. Upload some notes first!');
         }
       } else if (Array.isArray(r.data)) {
-        // Old format - direct array of notes
         setNotes(r.data);
         setPaginationInfo({
           currentPage: 1,
@@ -105,47 +73,27 @@ export default function Notes() {
           hasPrevPage: false,
           limit: r.data.length
         });
-        setDebugInfo(prev => prev + `Notes: ${r.data.length} loaded (legacy format). `);
-
         if (r.data.length === 0) {
-          setError('No notes found in the database. Upload some notes first!');
+          setError('No notes found. Upload some notes first!');
         }
       } else {
-        console.error('❌ Invalid response format:', r.data);
         setError('Invalid response format from server.');
       }
     } catch (err) {
-      console.error('❌ Error loading notes:', err);
-
-      let errorMessage = 'Failed to load notes.';
-      if (err.response?.status === 404) {
-        errorMessage += ' Endpoint not found (404). Check if server is running.';
-      } else if (err.response?.status >= 500) {
-        errorMessage += ' Server error. Check server console for details.';
-      } else if (!err.response) {
-        errorMessage += ' Cannot connect to server. Make sure server is running.';
-      } else if (err.code === 'ECONNABORTED') {
-        errorMessage += ' Request timed out. Please try again.';
-      } else {
-        errorMessage += ' ' + (err.response?.data?.msg || err.message);
-      }
-
-      setError(errorMessage);
-      setDebugInfo(prev => prev + `Notes failed: ${err.message}. `);
+      console.error('Error loading notes:', err);
+      setError('Failed to load notes. Please verify connection.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCardClick = (note) => {
-    // Navigate to note details page
     navigate(`/note/${note._id}`);
   };
 
   const handleActionClick = (e) => {
-    // Prevent card click when clicking action buttons
     e.stopPropagation();
-    e.preventDefault(); // Also prevent default browser behavior
+    e.preventDefault();
   };
 
   const filterNotes = () => {
@@ -154,7 +102,6 @@ export default function Notes() {
     if (selectedSubject) {
       filtered = filtered.filter(note => note.subjectName === selectedSubject);
     }
-
 
     if (searchTerm) {
       filtered = filtered.filter(note =>
@@ -166,7 +113,6 @@ export default function Notes() {
 
     setFilteredNotes(filtered);
   };
-
 
   const share = async (note) => {
     const shareUrl = `${window.location.origin}/note/${note._id}`;
@@ -198,22 +144,18 @@ export default function Notes() {
   const clearFilters = () => {
     setSelectedSubject('');
     setSearchTerm('');
+    // Remove query parameter from URL
+    navigate('/notes', { replace: true });
   };
 
-  // Robust download using shared utility
   const handleDownload = async (note) => {
     try {
-      console.log('🔽 handleDownload called with note:', note);
       if (note.files && note.files.length > 1) {
-        // For multiple files, navigate to details page for explicit downloads
         handleCardClick(note);
         return;
       }
 
-      // Single-file path (or first file fallback)
-      const fileUrl = note.files && note.files.length > 0
-        ? note.files[0].fileUrl
-        : note.fileUrl;
+      const fileUrl = note.files && note.files.length > 0 ? note.files[0].fileUrl : note.fileUrl;
       const filename = note.files && note.files.length > 0
         ? (note.files[0].originalName || note.files[0].filename || 'download')
         : (note.originalName || note.filename || 'download');
@@ -229,11 +171,9 @@ export default function Notes() {
         timeout: 45000,
       });
 
-      if (!ok) {
-        alert('Download failed. Please try again.');
-      }
+      if (!ok) alert('Download failed. Please try again.');
     } catch (error) {
-      console.error('❌ Download error:', error);
+      console.error('Download error:', error);
       alert('Download failed due to an unexpected error.');
     }
   };
@@ -241,9 +181,10 @@ export default function Notes() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
-      padding: 'clamp(1rem, 3vw, 2rem) clamp(0.5rem, 2vw, 1rem)',
-      paddingTop: 'clamp(5rem, 12vh, 7rem)'
+      background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
+      padding: '2rem 1.5rem',
+      paddingTop: '7rem',
+      boxSizing: 'border-box'
     }}>
       {/* Header Section */}
       <div style={{
@@ -252,23 +193,29 @@ export default function Notes() {
         textAlign: 'center'
       }}>
         <h1 style={{
-          fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+          fontSize: 'clamp(2.2rem, 5vw, 3.8rem)',
           fontWeight: '900',
-          background: 'linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #6366f1 100%)',
+          fontFamily: 'var(--font-cyber)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.02em',
+          background: 'linear-gradient(135deg, #ffffff 30%, var(--accent-orange) 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
           margin: '0 0 1rem',
-          letterSpacing: '-0.02em'
-        }}>Notes Library</h1>
-
+        }}>
+          NOTES LIBRARY
+        </h1>
         <p style={{
-          color: '#94a3b8',
-          fontSize: '1.125rem',
+          color: 'var(--text-secondary)',
+          fontSize: '1.1rem',
+          fontFamily: 'var(--font-body)',
           maxWidth: '600px',
           margin: '0 auto',
           lineHeight: '1.6'
-        }}>Explore and download educational content organized by subjects and topics</p>
+        }}>
+          Explore and download educational content organized by subjects and topics.
+        </p>
       </div>
 
       {/* Error Display */}
@@ -276,127 +223,88 @@ export default function Notes() {
         <div style={{
           maxWidth: '1200px',
           margin: '0 auto 2rem',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '1rem',
-          padding: '1rem 1.5rem',
-          color: '#f87171'
+          background: 'rgba(251, 54, 64, 0.08)',
+          border: '1px solid rgba(251, 54, 64, 0.3)',
+          borderRadius: '8px',
+          padding: '1.25rem',
+          color: 'var(--accent-orange)',
+          fontFamily: 'var(--font-body)'
         }}>
-          <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>⚠️ Loading Error</div>
-          <div style={{ fontSize: '0.9rem' }}>{error}</div>
-          {debugInfo && (
-            <details style={{ marginTop: '0.5rem', fontSize: '0.8rem', opacity: 0.8 }}>
-              <summary style={{ cursor: 'pointer' }}>Debug Info</summary>
-              <div style={{ marginTop: '0.5rem', fontFamily: 'monospace' }}>{debugInfo}</div>
-            </details>
-          )}
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>⚠️ Loading Warning</div>
+          <div style={{ fontSize: '0.95rem' }}>{error}</div>
         </div>
       )}
 
-      {/* Filters and Search */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto 2rem',
-        background: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(148, 163, 184, 0.1)',
-        borderRadius: '1rem',
-        padding: '1.5rem'
-      }}>
+      {/* Filters and Search Section */}
+      <div 
+        className="cyber-panel"
+        style={{
+          maxWidth: '1200px',
+          margin: '0 auto 2.5rem',
+          padding: '1.5rem',
+          borderRadius: '8px'
+        }}
+      >
         <div style={{
           display: 'flex',
           flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1rem'
+          gap: '1.2rem',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}>
-          {/* Search */}
-          <div style={{ position: 'relative', flex: window.innerWidth < 768 ? '1' : '2', minWidth: '250px' }}>
-            <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          {/* Search Box */}
+          <div style={{ position: 'relative', flex: '1', width: '100%' }}>
+            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Search notes..."
+              placeholder="Search notes by title, topic..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(30, 41, 59, 0.5)',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: '0.5rem',
-                padding: 'clamp(0.75rem, 3vw, 1rem) 1rem clamp(0.75rem, 3vw, 1rem) 3rem',
-                color: '#e2e8f0',
-                fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                outline: 'none',
-                transition: 'all 0.3s ease',
-                boxSizing: 'border-box',
-                minHeight: '48px' // Touch-friendly
+                paddingLeft: '3rem !important',
+                fontFamily: 'var(--font-tech)',
+                fontSize: '1.1rem'
               }}
-              onFocus={(e) => e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)'}
-              onBlur={(e) => e.target.style.borderColor = 'rgba(148, 163, 184, 0.2)'}
             />
           </div>
 
-          {/* Subject Filter */}
+          {/* Subject Filter Dropdown */}
           <select
             value={selectedSubject}
-            onChange={e => { setSelectedSubject(e.target.value); setSelectedTopic(''); }}
+            onChange={e => setSelectedSubject(e.target.value)}
             style={{
-              flex: window.innerWidth < 768 ? '1' : 'none',
-              minWidth: '150px',
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: '0.5rem',
-              padding: 'clamp(0.75rem, 3vw, 1rem)',
-              color: '#e2e8f0',
-              fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-              outline: 'none',
-              cursor: 'pointer',
-              minHeight: '48px' // Touch-friendly
+              width: window.innerWidth < 768 ? '100%' : '240px',
+              fontFamily: 'var(--font-tech)',
+              fontSize: '1.1rem'
             }}
           >
             <option value="">All Subjects</option>
             {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
           </select>
 
-
-          {/* View Mode Toggle */}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* View Mode Toggle Buttons */}
+          <div style={{ display: 'flex', gap: '0.5rem', width: window.innerWidth < 768 ? '100%' : 'auto' }}>
             <button
               onClick={() => setViewMode('grid')}
+              className="cyber-btn-wire"
               style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem',
-                background: viewMode === 'grid' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(30, 41, 59, 0.5)',
-                border: `1px solid ${viewMode === 'grid' ? 'rgba(168, 85, 247, 0.5)' : 'rgba(148, 163, 184, 0.2)'}`,
-                borderRadius: '0.5rem',
-                color: viewMode === 'grid' ? '#a855f7' : '#94a3b8',
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                flex: '1',
+                borderColor: viewMode === 'grid' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
+                color: viewMode === 'grid' ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                background: viewMode === 'grid' ? 'rgba(251, 54, 64, 0.08)' : 'transparent'
               }}
             >
               <Grid size={16} /> Grid
             </button>
             <button
               onClick={() => setViewMode('list')}
+              className="cyber-btn-wire"
               style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem',
-                background: viewMode === 'list' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(30, 41, 59, 0.5)',
-                border: `1px solid ${viewMode === 'list' ? 'rgba(168, 85, 247, 0.5)' : 'rgba(148, 163, 184, 0.2)'}`,
-                borderRadius: '0.5rem',
-                color: viewMode === 'list' ? '#a855f7' : '#94a3b8',
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                flex: '1',
+                borderColor: viewMode === 'list' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
+                color: viewMode === 'list' ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                background: viewMode === 'list' ? 'rgba(251, 54, 64, 0.08)' : 'transparent'
               }}
             >
               <List size={16} /> List
@@ -404,100 +312,112 @@ export default function Notes() {
           </div>
         </div>
 
-        {/* Clear Filters */}
+        {/* Clear Filters Indicator */}
         {(selectedSubject || searchTerm) && (
           <button
             onClick={clearFilters}
+            className="cyber-btn-wire"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '0.5rem',
-              color: '#f87171',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              marginTop: '1.2rem',
+              borderColor: 'rgba(251, 54, 64, 0.3)',
+              color: 'var(--accent-orange)',
+              padding: '0.4rem 1rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(251, 54, 64, 0.08)';
+              e.currentTarget.style.borderColor = 'var(--accent-orange)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.3)';
             }}
           >
-            <Filter size={16} /> Clear Filters
+            <Filter size={14} /> Clear Active Filters
           </button>
         )}
       </div>
 
-      {/* Notes Display */}
+      {/* Notes Listing Container */}
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-            <div style={{ fontSize: '1.125rem' }}>Loading notes...</div>
+          <div style={{ textAlign: 'center', padding: '5rem 0', color: 'var(--text-secondary)' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid rgba(251, 54, 64, 0.2)',
+              borderTop: '3px solid var(--accent-orange)',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 1.5rem'
+            }} />
+            <p style={{ fontFamily: 'var(--font-tech)', fontSize: '1.2rem', letterSpacing: '0.05em' }}>FETCHING NOTES SYSTEMS...</p>
           </div>
         ) : filteredNotes.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '3rem',
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(148, 163, 184, 0.1)',
-            borderRadius: '1rem',
-            color: '#94a3b8'
-          }}>
-            <FileText size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-            <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No notes found</div>
-            <div>Try adjusting your search or filter criteria</div>
+          <div 
+            className="cyber-panel"
+            style={{
+              textAlign: 'center',
+              padding: '4rem 2rem',
+              borderRadius: '8px',
+              color: 'var(--text-secondary)'
+            }}
+          >
+            <FileText size={48} style={{ margin: '0 auto 1rem', color: 'var(--text-muted)' }} />
+            <h3 style={{ fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', color: '#fff', marginBottom: '0.5rem' }}>NO RECORD FOUND</h3>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>No notes match your active filter/search configurations.</p>
           </div>
         ) : (
           <div style={{
             display: viewMode === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns: viewMode === 'grid' ? (window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))') : '1fr',
+            gridTemplateColumns: viewMode === 'grid' ? (window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))') : '1fr',
             flexDirection: viewMode === 'list' ? 'column' : 'row',
-            gap: 'clamp(1rem, 3vw, 1.5rem)'
+            gap: '1.5rem'
           }}>
-            {filteredNotes.map((note, index) => (
+            {filteredNotes.map((note, idx) => (
               <div
                 key={note._id}
                 onClick={() => handleCardClick(note)}
+                className="cyber-panel"
                 style={{
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(148, 163, 184, 0.1)',
-                  borderRadius: '1rem',
-                  padding: 'clamp(1rem, 3vw, 1.5rem)',
-                  transition: 'all 0.3s ease',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
                   cursor: 'pointer',
-                  animation: `slideInUp 0.6s ease ${index * 0.1}s both`,
+                  transition: 'all 0.3s ease',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  animation: 'fadeInUpUp 0.4s ease'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(168, 85, 247, 0.15)';
-                  e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                  e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(251, 54, 64, 0.15)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.37)';
                 }}
               >
-                {/* Header */}
+                {/* Note Details Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <h3 style={{
-                    color: '#e2e8f0',
-                    fontSize: 'clamp(1.125rem, 3vw, 1.25rem)',
+                    color: '#ffffff',
+                    fontSize: '1.2rem',
                     fontWeight: '700',
                     margin: 0,
-                    lineHeight: '1.4',
-                    flex: 1,
-                    wordBreak: 'break-word'
+                    fontFamily: 'var(--font-cyber)',
+                    flex: '1',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.3'
                   }}>{note.title}</h3>
+                  
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    color: '#94a3b8',
-                    fontSize: '0.875rem',
+                    gap: '0.4rem',
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-tech)',
+                    fontSize: '0.9rem',
                     marginLeft: '1rem'
                   }}>
                     <Calendar size={14} />
@@ -508,10 +428,11 @@ export default function Notes() {
                 {/* Description */}
                 {note.description && (
                   <p style={{
-                    color: '#94a3b8',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.9rem',
                     lineHeight: '1.5',
-                    margin: '0 0 1rem',
+                    fontFamily: 'var(--font-body)',
+                    margin: '0 0 1.25rem',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
@@ -520,124 +441,72 @@ export default function Notes() {
                   }}>{note.description}</p>
                 )}
 
-                {/* Subject Tag */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* Tags section */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
                   <span style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    background: 'rgba(168, 85, 247, 0.1)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    borderRadius: '1rem',
-                    padding: '0.25rem 0.75rem',
-                    fontSize: '0.75rem',
-                    color: '#a855f7',
-                    fontWeight: '500'
+                    background: 'rgba(251, 54, 64, 0.08)',
+                    border: '1px solid rgba(251, 54, 64, 0.25)',
+                    borderRadius: '4px',
+                    padding: '0.2rem 0.6rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--accent-orange)',
+                    fontFamily: 'var(--font-tech)',
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
                   }}>
                     <BookOpen size={12} />
                     {note.subjectName}
                   </span>
-                  {/* File count indicator for multiple files */}
+                  
                   {note.files && note.files.length > 1 && (
                     <span style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.25rem',
-                      background: 'rgba(34, 197, 94, 0.1)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      borderRadius: '1rem',
-                      padding: '0.25rem 0.75rem',
-                      fontSize: '0.75rem',
-                      color: '#22c55e',
-                      fontWeight: '500'
+                      background: 'rgba(251, 54, 64, 0.08)',
+                      border: '1px solid rgba(251, 54, 64, 0.25)',
+                      borderRadius: '4px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.8rem',
+                      color: 'var(--accent-amber)',
+                      fontFamily: 'var(--font-tech)',
+                      fontWeight: '600',
+                      textTransform: 'uppercase'
                     }}>
                       <FileText size={12} />
-                      {note.files.length} files
+                      {note.files.length} Files
                     </span>
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                {/* CTA Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.8rem' }}>
                   <button
                     onClick={async (e) => {
-                      try {
-                        handleActionClick(e);
-                        console.log('🔽 Button clicked, event handled');
-
-                        if (note.files && note.files.length > 1) {
-                          // For multiple files, navigate to details page
-                          console.log('🔽 Multiple files, navigating to details');
-                          handleCardClick(note);
-                        } else if (note.fileUrl) {
-                          // For single file, use simplified download function
-                          console.log('🔽 Single file, starting download');
-                          console.log('🔽 Full note object:', JSON.stringify(note, null, 2));
-
-                          await handleDownload(note);
-                          console.log('🔽 Download function completed');
-                        }
-                      } catch (error) {
-                        console.error('🔽 Click handler error:', error);
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
+                      handleActionClick(e);
+                      await handleDownload(note);
                     }}
+                    className="cyber-btn-orange"
                     style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem 1rem',
-                      background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      color: 'white',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      minHeight: '44px' // Touch-friendly
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)';
-                      e.target.style.transform = 'scale(1.02)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)';
-                      e.target.style.transform = 'scale(1)';
+                      flex: '1',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.9rem',
+                      clipPath: 'polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%)'
                     }}
                   >
-                    <Download size={16} />
-                    {note.files && note.files.length > 1 ? `View ${note.files.length} Files` : 'Download'}
+                    <Download size={14} />
+                    {note.files && note.files.length > 1 ? `View files` : 'Download'}
                   </button>
+                  
                   <button
                     onClick={(e) => { handleActionClick(e); share(note); }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.75rem',
-                      background: 'rgba(148, 163, 184, 0.1)',
-                      border: '1px solid rgba(148, 163, 184, 0.3)',
-                      borderRadius: '0.5rem',
-                      color: '#94a3b8',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(99, 102, 241, 0.2)';
-                      e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)';
-                      e.target.style.color = '#6366f1';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'rgba(148, 163, 184, 0.1)';
-                      e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-                      e.target.style.color = '#94a3b8';
-                    }}
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.5rem' }}
                   >
-                    <Share2 size={16} />
+                    <Share2 size={14} />
                   </button>
                 </div>
               </div>
@@ -650,80 +519,53 @@ export default function Notes() {
       {!loading && filteredNotes.length > 0 && paginationInfo.totalPages > 1 && (
         <div style={{
           maxWidth: '1200px',
-          margin: '2rem auto 0',
+          margin: '3rem auto 0',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '1rem',
+          gap: '1.2rem',
           flexWrap: 'wrap'
         }}>
-          {/* Previous Button */}
           <button
             onClick={() => loadAllNotes(paginationInfo.currentPage - 1)}
             disabled={!paginationInfo.hasPrevPage}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: paginationInfo.hasPrevPage
-                ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)'
-                : 'rgba(100, 116, 139, 0.3)',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              cursor: paginationInfo.hasPrevPage ? 'pointer' : 'not-allowed',
-              transition: 'all 0.3s ease',
-              opacity: paginationInfo.hasPrevPage ? 1 : 0.5
-            }}
+            className="cyber-btn-wire"
+            style={{ opacity: paginationInfo.hasPrevPage ? 1 : 0.5, cursor: paginationInfo.hasPrevPage ? 'pointer' : 'not-allowed' }}
           >
-            ← Previous
+            ← Prev System
           </button>
 
-          {/* Page Info */}
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            color: '#94a3b8',
-            fontSize: '0.875rem'
+            fontFamily: 'var(--font-tech)',
+            fontSize: '1rem',
+            color: 'var(--text-secondary)',
+            letterSpacing: '0.05em'
           }}>
-            <span>Page {paginationInfo.currentPage} of {paginationInfo.totalPages}</span>
-            <span style={{ opacity: 0.5 }}>•</span>
-            <span>{paginationInfo.totalNotes} total notes</span>
+            SYSTEM BLOCK {paginationInfo.currentPage} OF {paginationInfo.totalPages} ({paginationInfo.totalNotes} TOTAL CODES)
           </div>
 
-          {/* Next Button */}
           <button
             onClick={() => loadAllNotes(paginationInfo.currentPage + 1)}
             disabled={!paginationInfo.hasNextPage}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: paginationInfo.hasNextPage
-                ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%)'
-                : 'rgba(100, 116, 139, 0.3)',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              cursor: paginationInfo.hasNextPage ? 'pointer' : 'not-allowed',
-              transition: 'all 0.3s ease',
-              opacity: paginationInfo.hasNextPage ? 1 : 0.5
-            }}
+            className="cyber-btn-wire"
+            style={{ opacity: paginationInfo.hasNextPage ? 1 : 0.5, cursor: paginationInfo.hasNextPage ? 'pointer' : 'not-allowed' }}
           >
-            Next →
+            Next System →
           </button>
         </div>
       )}
 
-      {/* CSS Animations */}
+      {/* Animations styling */}
       <style jsx>{`
-        @keyframes slideInUp {
-          0% {
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes fadeInUpUp {
+          from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
           }
-          100% {
+          to {
             opacity: 1;
             transform: translateY(0);
           }

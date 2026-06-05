@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Calendar, BookOpen, Tag, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Calendar, BookOpen, FileText } from 'lucide-react';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
-
 
 export default function NoteDetails() {
   const { id } = useParams();
@@ -30,11 +29,9 @@ export default function NoteDetails() {
     }
   };
 
-  // Robust download using shared utility
   const handleDownload = async () => {
     try {
       if (note?.files && note.files.length > 1) {
-        // Batch download multiple files
         const files = note.files.map(f => ({
           fileUrl: f.fileUrl,
           filename: f.originalName || f.filename || 'download'
@@ -102,29 +99,23 @@ export default function NoteDetails() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+        background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem'
       }}>
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '1rem',
-          padding: '2rem',
-          textAlign: 'center'
-        }}>
+        <div className="cyber-panel" style={{ borderRadius: '8px', padding: '2.5rem', textAlign: 'center' }}>
           <div style={{
-            width: '48px',
-            height: '48px',
-            border: '3px solid rgba(168, 85, 247, 0.3)',
-            borderTop: '3px solid #a855f7',
+            width: '40px',
+            height: '40px',
+            border: '3px solid rgba(251, 54, 64, 0.2)',
+            borderTop: '3px solid var(--accent-orange)',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
+            margin: '0 auto 1.5rem'
           }} />
-          <p style={{ color: '#e2e8f0', fontSize: '1.125rem' }}>Loading note...</p>
+          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-tech)', fontSize: '1.2rem', letterSpacing: '0.05em' }}>BOOTING CORE RECORD...</p>
         </div>
       </div>
     );
@@ -134,43 +125,26 @@ export default function NoteDetails() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+        background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
         padding: '2rem',
-        paddingTop: '6rem'
+        paddingTop: '7rem',
+        boxSizing: 'border-box'
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem'
-          }}>
-            <FileText size={48} style={{ color: '#f87171', margin: '0 auto 1rem' }} />
-            <h2 style={{ color: '#f87171', fontSize: '1.5rem', margin: '0 0 1rem' }}>
-              Note Not Found
+          <div className="cyber-panel" style={{ borderRadius: '8px', padding: '3rem' }}>
+            <FileText size={48} style={{ color: 'var(--accent-orange)', margin: '0 auto 1.5rem' }} />
+            <h2 style={{ color: 'var(--accent-orange)', fontFamily: 'var(--font-cyber)', fontSize: '1.5rem', margin: '0 0 1rem' }}>
+              RECORD SYSTEM FAILURE
             </h2>
-            <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
-              {error || 'The note you are looking for does not exist.'}
+            <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginBottom: '2rem' }}>
+              {error || 'The note record you are searching for does not exist in our systems.'}
             </p>
             <button
               onClick={() => navigate('/notes')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                border: 'none',
-                borderRadius: '0.5rem',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
+              className="cyber-btn-orange"
             >
-              <ArrowLeft size={20} />
-              Back to Notes
+              <ArrowLeft size={18} />
+              Return to Notes
             </button>
           </div>
         </div>
@@ -181,85 +155,63 @@ export default function NoteDetails() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
-      padding: 'clamp(1rem, 4vw, 2rem) clamp(0.5rem, 2vw, 1rem)',
-      paddingTop: 'clamp(4rem, 10vh, 6rem)'
+      background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
+      padding: '2rem 1.5rem',
+      paddingTop: '7rem',
+      boxSizing: 'border-box'
     }}>
       {/* Back Button */}
       <div style={{ maxWidth: '1000px', margin: '0 auto 2rem' }}>
         <button
           onClick={() => navigate('/notes')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem 1rem',
-            background: 'rgba(148, 163, 184, 0.1)',
-            border: '1px solid rgba(148, 163, 184, 0.3)',
-            borderRadius: '0.5rem',
-            color: '#94a3b8',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(168, 85, 247, 0.1)';
-            e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
-            e.target.style.color = '#a855f7';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(148, 163, 184, 0.1)';
-            e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-            e.target.style.color = '#94a3b8';
-          }}
+          className="cyber-btn-wire"
         >
           <ArrowLeft size={16} />
-          Back to Notes
+          Return to Notes
         </button>
       </div>
 
-      {/* Note Details */}
-      <div style={{
-        maxWidth: '1000px',
-        margin: '0 auto',
-        background: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(148, 163, 184, 0.1)',
-        borderRadius: '1.5rem',
-        overflow: 'hidden',
-        animation: 'slideInUp 0.6s ease'
-      }}>
-        {/* Header */}
+      {/* Note Details Content */}
+      <div 
+        className="cyber-panel"
+        style={{
+          maxWidth: '1000px',
+          margin: '0 auto',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Header Block */}
         <div style={{
-          padding: 'clamp(1.5rem, 4vw, 2rem)',
-          borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
+          padding: '2rem',
+          borderBottom: '1px solid rgba(251, 54, 64, 0.15)',
+          background: 'rgba(0, 15, 8, 0.3)'
         }}>
           <h1 style={{
-            fontSize: 'clamp(1.875rem, 4vw, 3rem)',
+            fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
             fontWeight: '900',
-            background: 'linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #6366f1 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            margin: '0 0 1rem',
-            lineHeight: '1.2'
+            fontFamily: 'var(--font-cyber)',
+            lineHeight: '1.25',
+            color: '#ffffff',
+            marginBottom: '1rem'
           }}>
             {note.title}
           </h1>
 
           {note.description && (
             <p style={{
-              color: '#94a3b8',
-              fontSize: '1.125rem',
+              color: 'var(--text-secondary)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '1.05rem',
               lineHeight: '1.6',
-              margin: '0 0 1.5rem'
+              margin: '0 0 1.5rem',
+              maxWidth: '800px'
             }}>
               {note.description}
             </p>
           )}
 
-          {/* Metadata */}
+          {/* Meta Tags */}
           <div style={{
             display: 'flex',
             gap: '1rem',
@@ -269,85 +221,98 @@ export default function NoteDetails() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(168, 85, 247, 0.1)',
-              border: '1px solid rgba(168, 85, 247, 0.3)',
-              borderRadius: '1rem',
-              padding: '0.5rem 1rem',
-              color: '#a855f7',
-              fontSize: '0.875rem',
-              fontWeight: '500'
+              gap: '0.4rem',
+              background: 'rgba(251, 54, 64, 0.08)',
+              border: '1px solid rgba(251, 54, 64, 0.25)',
+              borderRadius: '4px',
+              padding: '0.4rem 0.8rem',
+              color: 'var(--accent-orange)',
+              fontFamily: 'var(--font-tech)',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textTransform: 'uppercase'
             }}>
               <BookOpen size={16} />
               {note.subjectName}
             </div>
 
-
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              color: '#94a3b8',
-              fontSize: '0.875rem'
+              gap: '0.4rem',
+              color: 'var(--text-secondary)',
+              fontFamily: 'var(--font-tech)',
+              fontSize: '0.95rem'
             }}>
               <Calendar size={16} />
               {formatDate(note.date)}
             </div>
 
-            {/* File count indicator */}
             {note.files && note.files.length > 1 && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                borderRadius: '1rem',
-                padding: '0.5rem 1rem',
-                color: '#22c55e',
-                fontSize: '0.875rem',
-                fontWeight: '500'
+                gap: '0.4rem',
+                background: 'rgba(251, 54, 64, 0.08)',
+                border: '1px solid rgba(251, 54, 64, 0.25)',
+                borderRadius: '4px',
+                padding: '0.4rem 0.8rem',
+                color: 'var(--accent-amber)',
+                fontFamily: 'var(--font-tech)',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                textTransform: 'uppercase'
               }}>
                 <FileText size={16} />
-                {note.files.length} files
+                {note.files.length} Files
               </div>
             )}
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content & Previews Block */}
         <div style={{ padding: '2rem' }}>
-          {/* Multiple Files Preview */}
+          {/* Multiple Files Preview List */}
           {note.files && note.files.length > 1 ? (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1rem',
+              gridTemplateColumns: window.innerWidth < 480 ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '1.2rem',
               marginBottom: '2rem'
             }}>
               {note.files.map((file, index) => (
-                <div key={index} style={{
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  borderRadius: '1rem',
-                  padding: 'clamp(1rem, 3vw, 1.5rem)',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  minHeight: '120px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}>
-                  <FileText size={32} style={{
-                    color: '#a855f7',
-                    margin: '0 auto 1rem'
-                  }} />
+                <div 
+                  key={index}
+                  className="cyber-panel"
+                  style={{
+                    background: 'rgba(0, 15, 8, 0.4)',
+                    border: '1px solid rgba(251, 54, 64, 0.12)',
+                    borderRadius: '6px',
+                    padding: '1.25rem',
+                    textAlign: 'center',
+                    minHeight: '160px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                    e.currentTarget.style.boxShadow = '0 0 12px rgba(251, 54, 64, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.12)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <FileText size={32} style={{ color: 'var(--accent-orange)', margin: '0 auto 0.75rem' }} />
                   <h4 style={{
-                    color: '#e2e8f0',
-                    fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+                    color: '#ffffff',
+                    fontFamily: 'var(--font-tech)',
+                    fontSize: '1rem',
                     fontWeight: '600',
-                    margin: '0 0 0.5rem',
-                    wordBreak: 'break-word',
+                    margin: '0 0 0.75rem',
+                    wordBreak: 'break-all',
                     lineHeight: '1.3',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -357,6 +322,7 @@ export default function NoteDetails() {
                   }}>
                     {file.originalName || `File ${index + 1}`}
                   </h4>
+                  
                   <button
                     onClick={async () => {
                       const ok = await downloadFile(
@@ -366,54 +332,37 @@ export default function NoteDetails() {
                       );
                       if (!ok) alert('Download failed. Please try again.');
                     }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.5rem 1rem',
-                      background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      color: 'white',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      minHeight: '44px' // Touch-friendly
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'scale(1)';
-                    }}
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: '100%', justifyContent: 'center' }}
                   >
-                    <Download size={14} />
-                    Download
+                    <Download size={12} />
+                    Download File
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            /* Single File Preview */
-            <div style={{
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
-              borderRadius: '1rem',
-              padding: '2rem',
-              textAlign: 'center',
-              marginBottom: '2rem'
-            }}>
-              {/* Note Preview - Clickable */}
+            /* Single File Card/Preview Indicator */
+            <div 
+              className="cyber-panel"
+              style={{
+                background: 'rgba(0, 15, 8, 0.3)',
+                borderRadius: '8px',
+                padding: '2.5rem 2rem',
+                textAlign: 'center',
+                marginBottom: '2rem'
+              }}
+            >
+              {/* Note Preview trigger box */}
               <div
                 onClick={() => setShowPreview(true)}
                 style={{
-                  width: '200px',
-                  height: '150px',
-                  margin: '0 auto 1rem',
-                  background: 'rgba(168, 85, 247, 0.1)',
-                  border: '2px solid rgba(168, 85, 247, 0.3)',
-                  borderRadius: '0.75rem',
+                  width: '180px',
+                  height: '140px',
+                  margin: '0 auto 1.5rem',
+                  background: 'rgba(251, 54, 64, 0.05)',
+                  border: '1px solid rgba(251, 54, 64, 0.25)',
+                  borderRadius: '6px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -423,169 +372,83 @@ export default function NoteDetails() {
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+                  e.currentTarget.style.transform = 'scale(1.04)';
+                  e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                  e.currentTarget.style.boxShadow = '0 0 15px rgba(251, 54, 64, 0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.25)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 {note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') ||
                   note.fileUrl.toLowerCase().includes('.jpeg') ||
                   note.fileUrl.toLowerCase().includes('.png')) ? (
-                  // Image preview
                   <img
                     src={note.fileUrl}
-                    alt={note.filename || 'Note preview'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      borderRadius: '0.5rem'
-                    }}
+                    alt={note.filename || 'Preview'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
-                      // Fallback to document icon if image fails to load
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
                 ) : (
-                  // Document preview for PDFs and other files
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#a855f7',
-                    textAlign: 'center'
-                  }}>
-                    <FileText size={32} style={{ marginBottom: '0.5rem' }} />
-                    <span style={{
-                      fontSize: '0.75rem',
-                      fontWeight: '600',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--accent-orange)' }}>
+                    <FileText size={32} style={{ marginBottom: '0.4rem' }} />
+                    <span style={{ fontFamily: 'var(--font-tech)', fontSize: '0.8rem', fontWeight: '700' }}>
                       {note.fileUrl ? note.fileUrl.split('.').pop().toUpperCase() : 'FILE'}
                     </span>
                   </div>
                 )}
-
-                {/* Fallback document icon (hidden by default, shown if image fails) */}
-                <div style={{
-                  display: 'none',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#a855f7',
-                  textAlign: 'center'
-                }}>
-                  <FileText size={32} style={{ marginBottom: '0.5rem' }} />
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}>
+                
+                {/* Fallback Icon */}
+                <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', color: 'var(--accent-orange)' }}>
+                  <FileText size={32} style={{ marginBottom: '0.4rem' }} />
+                  <span style={{ fontFamily: 'var(--font-tech)', fontSize: '0.8rem', fontWeight: '700' }}>
                     {note.fileUrl ? note.fileUrl.split('.').pop().toUpperCase() : 'FILE'}
                   </span>
                 </div>
               </div>
-              <h3 style={{
-                color: '#e2e8f0',
-                fontSize: '1.25rem',
-                fontWeight: '700',
-                margin: '0 0 0.5rem'
-              }}>
-                {note.filename || 'Note File'}
+
+              <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-tech)', fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.4rem' }}>
+                {note.filename || 'Note Code File'}
               </h3>
-              <p style={{
-                color: '#94a3b8',
-                fontSize: '0.875rem',
-                margin: '0 0 1.5rem'
-              }}>
-                Click preview to view the complete note, or download to save it
+              <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.9rem', marginBottom: '0' }}>
+                Click the preview screen to open full file view, or download to save.
               </p>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-          }}>
+          {/* Action Buttons Section */}
+          <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={handleDownload}
+              className="cyber-btn-orange"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1rem 2rem',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #d946ef 100%)',
-                border: 'none',
-                borderRadius: '1rem',
-                color: 'white',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 10px 30px rgba(168, 85, 247, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px) scale(1.05)';
-                e.target.style.boxShadow = '0 20px 40px rgba(168, 85, 247, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0) scale(1)';
-                e.target.style.boxShadow = '0 10px 30px rgba(168, 85, 247, 0.3)';
+                padding: '0.85rem 2rem',
+                fontSize: '1rem',
+                boxShadow: '0 0 20px rgba(251, 54, 64, 0.25)'
               }}
             >
-              <Download size={20} />
-              {note.files && note.files.length > 1 ? `Download All ${note.files.length} Files` : 'Download Note'}
+              <Download size={18} />
+              {note.files && note.files.length > 1 ? `Download all (${note.files.length} files)` : 'Download Note'}
             </button>
 
             <button
               onClick={handleShare}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1rem 2rem',
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(148, 163, 184, 0.3)',
-                borderRadius: '1rem',
-                color: '#e2e8f0',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(20px)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)';
-                e.target.style.background = 'rgba(99, 102, 241, 0.1)';
-                e.target.style.color = '#6366f1';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-                e.target.style.background = 'rgba(15, 23, 42, 0.6)';
-                e.target.style.color = '#e2e8f0';
-              }}
+              className="cyber-btn-wire"
+              style={{ padding: '0.85rem 2.2rem', fontSize: '1rem' }}
             >
-              <Share2 size={20} />
-              Share Note
+              <Share2 size={18} />
+              Share Link
             </button>
           </div>
         </div>
       </div>
 
-      {/* Full Screen Preview Modal */}
+      {/* Full Screen File Preview Overlay */}
       {showPreview && (
         <div
           style={{
@@ -594,78 +457,72 @@ export default function NoteDetails() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.9)',
+            background: 'rgba(0, 15, 8, 0.95)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
-            padding: '2rem'
+            zIndex: 2000,
+            padding: '1.5rem'
           }}
           onClick={() => setShowPreview(false)}
         >
           <div
+            className="cyber-panel"
             style={{
               position: 'relative',
               maxWidth: '90vw',
               maxHeight: '90vh',
-              background: 'white',
-              borderRadius: '1rem',
+              borderRadius: '8px',
               overflow: 'hidden',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)'
+              background: '#000F08',
+              border: '1px solid rgba(251, 54, 64, 0.3)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
+            {/* Close Cross Trigger */}
             <button
               onClick={() => setShowPreview(false)}
               style={{
                 position: 'absolute',
-                top: '1rem',
-                right: '1rem',
-                background: 'rgba(0, 0, 0, 0.7)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                color: 'white',
-                fontSize: '1.5rem',
+                top: '0.75rem',
+                right: '0.75rem',
+                background: 'rgba(0, 15, 8, 0.8)',
+                border: '1px solid rgba(251, 54, 64, 0.3)',
+                borderRadius: '4px',
+                width: '36px',
+                height: '36px',
+                color: 'var(--text-primary)',
                 cursor: 'pointer',
-                zIndex: 1001,
+                zIndex: 2005,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-orange)'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.3)'}
             >
               ×
             </button>
 
-            {/* Preview Content */}
+            {/* Preview Frame */}
             {(() => {
               const isImage = note.fileUrl && (
                 note.fileUrl.toLowerCase().includes('.jpg') ||
                 note.fileUrl.toLowerCase().includes('.jpeg') ||
                 note.fileUrl.toLowerCase().includes('.png')
               );
-
               const isPDF = note.fileUrl && note.fileUrl.toLowerCase().includes('.pdf');
 
               if (isImage) {
                 return (
                   <img
                     src={note.fileUrl}
-                    alt={note.filename || 'Note preview'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      maxWidth: '90vw',
-                      maxHeight: '90vh',
-                      objectFit: 'contain'
-                    }}
+                    alt="Preview"
+                    style={{ width: '100%', height: '100%', maxWidth: '85vw', maxHeight: '85vh', objectFit: 'contain' }}
                     onError={(e) => {
-                      // If image fails to load, show fallback
                       e.target.style.display = 'none';
-                      const fallback = e.target.nextSibling;
-                      if (fallback) fallback.style.display = 'flex';
+                      const fb = e.target.nextSibling;
+                      if (fb) fb.style.display = 'flex';
                     }}
                   />
                 );
@@ -673,109 +530,67 @@ export default function NoteDetails() {
                 return (
                   <iframe
                     src={note.fileUrl}
-                    title={note.filename || 'Note preview'}
-                    style={{
-                      width: '80vw',
-                      height: '80vh',
-                      border: 'none',
-                      borderRadius: '0.5rem'
-                    }}
+                    title="PDF Preview"
+                    style={{ width: '80vw', height: '80vh', border: 'none' }}
                     onLoad={(e) => {
-                      // Check if iframe loaded successfully
                       try {
-                        if (e.target.contentDocument?.body?.innerHTML === '') {
-                          throw new Error('Empty content');
-                        }
-                      } catch (err) {
-                        // If PDF fails to load, show fallback
+                        if (e.target.contentDocument?.body?.innerHTML === '') throw new Error('Empty');
+                      } catch (_) {
                         e.target.style.display = 'none';
-                        const fallback = e.target.nextSibling;
-                        if (fallback) fallback.style.display = 'flex';
+                        const fb = e.target.nextSibling;
+                        if (fb) fb.style.display = 'flex';
                       }
                     }}
                   />
                 );
-              } else {
-                // For other file types, show download option
-                return null; // Will show fallback below
               }
+              return null;
             })()}
 
-            {/* Fallback for failed previews or unsupported files */}
+            {/* Modal Fallback Frame */}
             <div style={{
               display: (() => {
-                const isImage = note.fileUrl && (
-                  note.fileUrl.toLowerCase().includes('.jpg') ||
-                  note.fileUrl.toLowerCase().includes('.jpeg') ||
-                  note.fileUrl.toLowerCase().includes('.png')
-                );
+                const isImg = note.fileUrl && (note.fileUrl.toLowerCase().includes('.jpg') || note.fileUrl.toLowerCase().includes('.jpeg') || note.fileUrl.toLowerCase().includes('.png'));
                 const isPDF = note.fileUrl && note.fileUrl.toLowerCase().includes('.pdf');
-                return (isImage || isPDF) ? 'none' : 'flex';
+                return (isImg || isPDF) ? 'none' : 'flex';
               })(),
-              width: '80vw',
-              height: '80vh',
+              width: '75vw',
+              height: '60vh',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '2rem',
-              textAlign: 'center',
-              background: '#f9fafb',
-              borderRadius: '0.5rem'
+              textAlign: 'center'
             }}>
-              <FileText size={64} style={{ color: '#a855f7', marginBottom: '1rem' }} />
-              <h3 style={{ color: '#1f2937', marginBottom: '1rem' }}>
-                {note.filename || 'Document'}
+              <FileText size={54} style={{ color: 'var(--accent-orange)', marginBottom: '1.25rem' }} />
+              <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                {note.filename || 'Document File'}
               </h3>
-              <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
-                This file type cannot be previewed in the browser. Click download to view it.
+              <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', marginBottom: '2rem', maxWidth: '400px' }}>
+                This file extension is not previewable in-browser. Please run file download to view.
               </p>
+              
               <button
-                onClick={() => {
+                onClick={async () => {
                   const storedFilename = note.fileUrl ? note.fileUrl.split('/').pop() : note.filename;
                   const originalName = note.originalName || note.filename || storedFilename;
-
-                  const baseUrl = window.location.hostname === 'localhost'
-                    ? 'http://localhost:5000'
-                    : 'https://notesvilla.onrender.com';
-
-                  const downloadUrl = `${baseUrl}/api/notes/download/${storedFilename}?name=${encodeURIComponent(originalName)}`;
-
-                  downloadViaFetch(downloadUrl, originalName);
+                  const ok = await downloadFile(note.fileUrl, originalName);
+                  if (!ok) alert('Download failed. Please try again.');
                 }}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: 'white',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
+                className="cyber-btn-orange"
               >
-                Download File
+                <Download size={14} />
+                Download File System
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* CSS Animations */}
+      {/* Styled JSX embedded animations */}
       <style jsx>{`
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes slideInUp {
-          0% {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

@@ -12,6 +12,7 @@ const LoadingScreen = ({ isLoading }) => {
                     <Loader />
                 </div>
                 <div className="loading-text">
+                    <h2>NOTESVILLA</h2>
                     <p>Loading your knowledge repository...</p>
                 </div>
             </div>
@@ -25,7 +26,7 @@ const StyledWrapper = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0f0f23 0%, #0a0a0a 50%, #141414 100%);
+  background: radial-gradient(circle, rgba(251, 54, 64, 0.15) 0%, #000F08 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,39 +41,43 @@ const StyledWrapper = styled.div`
   }
   
   .loader-wrapper {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
   }
   
   .loading-text {
     h2 {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 900;
       color: #ffffff;
       margin: 0 0 0.5rem 0;
-      font-family: 'Orbitron', 'Bebas Neue', monospace;
+      font-family: 'Orbitron', sans-serif;
       text-transform: uppercase;
-      background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 25%, #7c3aed 50%, #6366f1 75%, #818cf8 100%);
+      letter-spacing: 0.12em;
+      background: linear-gradient(135deg, #ffffff 30%, #FB3640 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     
     p {
-      font-size: 1rem;
-      color: #a1a1aa;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
       margin: 0;
-      font-weight: 400;
+      font-weight: 600;
     }
   }
   
   @media (max-width: 768px) {
     .loading-text {
       h2 {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
       }
       
       p {
-        font-size: 0.875rem;
+        font-size: 0.95rem;
       }
     }
   }
