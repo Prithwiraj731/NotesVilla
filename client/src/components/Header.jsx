@@ -8,8 +8,7 @@ import {
   Calendar, 
   Layers, 
   HelpCircle, 
-  Search,
-  Sparkles
+  Search
 } from 'lucide-react';
 
 export default function Header() {
@@ -43,19 +42,14 @@ export default function Header() {
       <div className="header-container">
         
         {/* =========================================
-            BRAND LOGO
+            BRAND LOGO (SVG Image Only)
             ========================================= */}
-        <Link to="/" className="brand-logo">
+        <Link to="/" className="brand-logo" aria-label="NotesVilla Home">
           <img 
             src="/logo.svg" 
             alt="NotesVilla Logo" 
             className="brand-logo-img"
           />
-          <div className="brand-logo-text">
-            <span className="logo-white">NOTES</span>
-            <span className="logo-red">VILLA</span>
-            <span className="logo-badge">STUDY</span>
-          </div>
         </Link>
 
         {/* =========================================
@@ -163,67 +157,39 @@ export default function Header() {
         .header-container {
           max-width: 1280px;
           margin: 0 auto;
-          padding: 0.85rem 1.5rem;
+          padding: 0.75rem 1.5rem;
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 1.5rem;
         }
 
-        /* Brand Logo */
+        /* Brand Logo Image Only */
         .brand-logo {
           text-decoration: none;
           display: flex;
           align-items: center;
-          gap: 0.65rem;
-          white-space: nowrap;
           transition: transform 0.2s ease;
         }
 
         .brand-logo:hover {
-          transform: scale(1.02);
+          transform: scale(1.03);
         }
 
         .brand-logo-img {
-          height: 32px;
-          width: 32px;
+          height: 38px;
+          width: auto;
+          max-width: 200px;
           object-fit: contain;
-          border-radius: 6px;
-          flex-shrink: 0;
-          filter: drop-shadow(0 0 6px rgba(251, 54, 64, 0.3));
+          display: block;
+          filter: drop-shadow(0 2px 10px rgba(251, 54, 64, 0.25));
         }
 
-        .brand-logo-text {
-          display: flex;
-          align-items: center;
-          gap: 0.15rem;
-          font-family: var(--font-cyber);
-          font-size: 1.35rem;
-          font-weight: 900;
-          letter-spacing: 0.06em;
-        }
-
-        .logo-white {
-          color: #ffffff;
-        }
-
-        .logo-red {
-          color: var(--accent-orange);
-          text-shadow: 0 0 12px rgba(251, 54, 64, 0.5);
-        }
-
-        .logo-badge {
-          font-size: 0.65rem;
-          font-family: var(--font-body);
-          font-weight: 800;
-          color: var(--accent-orange);
-          background: rgba(251, 54, 64, 0.12);
-          border: 1px solid rgba(251, 54, 64, 0.3);
-          border-radius: 4px;
-          padding: 0.15rem 0.4rem;
-          margin-left: 0.35rem;
-          letter-spacing: 0.08em;
-          line-height: 1;
+        @media (max-width: 768px) {
+          .brand-logo-img {
+            height: 30px;
+            max-width: 160px;
+          }
         }
 
         /* Desktop Nav */

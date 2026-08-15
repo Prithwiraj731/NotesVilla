@@ -13,7 +13,7 @@ export default function Footer() {
         fontSize: "0.95rem",
         borderTop: "1px solid rgba(251, 54, 64, 0.12)",
         marginTop: "auto",
-        fontFamily: "var(--font-tech)",
+        fontFamily: "var(--font-body)",
         zIndex: 99,
         boxSizing: "border-box"
       }}
@@ -27,44 +27,22 @@ export default function Footer() {
         flexWrap: "wrap",
         gap: "1.5rem"
       }}>
-        {/* Brand & Tagline */}
+        {/* Brand Logo & Tagline */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '0.6rem' }} aria-label="NotesVilla Home">
             <img 
               src="/logo.svg" 
               alt="NotesVilla Logo" 
               style={{
-                height: '28px',
-                width: '28px',
+                height: '32px',
+                width: 'auto',
+                maxWidth: '170px',
                 objectFit: 'contain',
-                borderRadius: '5px',
-                filter: 'drop-shadow(0 0 5px rgba(251, 54, 64, 0.25))'
+                display: 'block',
+                filter: 'drop-shadow(0 2px 6px rgba(251, 54, 64, 0.2))'
               }}
             />
-            <div style={{
-              fontFamily: 'var(--font-cyber)',
-              fontSize: '1.2rem',
-              fontWeight: '900',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#ffffff'
-            }}>
-              NOTES<span style={{ color: 'var(--accent-orange)' }}>VILLA</span>
-              <span style={{
-                fontSize: '0.65rem',
-                fontFamily: 'var(--font-body)',
-                fontWeight: '800',
-                color: 'var(--accent-orange)',
-                background: 'rgba(251, 54, 64, 0.12)',
-                border: '1px solid rgba(251, 54, 64, 0.3)',
-                borderRadius: '4px',
-                padding: '0.1rem 0.35rem',
-                marginLeft: '0.35rem'
-              }}>
-                STUDY
-              </span>
-            </div>
-          </div>
+          </Link>
           <p style={{
             color: 'var(--text-muted)',
             fontSize: '0.85rem',
@@ -87,65 +65,76 @@ export default function Footer() {
             style={{
               color: "var(--text-secondary)",
               textDecoration: "none",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
               fontSize: "0.9rem",
               transition: "color 0.2s ease"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-orange)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
-            Notes Library
+            <BookOpen size={15} />
+            <span>Notes</span>
           </Link>
+
           <Link
             to="/routine"
             style={{
               color: "var(--text-secondary)",
               textDecoration: "none",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
               fontSize: "0.9rem",
               transition: "color 0.2s ease"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-orange)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
-            Class Routine
+            <Calendar size={15} />
+            <span>Routine</span>
           </Link>
+
           <Link
             to="/syllabus"
             style={{
               color: "var(--text-secondary)",
               textDecoration: "none",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
               fontSize: "0.9rem",
               transition: "color 0.2s ease"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-orange)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
-            Course Syllabus
+            <Layers size={15} />
+            <span>Syllabus</span>
           </Link>
+
           <Link
             to="/practice"
             style={{
               color: "var(--text-secondary)",
               textDecoration: "none",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
               fontSize: "0.9rem",
               transition: "color 0.2s ease"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-orange)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
-            Practice Sets
+            <HelpCircle size={15} />
+            <span>Practice</span>
           </Link>
         </div>
       </div>
 
-      {/* Bottom Sub-bar */}
+      {/* Copyright & Credits */}
       <div style={{
         maxWidth: "1280px",
         margin: "1.8rem auto 0",
@@ -154,13 +143,17 @@ export default function Footer() {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        fontSize: "0.85rem",
-        color: "var(--text-muted)",
         flexWrap: "wrap",
-        gap: "0.8rem"
+        gap: "0.8rem",
+        fontSize: "0.82rem",
+        color: "var(--text-muted)"
       }}>
-        <span>© {new Date().getFullYear()} NOTESVILLA. ALL RIGHTS RESERVED.</span>
-        <span>ENGINEERED FOR HIGH-FIDELITY LEARNING</span>
+        <div>
+          © {new Date().getFullYear()} NotesVilla. All rights reserved. Built for Academic Excellence.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+          Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students
+        </div>
       </div>
     </footer>
   );
