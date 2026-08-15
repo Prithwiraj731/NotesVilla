@@ -1,22 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Home, BookOpen, Calendar, FileText, HelpCircle, Layers } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Menu, 
+  X, 
+  Home, 
+  BookOpen, 
+  Calendar, 
+  Layers, 
+  HelpCircle, 
+  Search,
+  Sparkles
+} from 'lucide-react';
 
 export default function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 15);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close menu on route change
+  // Close mobile drawer on route navigation
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
@@ -30,64 +39,22 @@ export default function Header() {
   ];
 
   return (
-    <header
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        zIndex: 1000,
-        background: scrolled ? "rgba(0, 15, 8, 0.95)" : "rgba(0, 15, 8, 0.8)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        boxShadow: scrolled ? "0 8px 32px 0 rgba(0, 0, 0, 0.6)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(251, 54, 64, 0.15)" : "1px solid rgba(251, 54, 64, 0.05)",
-        transition: "all 0.3s ease",
-      }}
-    >
-      <div style={{
-        maxWidth: "1280px",
-        margin: "0 auto",
-        padding: scrolled ? "0.75rem 1.5rem" : "1.1rem 1.5rem",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        transition: "all 0.3s ease",
-      }}>
-        {/* Brand Logo */}
-        <Link 
-          to="/" 
-          style={{
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            transition: "transform 0.2s ease",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-          onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-        >
-          <div style={{
-            fontFamily: 'var(--font-cyber)',
-            fontSize: scrolled ? '1.25rem' : '1.45rem',
-            fontWeight: '900',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'all 0.3s ease'
-          }}>
-            <span style={{ color: '#ffffff' }}>NOTES</span>
-            <span style={{ color: 'var(--accent-orange)', textShadow: '0 0 10px rgba(251, 54, 64, 0.5)' }}>VILLA</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: scrolled ? '0.7rem' : '0.75rem', marginLeft: '0.25rem', fontWeight: '600' }}>.STUDY</span>
-          </div>
+    <header className={`header-root ${scrolled ? 'header-scrolled' : ''}`}>
+      <div className="header-container">
+        
+        {/* =========================================
+            BRAND LOGO
+            ========================================= */}
+        <Link to="/" className="brand-logo">
+          <span className="logo-white">NOTES</span>
+          <span className="logo-red">VILLA</span>
+          <span className="logo-badge">STUDY</span>
         </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav style={{
-          display: window.innerWidth >= 900 ? "flex" : "none",
-          alignItems: "center",
-          gap: "1.8rem",
-        }}>
+        {/* =========================================
+            DESKTOP NAVIGATION
+            ========================================= */}
+        <nav className="desktop-nav">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -95,110 +62,42 @@ export default function Header() {
               <Link
                 key={item.path}
                 to={item.path}
-                style={{
-                  fontFamily: 'var(--font-tech)',
-                  fontSize: '1.05rem',
-                  fontWeight: isActive ? '700' : '500',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  color: isActive ? 'var(--accent-orange)' : 'var(--text-secondary)',
-                  textShadow: isActive ? '0 0 8px rgba(251, 54, 64, 0.3)' : 'none',
-                  transition: "all 0.2s ease",
-                  padding: "0.25rem 0.5rem",
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem"
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "var(--text-secondary)";
-                }}
+                className={`nav-link ${isActive ? 'active' : ''}`}
               >
-                <Icon size={15} style={{ opacity: isActive ? 1 : 0.7 }} />
+                <Icon size={15} className="nav-icon" />
                 <span>{item.label}</span>
-                {isActive && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: '-4px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '16px',
-                    height: '2px',
-                    backgroundColor: 'var(--accent-orange)',
-                    boxShadow: '0 0 8px var(--accent-orange)'
-                  }} />
-                )}
+                {isActive && <span className="active-glow-dot" />}
               </Link>
             );
           })}
         </nav>
 
-        {/* Action Button (Explore Notes CTA) */}
-        <div style={{ display: window.innerWidth >= 900 ? "flex" : "none", alignItems: "center" }}>
-          <Link
-            to="/notes"
-            className="cyber-btn-orange"
-            style={{
-              padding: "0.5rem 1.25rem",
-              fontSize: "0.85rem",
-              textDecoration: "none",
-              clipPath: "none",
-              borderRadius: "4px"
-            }}
-          >
-            <BookOpen size={14} />
+        {/* =========================================
+            SEARCH / EXPLORE CTA BUTTON
+            ========================================= */}
+        <div className="header-actions">
+          <Link to="/notes" className="header-search-btn">
+            <Search size={14} />
             <span>Search Library</span>
           </Link>
-        </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          style={{
-            display: window.innerWidth < 900 ? "flex" : "none",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "40px",
-            height: "40px",
-            borderRadius: "4px",
-            border: "1px solid rgba(251, 54, 64, 0.3)",
-            background: "rgba(0, 15, 8, 0.8)",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--accent-orange)";
-            e.currentTarget.style.boxShadow = "0 0 10px rgba(251, 54, 64, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.3)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
-          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="mobile-toggle-btn"
+            aria-label="Toggle Navigation Menu"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Dropdown Navigation */}
+      {/* =========================================
+          MOBILE DRAWER NAVIGATION
+          ========================================= */}
       {isMenuOpen && (
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          width: "100%",
-          background: "rgba(0, 15, 8, 0.98)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          borderTop: "1px solid rgba(251, 54, 64, 0.15)",
-          borderBottom: "1px solid rgba(251, 54, 64, 0.15)",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
-        }}>
-          <nav style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+        <div className="mobile-drawer">
+          <nav className="mobile-nav-list">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
@@ -206,33 +105,298 @@ export default function Header() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    padding: "0.8rem 1.2rem",
-                    borderRadius: "4px",
-                    textDecoration: "none",
-                    fontFamily: "var(--font-tech)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: isActive ? "var(--accent-orange)" : "var(--text-secondary)",
-                    background: isActive ? "rgba(251, 54, 64, 0.08)" : "transparent",
-                    border: isActive ? "1px solid rgba(251, 54, 64, 0.2)" : "1px solid transparent",
-                    fontSize: "1.1rem",
-                    fontWeight: isActive ? "700" : "500",
-                    transition: "all 0.2s ease",
-                  }}
+                  className={`mobile-nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <Icon size={18} />
-                  {item.label}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Icon size={18} style={{ color: isActive ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && <span className="mobile-active-pill">Current</span>}
                 </Link>
               );
             })}
+
+            <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(251, 54, 64, 0.12)' }}>
+              <Link 
+                to="/notes" 
+                className="cyber-btn-orange" 
+                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Search size={15} />
+                <span>Browse All Notes</span>
+              </Link>
+            </div>
           </nav>
         </div>
       )}
+
+      {/* Scoped CSS styling for bulletproof layout & responsive behavior */}
+      <style jsx>{`
+        .header-root {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 1000;
+          background: rgba(0, 15, 8, 0.85);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(251, 54, 64, 0.08);
+          transition: all 0.25s ease-in-out;
+        }
+
+        .header-scrolled {
+          background: rgba(0, 15, 8, 0.95);
+          border-bottom: 1px solid rgba(251, 54, 64, 0.18);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 0.85rem 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        /* Brand Logo */
+        .brand-logo {
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 0.15rem;
+          font-family: var(--font-cyber);
+          font-size: 1.35rem;
+          font-weight: 900;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+          transition: transform 0.2s ease;
+        }
+
+        .brand-logo:hover {
+          transform: scale(1.02);
+        }
+
+        .logo-white {
+          color: #ffffff;
+        }
+
+        .logo-red {
+          color: var(--accent-orange);
+          text-shadow: 0 0 12px rgba(251, 54, 64, 0.5);
+        }
+
+        .logo-badge {
+          font-size: 0.65rem;
+          font-family: var(--font-body);
+          font-weight: 800;
+          color: var(--accent-orange);
+          background: rgba(251, 54, 64, 0.12);
+          border: 1px solid rgba(251, 54, 64, 0.3);
+          border-radius: 4px;
+          padding: 0.15rem 0.4rem;
+          margin-left: 0.35rem;
+          letter-spacing: 0.08em;
+          line-height: 1;
+        }
+
+        /* Desktop Nav */
+        .desktop-nav {
+          display: none;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        @media (min-width: 900px) {
+          .desktop-nav {
+            display: flex;
+          }
+        }
+
+        .nav-link {
+          position: relative;
+          text-decoration: none;
+          font-family: var(--font-body);
+          font-size: 0.92rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+          padding: 0.5rem 0.9rem;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          white-space: nowrap;
+          transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+          color: #ffffff;
+          background: rgba(251, 54, 64, 0.06);
+        }
+
+        .nav-link.active {
+          color: #ffffff;
+          font-weight: 700;
+          background: rgba(251, 54, 64, 0.12);
+          border: 1px solid rgba(251, 54, 64, 0.25);
+        }
+
+        .nav-icon {
+          color: var(--text-muted);
+          transition: color 0.2s ease;
+          flex-shrink: 0;
+        }
+
+        .nav-link:hover .nav-icon,
+        .nav-link.active .nav-icon {
+          color: var(--accent-orange);
+        }
+
+        .active-glow-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--accent-orange);
+          box-shadow: 0 0 6px var(--accent-orange);
+          margin-left: 0.2rem;
+        }
+
+        /* Header Right Actions */
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+        }
+
+        .header-search-btn {
+          text-decoration: none;
+          display: none;
+          align-items: center;
+          gap: 0.45rem;
+          background: var(--accent-orange);
+          color: #000000 !important;
+          font-family: var(--font-body);
+          font-size: 0.85rem;
+          font-weight: 700;
+          padding: 0.55rem 1.15rem;
+          border-radius: 6px;
+          white-space: nowrap;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 10px rgba(251, 54, 64, 0.3);
+        }
+
+        @media (min-width: 520px) {
+          .header-search-btn {
+            display: inline-flex;
+          }
+        }
+
+        .header-search-btn:hover {
+          background: rgba(251, 54, 64, 0.9);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 15px rgba(251, 54, 64, 0.45);
+        }
+
+        /* Mobile Menu Button */
+        .mobile-toggle-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 6px;
+          border: 1px solid rgba(251, 54, 64, 0.25);
+          background: rgba(251, 54, 64, 0.05);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        @media (min-width: 900px) {
+          .mobile-toggle-btn {
+            display: none;
+          }
+        }
+
+        .mobile-toggle-btn:hover {
+          border-color: var(--accent-orange);
+          background: rgba(251, 54, 64, 0.15);
+          color: var(--accent-orange);
+        }
+
+        /* Mobile Drawer */
+        .mobile-drawer {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          width: 100%;
+          background: rgba(0, 15, 8, 0.98);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+          animation: slideDown 0.25s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .mobile-nav-list {
+          padding: 1.25rem 1.5rem 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+
+        .mobile-nav-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.75rem 1rem;
+          border-radius: 6px;
+          text-decoration: none;
+          font-family: var(--font-body);
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+          background: transparent;
+          border: 1px solid transparent;
+          transition: all 0.2s ease;
+        }
+
+        .mobile-nav-item:hover {
+          background: rgba(251, 54, 64, 0.06);
+          color: #ffffff;
+        }
+
+        .mobile-nav-item.active {
+          background: rgba(251, 54, 64, 0.12);
+          border-color: rgba(251, 54, 64, 0.3);
+          color: #ffffff;
+          font-weight: 700;
+        }
+
+        .mobile-active-pill {
+          font-size: 0.75rem;
+          background: var(--accent-orange);
+          color: #000000;
+          font-weight: 700;
+          padding: 0.15rem 0.5rem;
+          border-radius: 4px;
+        }
+      `}</style>
     </header>
   );
 }
