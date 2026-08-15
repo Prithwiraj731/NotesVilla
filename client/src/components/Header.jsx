@@ -46,9 +46,16 @@ export default function Header() {
             BRAND LOGO
             ========================================= */}
         <Link to="/" className="brand-logo">
-          <span className="logo-white">NOTES</span>
-          <span className="logo-red">VILLA</span>
-          <span className="logo-badge">STUDY</span>
+          <img 
+            src="/logo.svg" 
+            alt="NotesVilla Logo" 
+            className="brand-logo-img"
+          />
+          <div className="brand-logo-text">
+            <span className="logo-white">NOTES</span>
+            <span className="logo-red">VILLA</span>
+            <span className="logo-badge">STUDY</span>
+          </div>
         </Link>
 
         {/* =========================================
@@ -168,17 +175,32 @@ export default function Header() {
           text-decoration: none;
           display: flex;
           align-items: center;
-          gap: 0.15rem;
-          font-family: var(--font-cyber);
-          font-size: 1.35rem;
-          font-weight: 900;
-          letter-spacing: 0.06em;
+          gap: 0.65rem;
           white-space: nowrap;
           transition: transform 0.2s ease;
         }
 
         .brand-logo:hover {
           transform: scale(1.02);
+        }
+
+        .brand-logo-img {
+          height: 32px;
+          width: 32px;
+          object-fit: contain;
+          border-radius: 6px;
+          flex-shrink: 0;
+          filter: drop-shadow(0 0 6px rgba(251, 54, 64, 0.3));
+        }
+
+        .brand-logo-text {
+          display: flex;
+          align-items: center;
+          gap: 0.15rem;
+          font-family: var(--font-cyber);
+          font-size: 1.35rem;
+          font-weight: 900;
+          letter-spacing: 0.06em;
         }
 
         .logo-white {

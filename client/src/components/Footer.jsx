@@ -29,16 +29,41 @@ export default function Footer() {
       }}>
         {/* Brand & Tagline */}
         <div>
-          <div style={{
-            fontFamily: 'var(--font-cyber)',
-            fontSize: '1.2rem',
-            fontWeight: '900',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: '#ffffff',
-            marginBottom: '0.3rem'
-          }}>
-            NOTES<span style={{ color: 'var(--accent-orange)' }}>VILLA</span>.STUDY
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+            <img 
+              src="/logo.svg" 
+              alt="NotesVilla Logo" 
+              style={{
+                height: '28px',
+                width: '28px',
+                objectFit: 'contain',
+                borderRadius: '5px',
+                filter: 'drop-shadow(0 0 5px rgba(251, 54, 64, 0.25))'
+              }}
+            />
+            <div style={{
+              fontFamily: 'var(--font-cyber)',
+              fontSize: '1.2rem',
+              fontWeight: '900',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#ffffff'
+            }}>
+              NOTES<span style={{ color: 'var(--accent-orange)' }}>VILLA</span>
+              <span style={{
+                fontSize: '0.65rem',
+                fontFamily: 'var(--font-body)',
+                fontWeight: '800',
+                color: 'var(--accent-orange)',
+                background: 'rgba(251, 54, 64, 0.12)',
+                border: '1px solid rgba(251, 54, 64, 0.3)',
+                borderRadius: '4px',
+                padding: '0.1rem 0.35rem',
+                marginLeft: '0.35rem'
+              }}>
+                STUDY
+              </span>
+            </div>
           </div>
           <p style={{
             color: 'var(--text-muted)',
