@@ -9,13 +9,10 @@ import {
   Calendar, 
   HelpCircle, 
   Sparkles, 
-  Download, 
-  Clock, 
-  CheckCircle2, 
-  Cpu, 
-  ChevronRight,
-  FileText,
-  ShieldCheck
+  Play, 
+  ChevronRight, 
+  Cpu,
+  FileText
 } from "lucide-react";
 
 export default function Home() {
@@ -64,594 +61,164 @@ export default function Home() {
 
   return (
     <div className="home-page-container">
-      {/* Background Radial Glow */}
-      <div style={{
-        position: "absolute",
-        top: "5%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "55vw",
-        height: "55vw",
-        background: "radial-gradient(circle, rgba(251, 54, 64, 0.12) 0%, transparent 65%)",
-        borderRadius: "50%",
-        filter: "blur(90px)",
-        pointerEvents: "none",
-        zIndex: 1
-      }} />
+      
+      {/* =========================================================================
+          CINEMATIC HERO SECTION (Direct Reference Style: Title Graphic & Character)
+          ========================================================================= */}
+      <section className="cinematic-hero">
+        
+        {/* Background Ambient Radial Glow */}
+        <div style={{
+          position: "absolute",
+          top: "10%",
+          left: "5%",
+          width: "55vw",
+          height: "55vw",
+          background: "radial-gradient(circle, rgba(251, 54, 64, 0.16) 0%, transparent 65%)",
+          borderRadius: "50%",
+          filter: "blur(90px)",
+          pointerEvents: "none",
+          zIndex: 1
+        }} />
 
-      {/* Main Container */}
-      <div style={{
-        maxWidth: "1320px",
-        margin: "0 auto",
-        width: "100%",
-        position: "relative",
-        zIndex: 5
-      }}>
-        {/* =========================================================================
-            3-COLUMN BALANCED HERO SECTION (Left Copy | CENTER ROBOT | Right Cards)
-            ========================================================================= */}
-        <div className="hero-3col-grid" style={{
-          display: "grid",
-          gridTemplateColumns: window.innerWidth < 1024 ? "1fr" : "1.1fr 1fr 0.95fr",
-          alignItems: "center",
-          gap: "2rem",
-          paddingTop: "1.5rem",
-          paddingBottom: "4rem"
-        }}>
+        <div style={{
+          position: "absolute",
+          top: "20%",
+          right: "10%",
+          width: "40vw",
+          height: "40vw",
+          background: "radial-gradient(circle, rgba(251, 54, 64, 0.1) 0%, transparent 65%)",
+          borderRadius: "50%",
+          filter: "blur(80px)",
+          pointerEvents: "none",
+          zIndex: 1
+        }} />
+
+        {/* Hero Container */}
+        <div className="hero-content-wrapper">
           
-          {/* =========================================
-              LEFT COLUMN: Headline, Subtitle & Primary CTA
-              ========================================= */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem", textAlign: "left" }}>
+          {/* Main 2-Column Hero Stage */}
+          <div className="hero-main-stage">
             
-            {/* Tagline Badge */}
-            <div>
-              <div style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                background: "rgba(251, 54, 64, 0.08)",
-                border: "1px solid rgba(251, 54, 64, 0.3)",
-                borderRadius: "30px",
-                padding: "0.35rem 1.1rem",
-                boxShadow: "0 0 15px rgba(251, 54, 64, 0.15)"
-              }}>
+            {/* Left Column: Title Image, Description & Action Buttons */}
+            <div className="hero-left-col">
+              
+              {/* Category Pill */}
+              <div className="hero-badge">
                 <Sparkles size={14} style={{ color: "var(--accent-orange)" }} />
-                <span style={{
-                  fontFamily: "var(--font-body)",
-                  fontWeight: "700",
-                  color: "#ffffff",
-                  fontSize: "0.8rem",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase"
-                }}>
-                  Curated Knowledge Repository
-                </span>
+                <span>Curated Academic Knowledge Repository</span>
+              </div>
+
+              {/* NOTES VILLA Title Graphic Image */}
+              <div className="hero-title-container">
+                <img 
+                  src="/hero_text.png" 
+                  alt="NotesVilla" 
+                  className="hero-title-img"
+                />
+              </div>
+
+              {/* Narrative Subtitle */}
+              <p className="hero-narrative">
+                Hundreds of engineering & science scholars access lecture notes in chronological continuity, official class routine timetables, modular syllabi, and model practice question sets.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="hero-actions">
+                <button
+                  onClick={() => nav("/notes")}
+                  className="hero-play-btn"
+                >
+                  <div className="play-icon-circle">
+                    <Play size={13} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "2px" }} />
+                  </div>
+                  <span>EXPLORE NOTES</span>
+                </button>
+
+                <button
+                  onClick={() => nav("/routine")}
+                  className="hero-secondary-btn"
+                >
+                  <Calendar size={16} />
+                  <span>CLASS ROUTINE</span>
+                </button>
               </div>
             </div>
 
-            {/* Main Title */}
-            <h1 style={{
-              fontSize: "clamp(2.1rem, 3.6vw, 3.4rem)",
-              fontWeight: "900",
-              lineHeight: "1.12",
-              fontFamily: "var(--font-cyber)",
-              color: "#ffffff",
-              letterSpacing: "-0.01em",
-              margin: 0
-            }}>
-              YOUR PORTAL TO <br />
-              <span style={{
-                background: "linear-gradient(135deg, #ffffff 15%, #FB3640 85%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                textShadow: "0 0 30px rgba(251, 54, 64, 0.35)"
-              }}>
-                ACADEMIC EXCELLENCE.
-              </span>
-            </h1>
+            {/* Right Column: Character Graphic Showcase */}
+            <div className="hero-character-col">
+              {/* Radial Light Under Character */}
+              <div className="char-glow-underlay" />
+              
+              {/* White Sci-Fi Student Character */}
+              <img 
+                src="/photo1.png" 
+                alt="NotesVilla Student Character" 
+                className="hero-character-img"
+              />
 
-            {/* Subtitle */}
-            <p style={{
-              color: "var(--text-secondary)",
-              fontSize: "0.98rem",
-              lineHeight: "1.65",
-              maxWidth: "440px",
-              fontFamily: "var(--font-body)",
-              margin: 0
-            }}>
-              Access lecture notes in chronological continuity, official class routine timetables, modular course syllabi, and model practice question sets.
-            </p>
-
-            {/* Main CTA Button */}
-            <div style={{ marginTop: "0.4rem" }}>
-              <button
-                onClick={() => nav("/notes")}
-                className="cyber-btn-orange"
-                style={{
-                  padding: "0.8rem 1.8rem",
-                  fontSize: "0.95rem"
-                }}
-              >
-                <BookOpen size={17} />
-                <span>Explore Notes Archive</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* Quick Stat Counters */}
-            <div style={{
-              display: "flex",
-              gap: "1.5rem",
-              marginTop: "0.8rem",
-              paddingTop: "1.2rem",
-              borderTop: "1px solid rgba(251, 54, 64, 0.12)",
-              flexWrap: "wrap"
-            }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.35rem", fontWeight: "900", color: "#ffffff" }}>
-                  100%
-                </div>
-                <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", fontFamily: "var(--font-body)" }}>
-                  Free Access
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.35rem", fontWeight: "900", color: "var(--accent-orange)" }}>
-                  Daily
-                </div>
-                <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", fontFamily: "var(--font-body)" }}>
-                  Continuity Notes
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.35rem", fontWeight: "900", color: "#ffffff" }}>
-                  Instant
-                </div>
-                <div style={{ color: "var(--text-muted)", fontSize: "0.8rem", fontFamily: "var(--font-body)" }}>
-                  PDF Downloads
-                </div>
+              {/* Vertical Edge Pagination Dots */}
+              <div className="vertical-pagination">
+                <span className="dot active" />
+                <span className="dot" />
+                <span className="dot" />
               </div>
             </div>
           </div>
 
-          {/* =========================================
-              CENTER COLUMN: The White Robot in the Middle
-              ========================================= */}
-          <div style={{
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "380px"
-          }}>
-            {/* Core Radial Light Underlay */}
-            <div style={{
-              position: "absolute",
-              width: "300px",
-              height: "300px",
-              background: "radial-gradient(circle, rgba(251, 54, 64, 0.25) 0%, transparent 70%)",
-              filter: "blur(50px)",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              pointerEvents: "none",
-              zIndex: 1
-            }} />
-
-            {/* Atomic HUD Tech Circles */}
-            <div style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              pointerEvents: "none",
-              zIndex: 2,
-              opacity: 0.85,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center"
-            }}>
-              <svg width="100%" height="100%" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: "440px" }}>
-                <circle cx="250" cy="250" r="75" stroke="rgba(251, 54, 64, 0.25)" strokeWidth="1" strokeDasharray="4 4" />
-                <circle cx="190" cy="214" r="3.5" fill="#FB3640" opacity="0.8" />
-                
-                <circle cx="250" cy="250" r="130" stroke="rgba(251, 54, 64, 0.18)" strokeWidth="1" />
-                <circle cx="340" cy="170" r="4" fill="#FB3640" opacity="0.7" />
-                
-                <g transform="rotate(-30 250 250)">
-                  <ellipse cx="250" cy="250" rx="195" ry="85" stroke="rgba(251, 54, 64, 0.15)" strokeWidth="1" strokeDasharray="10 5" />
-                </g>
-                <circle cx="110" cy="180" r="4" fill="#FB3640" opacity="0.8" />
-                
-                <g transform="rotate(30 250 250)">
-                  <ellipse cx="250" cy="250" rx="195" ry="85" stroke="rgba(251, 54, 64, 0.15)" strokeWidth="1" strokeDasharray="15 5" />
-                </g>
-                <circle cx="390" cy="180" r="4" fill="#FB3640" opacity="0.8" />
-                
-                <circle cx="250" cy="250" r="175" stroke="rgba(251, 54, 64, 0.25)" strokeWidth="1.5" strokeDasharray="30 150" />
-                <circle cx="250" cy="250" r="182" stroke="rgba(251, 54, 64, 0.12)" strokeWidth="0.75" strokeDasharray="2 8" />
-              </svg>
-            </div>
-
-            {/* White Futuristic Sci-Fi Robot Student Character */}
-            <img 
-              src="/photo1.png" 
-              alt="NotesVilla Student" 
-              style={{
-                width: "100%",
-                maxWidth: "390px",
-                height: "auto",
-                objectFit: "contain",
-                zIndex: 5,
-                filter: "drop-shadow(0 15px 35px rgba(251, 54, 64, 0.25)) drop-shadow(0 10px 25px rgba(0, 0, 0, 0.7))",
-                display: "block",
-                maskImage: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%)"
-              }}
-            />
-          </div>
-
-          {/* =========================================
-              RIGHT COLUMN: Quick Feature Access Cards
-              ========================================= */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            
-            {/* Card 1: Class Routine */}
+          {/* Bottom Interactive Feature Tracks Strip (01, 02, 03) */}
+          <div className="hero-bottom-tracks">
             <div 
               onClick={() => nav("/routine")}
-              className="cyber-panel"
-              style={{
-                borderRadius: "8px",
-                padding: "1.2rem 1.4rem",
-                border: "1px solid rgba(251, 54, 64, 0.18)",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateX(-4px)";
-                e.currentTarget.style.borderColor = "var(--accent-orange)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(251, 54, 64, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateX(0)";
-                e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="track-item"
             >
-              <div style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "6px",
-                background: "rgba(251, 54, 64, 0.1)",
-                border: "1px solid rgba(251, 54, 64, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--accent-orange)",
-                flexShrink: 0
-              }}>
-                <Calendar size={20} />
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.05rem", color: "#ffffff", margin: "0 0 0.2rem 0" }}>
-                  Class Routine
-                </h3>
-                <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: 0 }}>
-                  Interactive timetable with 1-click offline download.
-                </p>
+              <div className="track-index">01</div>
+              <div className="track-info">
+                <div className="track-title">CLASS ROUTINE</div>
+                <div className="track-sub">Daily verified timetable & lab timings</div>
               </div>
             </div>
 
-            {/* Card 2: Course Syllabus */}
             <div 
               onClick={() => nav("/syllabus")}
-              className="cyber-panel"
-              style={{
-                borderRadius: "8px",
-                padding: "1.2rem 1.4rem",
-                border: "1px solid rgba(251, 54, 64, 0.18)",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateX(-4px)";
-                e.currentTarget.style.borderColor = "var(--accent-orange)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(251, 54, 64, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateX(0)";
-                e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="track-item"
             >
-              <div style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "6px",
-                background: "rgba(251, 54, 64, 0.1)",
-                border: "1px solid rgba(251, 54, 64, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--accent-orange)",
-                flexShrink: 0
-              }}>
-                <Layers size={20} />
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.05rem", color: "#ffffff", margin: "0 0 0.2rem 0" }}>
-                  Course Syllabus
-                </h3>
-                <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: 0 }}>
-                  Modular curriculum units and standard reference texts.
-                </p>
+              <div className="track-index">02</div>
+              <div className="track-info">
+                <div className="track-title">COURSE SYLLABUS</div>
+                <div className="track-sub">Modular unit guides & standard texts</div>
               </div>
             </div>
 
-            {/* Card 3: Practice Sets & PYQs */}
             <div 
               onClick={() => nav("/practice")}
-              className="cyber-panel"
-              style={{
-                borderRadius: "8px",
-                padding: "1.2rem 1.4rem",
-                border: "1px solid rgba(251, 54, 64, 0.18)",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateX(-4px)";
-                e.currentTarget.style.borderColor = "var(--accent-orange)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(251, 54, 64, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateX(0)";
-                e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="track-item"
             >
-              <div style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "6px",
-                background: "rgba(251, 54, 64, 0.1)",
-                border: "1px solid rgba(251, 54, 64, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--accent-orange)",
-                flexShrink: 0
-              }}>
-                <HelpCircle size={20} />
+              <div className="track-index">03</div>
+              <div className="track-info">
+                <div className="track-title">PRACTICE SETS & PYQS</div>
+                <div className="track-sub">Model exam papers & problem sets</div>
               </div>
-              <div style={{ textAlign: "left" }}>
-                <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.05rem", color: "#ffffff", margin: "0 0 0.2rem 0" }}>
-                  Practice Sets & PYQs
-                </h3>
-                <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: 0 }}>
-                  Exam previous year questions and model problems.
-                </p>
+            </div>
+
+            <div 
+              onClick={() => nav("/notes")}
+              className="track-item"
+            >
+              <div className="track-index">04</div>
+              <div className="track-info">
+                <div className="track-title">LECTURE ARCHIVE</div>
+                <div className="track-sub">100% Free instant PDF downloads</div>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* =========================================================================
-            FEATURE BENTO CARDS SECTION
-            ========================================================================= */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "5rem"
-        }}>
-          {/* Card 1: Notes Library */}
-          <div 
-            onClick={() => nav("/notes")}
-            className="cyber-panel"
-            style={{
-              borderRadius: "10px",
-              padding: "1.8rem",
-              border: "1px solid rgba(251, 54, 64, 0.18)",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "8px",
-              background: "rgba(251, 54, 64, 0.1)",
-              border: "1px solid rgba(251, 54, 64, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "1.2rem",
-              color: "var(--accent-orange)"
-            }}>
-              <BookOpen size={22} />
-            </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
-              Date-wise Notes
-            </h3>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Lecture notes in chronological order with instant modal preview and direct downloads.
-            </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Access Archive <ChevronRight size={15} />
-            </span>
-          </div>
-
-          {/* Card 2: Class Routine */}
-          <div 
-            onClick={() => nav("/routine")}
-            className="cyber-panel"
-            style={{
-              borderRadius: "10px",
-              padding: "1.8rem",
-              border: "1px solid rgba(251, 54, 64, 0.18)",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "8px",
-              background: "rgba(251, 54, 64, 0.1)",
-              border: "1px solid rgba(251, 54, 64, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "1.2rem",
-              color: "var(--accent-orange)"
-            }}>
-              <Calendar size={22} />
-            </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
-              Class Routine
-            </h3>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Verified schedule with interactive zoom, lab timings, and offline image download.
-            </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              View Routine <ChevronRight size={15} />
-            </span>
-          </div>
-
-          {/* Card 3: Course Syllabus */}
-          <div 
-            onClick={() => nav("/syllabus")}
-            className="cyber-panel"
-            style={{
-              borderRadius: "10px",
-              padding: "1.8rem",
-              border: "1px solid rgba(251, 54, 64, 0.18)",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "8px",
-              background: "rgba(251, 54, 64, 0.1)",
-              border: "1px solid rgba(251, 54, 64, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "1.2rem",
-              color: "var(--accent-orange)"
-            }}>
-              <Layers size={22} />
-            </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
-              Course Syllabus
-            </h3>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Modular unit curriculum breakdowns, objectives, and recommended standard reference textbooks.
-            </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Explore Syllabus <ChevronRight size={15} />
-            </span>
-          </div>
-
-          {/* Card 4: Practice Questions */}
-          <div 
-            onClick={() => nav("/practice")}
-            className="cyber-panel"
-            style={{
-              borderRadius: "10px",
-              padding: "1.8rem",
-              border: "1px solid rgba(251, 54, 64, 0.18)",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <div style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "8px",
-              background: "rgba(251, 54, 64, 0.1)",
-              border: "1px solid rgba(251, 54, 64, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "1.2rem",
-              color: "var(--accent-orange)"
-            }}>
-              <HelpCircle size={22} />
-            </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
-              Practice Sets & PYQs
-            </h3>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              University previous year questions and topic model problem sets for exam readiness.
-            </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Solve Problems <ChevronRight size={15} />
-            </span>
-          </div>
-        </div>
-
-        {/* =========================================================================
-            INTERACTIVE SUBJECT SHOWCASE
-            ========================================================================= */}
+      {/* =========================================================================
+          INTERACTIVE SUBJECT SHOWCASE
+          ========================================================================= */}
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem 4rem", position: "relative", zIndex: 5 }}>
         <div 
           className="cyber-panel"
           style={{
@@ -765,16 +332,297 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Embedded Animations */}
+      {/* Scoped CSS styling for Cinematic Hero Section */}
       <style jsx>{`
         .home-page-container {
           position: relative;
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 15%, rgba(251, 54, 64, 0.08) 0%, #000F08 75%);
-          overflow: hidden;
-          padding: 5rem 1.5rem 2rem;
-          box-sizing: border-box;
+          background: #000F08;
+          overflow-x: hidden;
           width: 100%;
+          box-sizing: border-box;
+        }
+
+        .cinematic-hero {
+          position: relative;
+          width: 100%;
+          padding: 6.5rem 1.5rem 3rem;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+
+        .hero-content-wrapper {
+          max-width: 1320px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 5;
+          display: flex;
+          flex-direction: column;
+          gap: 3rem;
+        }
+
+        .hero-main-stage {
+          display: grid;
+          grid-template-columns: 1.15fr 1fr;
+          align-items: center;
+          gap: 2rem;
+          min-height: 520px;
+        }
+
+        @media (max-width: 992px) {
+          .hero-main-stage {
+            grid-template-columns: 1fr;
+            text-align: center;
+          }
+        }
+
+        /* Left Column */
+        .hero-left-col {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          text-align: left;
+          z-index: 6;
+        }
+
+        @media (max-width: 992px) {
+          .hero-left-col {
+            text-align: center;
+            align-items: center;
+          }
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(251, 54, 64, 0.08);
+          border: 1px solid rgba(251, 54, 64, 0.3);
+          border-radius: 30px;
+          padding: 0.35rem 1.1rem;
+          box-shadow: 0 0 15px rgba(251, 54, 64, 0.15);
+          width: fit-content;
+          color: #ffffff;
+          font-family: var(--font-body);
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .hero-title-container {
+          width: 100%;
+          max-width: 520px;
+        }
+
+        .hero-title-img {
+          width: 100%;
+          height: auto;
+          display: block;
+          filter: drop-shadow(0 0 25px rgba(251, 54, 64, 0.45));
+          user-select: none;
+        }
+
+        .hero-narrative {
+          color: var(--text-secondary);
+          font-size: 1.05rem;
+          line-height: 1.65;
+          max-width: 520px;
+          font-family: var(--font-body);
+          margin: 0;
+        }
+
+        .hero-actions {
+          display: flex;
+          align-items: center;
+          gap: 1.2rem;
+          flex-wrap: wrap;
+          margin-top: 0.5rem;
+        }
+
+        @media (max-width: 992px) {
+          .hero-actions {
+            justify-content: center;
+          }
+        }
+
+        .hero-play-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: var(--accent-orange);
+          color: #000000;
+          border: none;
+          border-radius: 30px;
+          padding: 0.65rem 1.6rem 0.65rem 0.75rem;
+          font-family: var(--font-cyber);
+          font-size: 0.95rem;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 0 25px rgba(251, 54, 64, 0.45);
+        }
+
+        .hero-play-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 0 35px rgba(251, 54, 64, 0.65);
+          background: #ffffff;
+        }
+
+        .play-icon-circle {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: #000000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .hero-secondary-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(251, 54, 64, 0.08);
+          color: #ffffff;
+          border: 1px solid rgba(251, 54, 64, 0.35);
+          border-radius: 30px;
+          padding: 0.75rem 1.6rem;
+          font-family: var(--font-cyber);
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .hero-secondary-btn:hover {
+          background: rgba(251, 54, 64, 0.18);
+          border-color: var(--accent-orange);
+          color: var(--accent-orange);
+          transform: translateY(-2px);
+        }
+
+        /* Right Column: Character */
+        .hero-character-col {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 480px;
+        }
+
+        .char-glow-underlay {
+          position: absolute;
+          width: 380px;
+          height: 380px;
+          background: radial-gradient(circle, rgba(251, 54, 64, 0.3) 0%, transparent 70%);
+          filter: blur(60px);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .hero-character-img {
+          width: 100%;
+          max-width: 480px;
+          height: auto;
+          object-fit: contain;
+          z-index: 4;
+          display: block;
+          filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.3)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
+          -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        .vertical-pagination {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+          z-index: 5;
+        }
+
+        @media (max-width: 992px) {
+          .vertical-pagination {
+            display: none;
+          }
+        }
+
+        .vertical-pagination .dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.25);
+          transition: all 0.2s ease;
+        }
+
+        .vertical-pagination .dot.active {
+          height: 18px;
+          border-radius: 4px;
+          background: var(--accent-orange);
+          box-shadow: 0 0 8px var(--accent-orange);
+        }
+
+        /* Bottom Feature Tracks */
+        .hero-bottom-tracks {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1.5rem;
+          padding-top: 2rem;
+          border-top: 1px solid rgba(251, 54, 64, 0.15);
+          position: relative;
+          z-index: 5;
+        }
+
+        .track-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.9rem;
+          padding: 0.8rem 1rem;
+          border-radius: 8px;
+          background: rgba(0, 15, 8, 0.6);
+          border: 1px solid rgba(251, 54, 64, 0.12);
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+
+        .track-item:hover {
+          background: rgba(251, 54, 64, 0.08);
+          border-color: var(--accent-orange);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(251, 54, 64, 0.15);
+        }
+
+        .track-index {
+          font-family: var(--font-cyber);
+          font-size: 1.1rem;
+          font-weight: 900;
+          color: var(--accent-orange);
+          opacity: 0.9;
+        }
+
+        .track-info {
+          text-align: left;
+        }
+
+        .track-title {
+          font-family: var(--font-cyber);
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 0.2rem;
+          letter-spacing: 0.04em;
+        }
+
+        .track-sub {
+          font-family: var(--font-body);
+          font-size: 0.78rem;
+          color: var(--text-muted);
         }
       `}</style>
     </div>
