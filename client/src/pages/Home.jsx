@@ -71,9 +71,9 @@ export default function Home() {
           position: "absolute",
           top: "5%",
           left: "0%",
-          width: "50vw",
-          height: "50vw",
-          background: "radial-gradient(circle, rgba(251, 54, 64, 0.15) 0%, transparent 65%)",
+          width: "55vw",
+          height: "55vw",
+          background: "radial-gradient(circle, rgba(251, 54, 64, 0.16) 0%, transparent 65%)",
           borderRadius: "50%",
           filter: "blur(90px)",
           pointerEvents: "none",
@@ -345,7 +345,7 @@ export default function Home() {
         .cinematic-hero {
           position: relative;
           width: 100%;
-          padding: 4.8rem 1.5rem 2rem;
+          padding: 6rem 1.5rem 2.5rem;
           box-sizing: border-box;
           overflow: hidden;
         }
@@ -357,15 +357,15 @@ export default function Home() {
           z-index: 5;
           display: flex;
           flex-direction: column;
-          gap: 1.8rem;
+          gap: 2.2rem;
         }
 
         .hero-main-stage {
           display: grid;
-          grid-template-columns: 1.1fr 1fr;
+          grid-template-columns: 1.15fr 1fr;
           align-items: center;
-          gap: 2rem;
-          min-height: 420px;
+          gap: 2.5rem;
+          min-height: 440px;
         }
 
         @media (max-width: 992px) {
@@ -379,7 +379,7 @@ export default function Home() {
         .hero-left-col {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 1.4rem;
           text-align: left;
           z-index: 6;
         }
@@ -394,16 +394,16 @@ export default function Home() {
         .hero-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.4rem;
+          gap: 0.45rem;
           background: rgba(251, 54, 64, 0.08);
           border: 1px solid rgba(251, 54, 64, 0.3);
           border-radius: 30px;
-          padding: 0.3rem 0.95rem;
+          padding: 0.35rem 1.1rem;
           box-shadow: 0 0 15px rgba(251, 54, 64, 0.15);
           width: fit-content;
           color: #ffffff;
           font-family: var(--font-body);
-          font-size: 0.78rem;
+          font-size: 0.8rem;
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -412,18 +412,18 @@ export default function Home() {
         .hero-title-container {
           width: 100%;
           max-width: 440px;
-          margin: -0.5rem 0 0 -0.5rem;
+          margin: 0.4rem 0 0.4rem 0;
         }
 
         @media (max-width: 992px) {
           .hero-title-container {
-            margin: 0 auto;
+            margin: 0.4rem auto;
           }
         }
 
         .hero-title-img {
           width: 100%;
-          max-height: 190px;
+          max-height: 180px;
           height: auto;
           object-fit: contain;
           object-position: left center;
@@ -440,8 +440,8 @@ export default function Home() {
 
         .hero-narrative {
           color: var(--text-secondary);
-          font-size: 0.95rem;
-          line-height: 1.6;
+          font-size: 0.96rem;
+          line-height: 1.68;
           max-width: 460px;
           font-family: var(--font-body);
           margin: 0;
@@ -450,9 +450,9 @@ export default function Home() {
         .hero-actions {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 1.1rem;
           flex-wrap: wrap;
-          margin-top: 0.3rem;
+          margin-top: 0.4rem;
         }
 
         @media (max-width: 992px) {
@@ -469,7 +469,7 @@ export default function Home() {
           color: #000000;
           border: none;
           border-radius: 30px;
-          padding: 0.6rem 1.4rem 0.6rem 0.65rem;
+          padding: 0.65rem 1.5rem 0.65rem 0.7rem;
           font-family: var(--font-cyber);
           font-size: 0.88rem;
           font-weight: 900;
@@ -502,7 +502,7 @@ export default function Home() {
           color: #ffffff;
           border: 1px solid rgba(251, 54, 64, 0.35);
           border-radius: 30px;
-          padding: 0.68rem 1.4rem;
+          padding: 0.72rem 1.5rem;
           font-family: var(--font-cyber);
           font-size: 0.84rem;
           font-weight: 700;
@@ -522,18 +522,18 @@ export default function Home() {
           position: relative;
           display: flex;
           justifyContent: center;
-          align-items: flex-end;
-          min-height: 380px;
+          align-items: center;
+          min-height: 420px;
         }
 
         .char-glow-underlay {
           position: absolute;
-          width: 320px;
-          height: 320px;
+          width: 340px;
+          height: 340px;
           background: radial-gradient(circle, rgba(251, 54, 64, 0.25) 0%, transparent 70%);
           filter: blur(55px);
           top: 50%;
-          left: "50%";
+          left: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
           z-index: 1;
@@ -541,8 +541,8 @@ export default function Home() {
 
         .hero-character-img {
           width: 100%;
-          max-width: 400px;
-          max-height: 420px;
+          max-width: 420px;
+          max-height: 440px;
           height: auto;
           object-fit: contain;
           z-index: 4;
