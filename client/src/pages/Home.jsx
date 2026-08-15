@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { 
   ArrowRight, 
   BookOpen, 
@@ -13,8 +13,8 @@ import {
   Clock, 
   CheckCircle2, 
   Cpu, 
-  ShieldAlert,
-  ChevronRight
+  ChevronRight,
+  GraduationCap
 } from "lucide-react";
 
 export default function Home() {
@@ -81,15 +81,15 @@ export default function Home() {
       {/* Background Radial Glow */}
       <div style={{
         position: "absolute",
-        top: "15%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "70vw",
-        height: "500px",
-        background: "radial-gradient(ellipse at center, rgba(251, 54, 64, 0.12) 0%, transparent 70%)",
+        top: "10%",
+        right: "10%",
+        width: "45vw",
+        height: "45vw",
+        background: "radial-gradient(circle, rgba(251, 54, 64, 0.1) 0%, transparent 70%)",
+        borderRadius: "50%",
+        filter: "blur(70px)",
         pointerEvents: "none",
-        zIndex: 1,
-        filter: "blur(60px)"
+        zIndex: 1
       }} />
 
       {/* Floating Embers */}
@@ -105,127 +105,256 @@ export default function Home() {
             height: e.size,
             backgroundColor: "#FB3640",
             boxShadow: "0 0 8px #FB3640",
-            opacity: 0.4
+            opacity: 0.35
           }}
         />
       ))}
 
-      {/* Hero Section Container */}
+      {/* Main Container */}
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",
         width: "100%",
         position: "relative",
-        zIndex: 5,
-        paddingTop: "2.5rem",
-        paddingBottom: "4rem"
+        zIndex: 5
       }}>
-        {/* Top Tagline Badge */}
-        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            background: "rgba(251, 54, 64, 0.08)",
-            border: "1px solid rgba(251, 54, 64, 0.3)",
-            borderRadius: "30px",
-            padding: "0.45rem 1.4rem",
-            boxShadow: "0 0 20px rgba(251, 54, 64, 0.15)"
-          }}>
-            <Sparkles size={16} style={{ color: "var(--accent-orange)" }} />
-            <span style={{
-              fontFamily: "var(--font-tech)",
-              fontWeight: "700",
+        {/* =========================================================================
+            HERO SPLIT SECTION (Left: Copy & CTAs | Right: White Sci-Fi Robot Graphic)
+            ========================================================================= */}
+        <div className="hero-split-grid" style={{
+          display: "grid",
+          gridTemplateColumns: window.innerWidth < 992 ? "1fr" : "1.2fr 1fr",
+          alignItems: "center",
+          gap: "2.5rem",
+          paddingTop: "2rem",
+          paddingBottom: "4rem"
+        }}>
+          {/* Left Column: Hero Copy */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", textAlign: "left" }}>
+            
+            {/* Tagline Badge */}
+            <div>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "rgba(251, 54, 64, 0.08)",
+                border: "1px solid rgba(251, 54, 64, 0.3)",
+                borderRadius: "30px",
+                padding: "0.4rem 1.2rem",
+                boxShadow: "0 0 15px rgba(251, 54, 64, 0.15)"
+              }}>
+                <Sparkles size={15} style={{ color: "var(--accent-orange)" }} />
+                <span style={{
+                  fontFamily: "var(--font-body)",
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  fontSize: "0.85rem",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase"
+                }}>
+                  Curated Knowledge Repository
+                </span>
+              </div>
+            </div>
+
+            {/* Main Title */}
+            <h1 style={{
+              fontSize: "clamp(2.4rem, 5.5vw, 4.2rem)",
+              fontWeight: "900",
+              lineHeight: "1.1",
+              fontFamily: "var(--font-cyber)",
               color: "#ffffff",
-              fontSize: "0.95rem",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase"
+              letterSpacing: "-0.02em"
             }}>
-              Curated Academic Repository
-            </span>
+              YOUR PORTAL TO <br />
+              <span style={{
+                background: "linear-gradient(135deg, #ffffff 20%, #FB3640 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                textShadow: "0 0 30px rgba(251, 54, 64, 0.35)"
+              }}>
+                ACADEMIC EXCELLENCE.
+              </span>
+            </h1>
+
+            {/* Subtitle */}
+            <p style={{
+              color: "var(--text-secondary)",
+              fontSize: "clamp(1rem, 1.8vw, 1.15rem)",
+              lineHeight: "1.65",
+              maxWidth: "560px",
+              fontFamily: "var(--font-body)"
+            }}>
+              Access lecture notes in chronological continuity, verified daily class timetable, university course syllabi, and model practice problem sets—engineered for peak learning.
+            </p>
+
+            {/* Hero Action Buttons */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              flexWrap: "wrap",
+              marginTop: "0.5rem"
+            }}>
+              <button
+                onClick={() => nav("/notes")}
+                className="cyber-btn-orange"
+                style={{
+                  padding: "0.85rem 1.8rem",
+                  fontSize: "1rem"
+                }}
+              >
+                <BookOpen size={17} />
+                <span>Explore Notes</span>
+                <ArrowRight size={16} />
+              </button>
+
+              <button
+                onClick={() => nav("/routine")}
+                className="cyber-btn-wire"
+                style={{
+                  padding: "0.85rem 1.7rem",
+                  fontSize: "1rem"
+                }}
+              >
+                <Calendar size={17} />
+                <span>Class Routine</span>
+              </button>
+            </div>
+
+            {/* Quick Stat Counter Badges */}
+            <div style={{
+              display: "flex",
+              gap: "1.8rem",
+              marginTop: "1.5rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid rgba(251, 54, 64, 0.12)",
+              flexWrap: "wrap"
+            }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.5rem", fontWeight: "900", color: "#ffffff" }}>
+                  100%
+                </div>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.82rem", fontFamily: "var(--font-body)" }}>
+                  Free Access
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.5rem", fontWeight: "900", color: "var(--accent-orange)" }}>
+                  Daily
+                </div>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.82rem", fontFamily: "var(--font-body)" }}>
+                  Continuity Notes
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontFamily: "var(--font-cyber)", fontSize: "1.5rem", fontWeight: "900", color: "#ffffff" }}>
+                  Instant
+                </div>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.82rem", fontFamily: "var(--font-body)" }}>
+                  PDF Downloads
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: White Robot Sci-Fi Character with Atomic Tech HUD */}
+          <div style={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "420px"
+          }}>
+            {/* Background Glow */}
+            <div style={{
+              position: "absolute",
+              width: "340px",
+              height: "340px",
+              background: "radial-gradient(circle, rgba(251, 54, 64, 0.22) 0%, transparent 70%)",
+              filter: "blur(50px)",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              pointerEvents: "none",
+              zIndex: 1
+            }} />
+
+            {/* Atomic Tech HUD Orbit Lines */}
+            <div style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              pointerEvents: "none",
+              zIndex: 2,
+              opacity: 0.85,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center"
+            }}>
+              <svg width="100%" height="100%" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: "480px" }}>
+                {/* Inner Orbit */}
+                <circle cx="250" cy="250" r="75" stroke="rgba(251, 54, 64, 0.25)" strokeWidth="1" strokeDasharray="4 4" />
+                <circle cx="190" cy="214" r="3.5" fill="#FB3640" opacity="0.8" />
+                
+                {/* Middle Orbit */}
+                <circle cx="250" cy="250" r="130" stroke="rgba(251, 54, 64, 0.18)" strokeWidth="1" />
+                <circle cx="340" cy="170" r="4" fill="#FB3640" opacity="0.7" />
+                
+                {/* Outer Orbit (Elongated Ellipse 1) */}
+                <g transform="rotate(-30 250 250)">
+                  <ellipse cx="250" cy="250" rx="195" ry="90" stroke="rgba(251, 54, 64, 0.15)" strokeWidth="1" strokeDasharray="10 5" />
+                </g>
+                <circle cx="110" cy="180" r="4" fill="#FB3640" opacity="0.8" />
+                
+                {/* Outer Orbit (Elongated Ellipse 2) */}
+                <g transform="rotate(30 250 250)">
+                  <ellipse cx="250" cy="250" rx="195" ry="90" stroke="rgba(251, 54, 64, 0.15)" strokeWidth="1" strokeDasharray="15 5" />
+                </g>
+                <circle cx="390" cy="180" r="4" fill="#FB3640" opacity="0.8" />
+                
+                {/* Crosshair Grids */}
+                <line x1="250" y1="20" x2="250" y2="480" stroke="rgba(251, 54, 64, 0.1)" strokeWidth="1" strokeDasharray="2 8" />
+                <line x1="20" y1="250" x2="480" y2="250" stroke="rgba(251, 54, 64, 0.1)" strokeWidth="1" strokeDasharray="2 8" />
+                
+                {/* Tech Ring Ticks */}
+                <circle cx="250" cy="250" r="175" stroke="rgba(251, 54, 64, 0.25)" strokeWidth="1.5" strokeDasharray="30 150" />
+                <circle cx="250" cy="250" r="182" stroke="rgba(251, 54, 64, 0.12)" strokeWidth="0.75" strokeDasharray="2 8" />
+              </svg>
+            </div>
+
+            {/* White Futuristic Sci-Fi Robot Student Graphic */}
+            <img 
+              src="/photo1.png" 
+              alt="NotesVilla Student" 
+              style={{
+                width: "100%",
+                maxWidth: "460px",
+                height: "auto",
+                objectFit: "contain",
+                zIndex: 5,
+                filter: "drop-shadow(0 15px 35px rgba(251, 54, 64, 0.25)) drop-shadow(0 10px 25px rgba(0, 0, 0, 0.7))",
+                display: "block",
+                maskImage: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%)"
+              }}
+            />
           </div>
         </div>
 
-        {/* Hero Title */}
-        <div style={{ textAlign: "center", maxWidth: "960px", margin: "0 auto 1.8rem" }}>
-          <h1 style={{
-            fontSize: "clamp(2.8rem, 6.5vw, 5rem)",
-            fontWeight: "900",
-            lineHeight: "1.08",
-            fontFamily: "var(--font-cyber)",
-            letterSpacing: "-0.02em",
-            color: "#ffffff",
-            textTransform: "uppercase"
-          }}>
-            ELEVATE YOUR <br />
-            <span style={{
-              background: "linear-gradient(135deg, #ffffff 20%, #FB3640 85%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              textShadow: "0 0 30px rgba(251, 54, 64, 0.3)"
-            }}>
-              ACADEMIC MASTERY
-            </span>
-          </h1>
-        </div>
-
-        {/* Subtitle */}
-        <p style={{
-          textAlign: "center",
-          color: "var(--text-secondary)",
-          fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
-          lineHeight: "1.65",
-          maxWidth: "720px",
-          margin: "0 auto 2.5rem",
-          fontFamily: "var(--font-body)"
-        }}>
-          High-fidelity lecture notes in continuity, verified daily class timetable, university course syllabi, and model practice question sets—all in one futuristic portal.
-        </p>
-
-        {/* Hero Action Buttons */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "1.2rem",
-          flexWrap: "wrap",
-          marginBottom: "4rem"
-        }}>
-          <button
-            onClick={() => nav("/notes")}
-            className="cyber-btn-orange"
-            style={{
-              padding: "0.95rem 2.2rem",
-              fontSize: "1.05rem",
-              clipPath: "none",
-              borderRadius: "6px",
-              boxShadow: "0 0 25px rgba(251, 54, 64, 0.4)"
-            }}
-          >
-            <BookOpen size={18} />
-            <span>Explore Notes Archive</span>
-            <ArrowRight size={18} />
-          </button>
-
-          <button
-            onClick={() => nav("/routine")}
-            className="cyber-btn-wire"
-            style={{
-              padding: "0.95rem 2rem",
-              fontSize: "1.05rem",
-              borderRadius: "6px"
-            }}
-          >
-            <Calendar size={18} />
-            <span>View Class Routine</span>
-          </button>
-        </div>
-
-        {/* Quick Highlights Feature Bento Grid */}
+        {/* =========================================================================
+            FEATURE BENTO CARDS SECTION
+            ========================================================================= */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: "1.5rem",
           marginBottom: "5rem"
         }}>
@@ -235,27 +364,25 @@ export default function Home() {
             className="cyber-panel"
             style={{
               borderRadius: "10px",
-              padding: "2rem",
-              border: "1px solid rgba(251, 54, 64, 0.2)",
+              padding: "1.8rem",
+              border: "1px solid rgba(251, 54, 64, 0.18)",
               cursor: "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden"
+              transition: "all 0.3s ease"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.transform = "translateY(-4px)";
               e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 30px rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
             <div style={{
-              width: "48px",
-              height: "48px",
+              width: "44px",
+              height: "44px",
               borderRadius: "8px",
               background: "rgba(251, 54, 64, 0.1)",
               border: "1px solid rgba(251, 54, 64, 0.3)",
@@ -265,16 +392,16 @@ export default function Home() {
               marginBottom: "1.2rem",
               color: "var(--accent-orange)"
             }}>
-              <BookOpen size={24} />
+              <BookOpen size={22} />
             </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.25rem", color: "#ffffff", marginBottom: "0.6rem" }}>
+            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
               Date-wise Notes
             </h3>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Lecture notes organized in chronological continuity with in-browser previews and direct downloads.
+              Lecture notes in chronological order with instant modal preview and direct downloads.
             </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-tech)", fontSize: "0.95rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Access Library <ChevronRight size={16} />
+            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              Access Archive <ChevronRight size={15} />
             </span>
           </div>
 
@@ -284,25 +411,25 @@ export default function Home() {
             className="cyber-panel"
             style={{
               borderRadius: "10px",
-              padding: "2rem",
-              border: "1px solid rgba(251, 54, 64, 0.2)",
+              padding: "1.8rem",
+              border: "1px solid rgba(251, 54, 64, 0.18)",
               cursor: "pointer",
               transition: "all 0.3s ease"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.transform = "translateY(-4px)";
               e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 30px rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
             <div style={{
-              width: "48px",
-              height: "48px",
+              width: "44px",
+              height: "44px",
               borderRadius: "8px",
               background: "rgba(251, 54, 64, 0.1)",
               border: "1px solid rgba(251, 54, 64, 0.3)",
@@ -312,16 +439,16 @@ export default function Home() {
               marginBottom: "1.2rem",
               color: "var(--accent-orange)"
             }}>
-              <Calendar size={24} />
+              <Calendar size={22} />
             </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.25rem", color: "#ffffff", marginBottom: "0.6rem" }}>
+            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
               Class Routine
             </h3>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Verified timetable with high-res zoom controls, lab timings, and instant offline schedule download.
+              Verified schedule with interactive zoom, lab timings, and offline image download.
             </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-tech)", fontSize: "0.95rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              View Routine <ChevronRight size={16} />
+            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              View Routine <ChevronRight size={15} />
             </span>
           </div>
 
@@ -331,25 +458,25 @@ export default function Home() {
             className="cyber-panel"
             style={{
               borderRadius: "10px",
-              padding: "2rem",
-              border: "1px solid rgba(251, 54, 64, 0.2)",
+              padding: "1.8rem",
+              border: "1px solid rgba(251, 54, 64, 0.18)",
               cursor: "pointer",
               transition: "all 0.3s ease"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.transform = "translateY(-4px)";
               e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 30px rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
             <div style={{
-              width: "48px",
-              height: "48px",
+              width: "44px",
+              height: "44px",
               borderRadius: "8px",
               background: "rgba(251, 54, 64, 0.1)",
               border: "1px solid rgba(251, 54, 64, 0.3)",
@@ -359,16 +486,16 @@ export default function Home() {
               marginBottom: "1.2rem",
               color: "var(--accent-orange)"
             }}>
-              <Layers size={24} />
+              <Layers size={22} />
             </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.25rem", color: "#ffffff", marginBottom: "0.6rem" }}>
+            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
               Course Syllabus
             </h3>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              Modular unit-by-unit curriculum guide, learning outcomes, and recommended standard reference textbooks.
+              Modular unit curriculum breakdowns, objectives, and recommended standard reference textbooks.
             </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-tech)", fontSize: "0.95rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Explore Syllabus <ChevronRight size={16} />
+            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              Explore Syllabus <ChevronRight size={15} />
             </span>
           </div>
 
@@ -378,25 +505,25 @@ export default function Home() {
             className="cyber-panel"
             style={{
               borderRadius: "10px",
-              padding: "2rem",
-              border: "1px solid rgba(251, 54, 64, 0.2)",
+              padding: "1.8rem",
+              border: "1px solid rgba(251, 54, 64, 0.18)",
               cursor: "pointer",
               transition: "all 0.3s ease"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.transform = "translateY(-4px)";
               e.currentTarget.style.borderColor = "var(--accent-orange)";
-              e.currentTarget.style.boxShadow = "0 10px 30px rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.boxShadow = "0 10px 25px rgba(251, 54, 64, 0.2)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
             <div style={{
-              width: "48px",
-              height: "48px",
+              width: "44px",
+              height: "44px",
               borderRadius: "8px",
               background: "rgba(251, 54, 64, 0.1)",
               border: "1px solid rgba(251, 54, 64, 0.3)",
@@ -406,32 +533,35 @@ export default function Home() {
               marginBottom: "1.2rem",
               color: "var(--accent-orange)"
             }}>
-              <HelpCircle size={24} />
+              <HelpCircle size={22} />
             </div>
-            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.25rem", color: "#ffffff", marginBottom: "0.6rem" }}>
+            <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.5rem" }}>
               Practice Sets & PYQs
             </h3>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "1rem" }}>
-              University previous year questions and topic-wise model problem sheets for exam readiness.
+              University previous year questions and topic model problem sets for exam readiness.
             </p>
-            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-tech)", fontSize: "0.95rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              Solve Questions <ChevronRight size={16} />
+            <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              Solve Problems <ChevronRight size={15} />
             </span>
           </div>
         </div>
 
-        {/* Interactive Subject Explorer Section */}
+        {/* =========================================================================
+            INTERACTIVE SUBJECT SHOWCASE
+            ========================================================================= */}
         <div 
           className="cyber-panel"
           style={{
             borderRadius: "12px",
             padding: "2.5rem 2rem",
             border: "1px solid rgba(251, 54, 64, 0.2)",
-            background: "rgba(0, 15, 8, 0.8)"
+            background: "rgba(0, 15, 8, 0.85)",
+            marginBottom: "4rem"
           }}
         >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <h2 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.8rem", color: "#ffffff", marginBottom: "0.5rem", textTransform: "uppercase" }}>
+            <h2 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.6rem", color: "#ffffff", marginBottom: "0.4rem", textTransform: "uppercase" }}>
               CORE ACADEMIC DISCIPLINES
             </h2>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.95rem", maxWidth: "600px", margin: "0 auto" }}>
@@ -439,11 +569,11 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Subject Pills Switcher */}
+          {/* Subject Pills */}
           <div style={{
             display: "flex",
             justifyContent: "center",
-            gap: "0.8rem",
+            gap: "0.75rem",
             flexWrap: "wrap",
             marginBottom: "2rem"
           }}>
@@ -459,17 +589,15 @@ export default function Home() {
                     color: isSelected ? "#000000" : "var(--text-secondary)",
                     border: isSelected ? "1px solid var(--accent-orange)" : "1px solid rgba(251, 54, 64, 0.2)",
                     borderRadius: "6px",
-                    padding: "0.6rem 1.4rem",
-                    fontFamily: "var(--font-tech)",
+                    padding: "0.55rem 1.3rem",
+                    fontFamily: "var(--font-body)",
                     fontWeight: isSelected ? "700" : "600",
-                    fontSize: "0.95rem",
+                    fontSize: "0.92rem",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: "0.5rem",
-                    transition: "all 0.2s ease",
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase"
+                    transition: "all 0.2s ease"
                   }}
                 >
                   <Icon size={16} />
@@ -479,12 +607,12 @@ export default function Home() {
             })}
           </div>
 
-          {/* Active Subject Showcase */}
+          {/* Selected Subject Box */}
           <div style={{
             background: "rgba(0, 5, 2, 0.7)",
             border: "1px solid rgba(251, 54, 64, 0.15)",
             borderRadius: "8px",
-            padding: "2rem",
+            padding: "1.8rem 2rem",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -494,9 +622,9 @@ export default function Home() {
             <div>
               <h3 style={{
                 fontFamily: "var(--font-cyber)",
-                fontSize: "1.4rem",
+                fontSize: "1.35rem",
                 color: "#ffffff",
-                marginBottom: "0.5rem"
+                marginBottom: "0.4rem"
               }}>
                 {activeSubject.name}
               </h3>
@@ -516,7 +644,7 @@ export default function Home() {
               <button
                 onClick={() => nav(`/notes?subject=${encodeURIComponent(activeSubject.dbQuery)}`)}
                 className="cyber-btn-orange"
-                style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem", clipPath: "none", borderRadius: "4px" }}
+                style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem" }}
               >
                 <BookOpen size={16} />
                 <span>Open Subject Notes</span>
@@ -540,7 +668,7 @@ export default function Home() {
         .home-page-container {
           position: relative;
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.08) 0%, #000F08 75%);
+          background: radial-gradient(circle at 50% 15%, rgba(251, 54, 64, 0.08) 0%, #000F08 75%);
           overflow: hidden;
           padding: 5rem 1.5rem 2rem;
           box-sizing: border-box;

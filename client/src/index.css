@@ -15,8 +15,8 @@
   --text-muted: rgba(255, 255, 255, 0.4);     /* Translucent white muted */
   
   --font-cyber: 'Orbitron', sans-serif;
-  --font-tech: 'Rajdhani', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-tech: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   --border-glow: 1px solid rgba(251, 54, 64, 0.15);
@@ -97,60 +97,58 @@ h1, h2, h3, h4, h5, h6 {
 /* Custom Input Field */
 input, select, textarea {
   background: rgba(0, 15, 8, 0.6) !important;
-  border: 1px solid rgba(251, 54, 64, 0.15) !important;
-  border-radius: 4px !important;
+  border: 1px solid rgba(251, 54, 64, 0.2) !important;
+  border-radius: 6px !important;
   color: var(--text-primary) !important;
-  padding: 0.8rem 1.2rem !important;
-  font-family: var(--font-tech);
-  font-size: 1.1rem;
-  letter-spacing: 0.05em;
+  padding: 0.75rem 1.1rem !important;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  letter-spacing: normal;
   outline: none;
   transition: var(--transition-smooth);
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent-orange) !important;
-  box-shadow: 0 0 10px rgba(251, 54, 64, 0.25) !important;
+  box-shadow: 0 0 12px rgba(251, 54, 64, 0.25) !important;
 }
 
-/* Cyberpunk Button - Angular Clip Path Style (Screenshot style) */
+/* Primary Button */
 .cyber-btn-orange {
   position: relative;
   background: var(--accent-orange) !important;
-  color: #000 !important;
-  font-family: var(--font-cyber);
+  color: #000000 !important;
+  font-family: var(--font-tech);
   font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 1rem 2rem;
-  font-size: 1rem;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.75rem 1.6rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
-  clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   transition: var(--transition-smooth);
-  box-shadow: 0 0 20px rgba(251, 54, 64, 0.3);
+  box-shadow: 0 4px 15px rgba(251, 54, 64, 0.3);
 }
 .cyber-btn-orange:hover {
-  background: var(--accent-amber) !important;
+  background: rgba(251, 54, 64, 0.9) !important;
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(251, 54, 64, 0.5);
+  box-shadow: 0 6px 22px rgba(251, 54, 64, 0.45);
 }
 
-/* Cyberpunk Wireframe Button (Add to cart style) */
+/* Wireframe Button */
 .cyber-btn-wire {
   position: relative;
   background: transparent !important;
   color: var(--text-primary) !important;
-  border: 1px solid rgba(251, 54, 64, 0.4) !important;
+  border: 1px solid rgba(251, 54, 64, 0.3) !important;
   font-family: var(--font-tech);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  padding: 0.6rem 1.4rem;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.6rem 1.3rem;
+  border-radius: 6px;
+  font-size: 0.92rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -161,7 +159,7 @@ input:focus, select:focus, textarea:focus {
   background: rgba(251, 54, 64, 0.1) !important;
   border-color: var(--accent-orange) !important;
   color: var(--accent-orange) !important;
-  box-shadow: 0 0 12px rgba(251, 54, 64, 0.2);
+  box-shadow: 0 0 14px rgba(251, 54, 64, 0.2);
 }
 
 /* Animations */
