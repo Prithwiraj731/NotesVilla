@@ -14,22 +14,12 @@ import {
   LogOut,
   Layers,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 
 export default function AdminUpload() {
   const navigate = useNavigate();
-
-  const suggestedSubjects = [
-    "Data Structures & Algorithms",
-    "Full Stack Development",
-    "Database Systems",
-    "Operating Systems",
-    "Computer Networks",
-    "Discrete Mathematics",
-    "Artificial Intelligence",
-    "Software Engineering"
-  ];
 
   const [form, setForm] = useState({
     subjectName: '',
@@ -37,6 +27,7 @@ export default function AdminUpload() {
     files: []
   });
 
+  const [existingSubjects, setExistingSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -51,7 +42,19 @@ export default function AdminUpload() {
 
   useEffect(() => {
     fetchNotes();
+    fetchSubjects();
   }, []);
+
+  const fetchSubjects = async () => {
+    try {
+      const res = await API.get('/notes/subjects');
+      if (Array.isArray(res.data)) {
+        setExistingSubjects(res.data.map(s => s.name || s));
+      }
+    } catch (err) {
+      console.error('Error fetching subjects:', err);
+    }
+  };
 
   const fetchNotes = async () => {
     try {
@@ -59,6 +62,12 @@ export default function AdminUpload() {
       const response = await API.get('/notes?limit=100');
       const notesData = Array.isArray(response.data) ? response.data : (response.data.notes || []);
       setNotes(notesData);
+      
+      // Update distinct subjects from notes
+      const distinct = [...new Set(notesData.map(n => n.subjectName).filter(Boolean))];
+      if (distinct.length > 0) {
+        setExistingSubjects(prev => [...new Set([...prev, ...distinct])]);
+      }
     } catch (err) {
       console.error('Error fetching notes:', err);
     } finally {
@@ -118,6 +127,7 @@ export default function AdminUpload() {
       setDeleteModalOpen(false);
       setNoteToDelete(null);
       fetchNotes();
+      fetchSubjects();
     } catch (err) {
       console.error('Delete error:', err);
       setError(err.response?.data?.msg || 'Failed to delete note');
@@ -176,7 +186,7 @@ export default function AdminUpload() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setSuccess(`🎉 Successfully uploaded note for ${form.subjectName}!`);
+      setSuccess(`🎉 Successfully uploaded note for ${form.subjectName.trim()}!`);
       
       // Reset form
       setForm({
@@ -186,6 +196,7 @@ export default function AdminUpload() {
       });
       setFilePreview([]);
       fetchNotes();
+      fetchSubjects();
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -250,8 +261,8 @@ export default function AdminUpload() {
             style={{
               padding: '0.4rem 0.9rem',
               fontSize: '0.85rem',
-              borderColor: 'rgba(251, 54, 64, 0.4)',
-              color: 'var(--accent-orange)'
+              borderColor: 'rgba(239, 68, 68, 0.4)',
+              color: '#ef4444'
             }}
           >
             <LogOut size={14} /> Logout
@@ -259,23 +270,20 @@ export default function AdminUpload() {
         </div>
       </div>
 
-      {/* Main Upload Box */}
-      <div 
-        className="cyber-panel"
-        style={{
-          maxWidth: '900px',
-          margin: '0 auto 3.5rem',
-          borderRadius: '12px',
-          padding: '2.5rem 2rem',
-          border: '1px solid rgba(251, 54, 64, 0.25)',
-          boxShadow: '0 15px 40px rgba(0, 0, 0, 0.6)'
-        }}
-      >
+      {/* Main Upload Card */}
+      <div className="cyber-panel" style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        borderRadius: '12px',
+        padding: '2.5rem',
+        border: '1px solid rgba(251, 54, 64, 0.25)',
+        background: 'rgba(0, 15, 8, 0.95)',
+        boxShadow: '0 15px 35px rgba(0,0,0,0.6)'
+      }}>
+        
         <h2 style={{
-          fontSize: '1.8rem',
           fontFamily: 'var(--font-cyber)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
+          fontSize: '1.6rem',
           color: '#ffffff',
           marginBottom: '0.5rem'
         }}>
@@ -287,7 +295,7 @@ export default function AdminUpload() {
           fontSize: '0.95rem',
           marginBottom: '2rem'
         }}>
-          Simply select the Subject, choose the Date, and drop your lecture note files below.
+          Enter your 4th-year subject name, select the lecture date, and upload PDF/document files.
         </p>
 
         {/* Notifications */}
@@ -331,7 +339,7 @@ export default function AdminUpload() {
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
           
-          {/* 1. Subject Name Field */}
+          {/* 1. Subject Name Field with dynamic auto-suggestions */}
           <div>
             <label style={{
               display: 'flex',
@@ -350,45 +358,62 @@ export default function AdminUpload() {
 
             <input 
               type="text"
-              placeholder="e.g. Data Structures & Algorithms, Operating Systems, DBMS..."
+              list="existing-subjects-list"
+              placeholder="e.g. Cloud Computing, Cyber Security, Deep Learning, Distributed Systems..."
               value={form.subjectName}
               onChange={(e) => setForm({ ...form, subjectName: e.target.value })}
               required
               style={{
                 width: '100%',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '1.1rem',
-                marginBottom: '0.75rem'
+                fontSize: '1rem',
+                padding: '0.85rem 1.2rem',
+                borderRadius: '6px',
+                background: 'rgba(0, 5, 2, 0.8)',
+                border: '1px solid rgba(251, 54, 64, 0.25)',
+                color: '#ffffff',
+                boxSizing: 'border-box'
               }}
             />
 
-            {/* Quick-Pick Subject Badges */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {suggestedSubjects.map((sub, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setForm({ ...form, subjectName: sub })}
-                  style={{
-                    background: form.subjectName === sub ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.06)',
-                    color: form.subjectName === sub ? '#000000' : 'var(--text-secondary)',
-                    border: form.subjectName === sub ? '1px solid var(--accent-orange)' : '1px solid rgba(251, 54, 64, 0.18)',
-                    borderRadius: '4px',
-                    padding: '0.3rem 0.65rem',
-                    fontSize: '0.8rem',
-                    fontFamily: 'var(--font-tech)',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  + {sub}
-                </button>
+            {/* Datalist for fast auto-complete of existing uploaded subjects */}
+            <datalist id="existing-subjects-list">
+              {existingSubjects.map((s, i) => (
+                <option key={i} value={s} />
               ))}
-            </div>
+            </datalist>
+
+            {existingSubjects.length > 0 && (
+              <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
+                  Active Subjects:
+                </span>
+                {existingSubjects.map((subj, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setForm({ ...form, subjectName: subj })}
+                    style={{
+                      background: form.subjectName === subj ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.08)',
+                      color: form.subjectName === subj ? '#000000' : 'var(--text-secondary)',
+                      border: '1px solid rgba(251, 54, 64, 0.2)',
+                      borderRadius: '4px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.78rem',
+                      fontFamily: 'var(--font-body)',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {subj}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* 2. Date Field */}
+          {/* 2. Lecture Date */}
           <div>
             <label style={{
               display: 'flex',
@@ -402,7 +427,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Calendar size={16} style={{ color: 'var(--accent-orange)' }} />
-              2. Lecture / Note Date
+              2. Lecture Date
             </label>
 
             <input 
@@ -412,14 +437,20 @@ export default function AdminUpload() {
               required
               style={{
                 width: '100%',
-                maxWidth: '300px',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '1.1rem'
+                fontSize: '1rem',
+                padding: '0.85rem 1.2rem',
+                borderRadius: '6px',
+                background: 'rgba(0, 5, 2, 0.8)',
+                border: '1px solid rgba(251, 54, 64, 0.25)',
+                color: '#ffffff',
+                colorScheme: 'dark',
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
-          {/* 3. Drag & Drop Upload Area */}
+          {/* 3. Drag & Drop File Upload Area */}
           <div>
             <label style={{
               display: 'flex',
@@ -433,7 +464,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
-              3. Note Files Upload (PDF, DOC, Images, Zip, PPT)
+              3. Upload Files (PDF / DOCX / PPT / ZIP)
             </label>
 
             <div
@@ -442,87 +473,65 @@ export default function AdminUpload() {
               onDragOver={handleDrag}
               onDrop={handleDrop}
               style={{
-                border: dragActive 
-                  ? '2px dashed var(--accent-orange)' 
-                  : '2px dashed rgba(251, 54, 64, 0.3)',
+                border: `2px dashed ${dragActive ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.3)'}`,
                 borderRadius: '8px',
                 padding: '2.5rem 1.5rem',
                 textAlign: 'center',
-                background: dragActive 
-                  ? 'rgba(251, 54, 64, 0.12)' 
-                  : 'rgba(0, 15, 8, 0.4)',
+                background: dragActive ? 'rgba(251, 54, 64, 0.08)' : 'rgba(0, 5, 2, 0.5)',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.2s ease'
               }}
               onClick={() => document.getElementById('note-file-input').click()}
             >
-              <input 
+              <input
                 id="note-file-input"
                 type="file"
                 multiple
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.png,.jpg,.jpeg"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar"
                 onChange={(e) => handleFiles(e.target.files)}
                 style={{ display: 'none' }}
               />
 
-              <Upload 
-                size={40} 
-                style={{ 
-                  color: dragActive ? 'var(--accent-orange)' : 'var(--text-muted)', 
-                  margin: '0 auto 1rem',
-                  animation: dragActive ? 'bounce 0.5s infinite alternate' : 'none'
-                }} 
-              />
-
-              <p style={{
-                color: '#ffffff',
+              <Upload size={36} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.8 }} />
+              
+              <div style={{
                 fontFamily: 'var(--font-tech)',
-                fontSize: '1.1rem',
                 fontWeight: '700',
-                margin: '0 0 0.4rem'
+                color: '#ffffff',
+                fontSize: '1.05rem',
+                marginBottom: '0.4rem'
               }}>
-                Drag and drop your note file(s) here, or <span style={{ color: 'var(--accent-orange)', textDecoration: 'underline' }}>Browse</span>
-              </p>
-              <p style={{
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.85rem',
-                margin: 0
-              }}>
-                Supports PDF, DOCX, PPTX, Images, ZIP up to 50MB per file (Up to 10 files)
-              </p>
+                Drag and drop your lecture note files here
+              </div>
+              
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
+                or click to browse files from your device
+              </div>
             </div>
 
-            {/* Selected Files Preview */}
+            {/* Selected File Previews */}
             {filePreview.length > 0 && (
               <div style={{ marginTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                <span style={{
-                  fontFamily: 'var(--font-tech)',
-                  fontSize: '0.9rem',
-                  fontWeight: '700',
-                  color: 'var(--accent-orange)',
-                  textTransform: 'uppercase'
-                }}>
+                <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)' }}>
                   Selected Files ({filePreview.length}):
-                </span>
-                
+                </div>
                 {filePreview.map((file, idx) => (
                   <div key={idx} style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.7rem 1rem',
                     background: 'rgba(251, 54, 64, 0.06)',
                     border: '1px solid rgba(251, 54, 64, 0.2)',
-                    borderRadius: '6px',
-                    padding: '0.6rem 1rem'
+                    borderRadius: '6px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                       <FileText size={16} style={{ color: 'var(--accent-orange)' }} />
-                      <span style={{ color: '#ffffff', fontFamily: 'var(--font-tech)', fontSize: '0.95rem', fontWeight: '600' }}>
+                      <span style={{ color: '#ffffff', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}>
                         {file.name}
                       </span>
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}>
                       {file.size}
                     </span>
                   </div>
@@ -537,57 +546,87 @@ export default function AdminUpload() {
             disabled={loading}
             className="cyber-btn-orange"
             style={{
-              padding: '0.95rem 2rem',
-              fontSize: '1.05rem',
+              padding: '1rem',
               justifyContent: 'center',
-              marginTop: '0.5rem',
-              clipPath: 'none',
-              borderRadius: '6px'
+              fontSize: '1rem',
+              opacity: loading ? 0.7 : 1,
+              marginTop: '0.5rem'
             }}
           >
             {loading ? (
               <>
-                <RefreshCw size={18} className="spin" />
-                <span>UPLOADING TO SYSTEM...</span>
+                <RefreshCw size={18} className="spin-animate" />
+                <span>Uploading Note...</span>
               </>
             ) : (
               <>
                 <Upload size={18} />
-                <span>UPLOAD NOTES NOW</span>
+                <span>Upload & Publish Note</span>
               </>
             )}
           </button>
         </form>
       </div>
 
-      {/* Note Management / Deletion Center */}
-      <div style={{ maxWidth: '900px', margin: '0 auto 4rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{
-            fontFamily: 'var(--font-cyber)',
-            fontSize: '1.3rem',
-            color: '#ffffff',
-            letterSpacing: '0.04em',
-            margin: 0
-          }}>
-            UPLOADED NOTES ARCHIVE ({notes.length})
-          </h3>
+      {/* =========================================================================
+          EXISTING UPLOADED NOTES MANAGEMENT
+          ========================================================================= */}
+      <div style={{
+        maxWidth: '900px',
+        margin: '3rem auto 0'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1.2rem',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div>
+            <h3 style={{
+              fontFamily: 'var(--font-cyber)',
+              fontSize: '1.3rem',
+              color: '#ffffff',
+              margin: '0 0 0.3rem 0'
+            }}>
+              PUBLISHED NOTES ARCHIVE ({notes.length})
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', margin: 0 }}>
+              Manage, review, or delete uploaded lecture notes in real-time.
+            </p>
+          </div>
+
           <button
             onClick={fetchNotes}
             className="cyber-btn-wire"
-            style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem' }}
+            style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
           >
-            <RefreshCw size={12} /> Refresh
+            <RefreshCw size={14} className={fetchingNotes ? 'spin-animate' : ''} />
+            <span>Refresh</span>
           </button>
         </div>
 
         {fetchingNotes ? (
-          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)' }}>
-            Loading notes inventory...
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+            <RefreshCw size={24} className="spin-animate" style={{ margin: '0 auto 0.5rem' }} />
+            <div>Loading uploaded notes...</div>
           </div>
         ) : notes.length === 0 ? (
-          <div className="cyber-panel" style={{ padding: '2rem', textAlign: 'center', borderRadius: '8px', color: 'var(--text-secondary)' }}>
-            No notes currently uploaded in the database.
+          <div className="cyber-panel" style={{
+            padding: '2.5rem',
+            textAlign: 'center',
+            borderRadius: '8px',
+            border: '1px dashed rgba(251, 54, 64, 0.25)',
+            background: 'rgba(0, 15, 8, 0.6)'
+          }}>
+            <BookOpen size={32} style={{ color: 'var(--accent-orange)', margin: '0 auto 0.8rem', opacity: 0.6 }} />
+            <div style={{ color: '#ffffff', fontFamily: 'var(--font-body)', fontWeight: '600', marginBottom: '0.3rem' }}>
+              No notes published yet
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
+              Use the upload form above to add your first 4th-year subject notes.
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -596,57 +635,84 @@ export default function AdminUpload() {
                 key={note._id}
                 className="cyber-panel"
                 style={{
-                  padding: '1.2rem 1.5rem',
                   borderRadius: '8px',
+                  padding: '1rem 1.25rem',
+                  border: '1px solid rgba(251, 54, 64, 0.15)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: '1rem',
-                  border: '1px solid rgba(251, 54, 64, 0.15)'
+                  background: 'rgba(0, 15, 8, 0.8)'
                 }}
               >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-                    <span style={{
-                      background: 'rgba(251, 54, 64, 0.1)',
-                      border: '1px solid rgba(251, 54, 64, 0.3)',
-                      color: 'var(--accent-orange)',
-                      fontFamily: 'var(--font-tech)',
-                      fontSize: '0.8rem',
-                      fontWeight: '700',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px'
-                    }}>
-                      {note.subjectName}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                      📅 {new Date(note.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <h4 style={{
-                    color: '#ffffff',
-                    fontFamily: 'var(--font-tech)',
-                    fontSize: '1.15rem',
-                    fontWeight: '700',
-                    margin: 0
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '6px',
+                    background: 'rgba(251, 54, 64, 0.1)',
+                    border: '1px solid rgba(251, 54, 64, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-orange)'
                   }}>
-                    {note.title}
-                  </h4>
+                    <FileText size={18} />
+                  </div>
+
+                  <div>
+                    <div style={{ color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
+                      {note.title || note.filename}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: 'rgba(251, 54, 64, 0.12)',
+                        border: '1px solid rgba(251, 54, 64, 0.25)',
+                        color: 'var(--accent-orange)',
+                        padding: '0.1rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: '700'
+                      }}>
+                        {note.subjectName}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Calendar size={12} />
+                        {new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <a
+                    href={note.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}
+                  >
+                    <ExternalLink size={13} />
+                    <span>View File</span>
+                  </a>
+
                   <button
                     onClick={() => confirmDelete(note)}
-                    className="cyber-btn-wire"
                     style={{
-                      padding: '0.4rem 0.8rem',
-                      fontSize: '0.85rem',
-                      color: '#EF4444',
-                      borderColor: 'rgba(239, 68, 68, 0.4)'
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '6px',
+                      color: '#ef4444',
+                      padding: '0.45rem 0.65rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      transition: 'all 0.2s ease'
                     }}
+                    title="Delete Note"
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
@@ -656,54 +722,73 @@ export default function AdminUpload() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && noteToDelete && (
+      {deleteModalOpen && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 15, 8, 0.9)',
-          zIndex: 3000,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '1.5rem'
+          zIndex: 1000,
+          padding: '1rem'
         }}>
           <div className="cyber-panel" style={{
-            maxWidth: '450px',
+            maxWidth: '440px',
             width: '100%',
-            borderRadius: '8px',
             padding: '2rem',
-            border: '1px solid rgba(251, 54, 64, 0.4)',
-            textAlign: 'center'
+            borderRadius: '10px',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            background: '#000F08'
           }}>
-            <Trash2 size={40} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem' }} />
-            <h3 style={{ fontFamily: 'var(--font-cyber)', color: '#ffffff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-              CONFIRM NOTE DELETION
+            <h3 style={{ color: '#ef4444', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.8rem' }}>
+              CONFIRM DELETION
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', marginBottom: '1.8rem' }}>
-              Are you sure you want to permanently delete <strong>{noteToDelete.title}</strong>?
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              Are you sure you want to permanently delete <strong style={{ color: '#ffffff' }}>{noteToDelete?.title || noteToDelete?.filename}</strong>? This action cannot be undone.
             </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setDeleteModalOpen(false)}
                 className="cyber-btn-wire"
-                style={{ padding: '0.6rem 1.4rem' }}
+                style={{ padding: '0.5rem 1rem' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="cyber-btn-orange"
-                style={{ padding: '0.6rem 1.4rem', clipPath: 'none', borderRadius: '4px' }}
+                style={{
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0.5rem 1.2rem',
+                  fontFamily: 'var(--font-cyber)',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
               >
-                Yes, Delete
+                {loading ? 'Deleting...' : 'Delete Permanently'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Spin animation */}
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spin-animate {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }

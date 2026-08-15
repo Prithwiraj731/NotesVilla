@@ -1,58 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 import { 
   BookOpen, 
   Layers, 
-  Database, 
-  Code, 
   Calendar, 
   Play, 
-  Cpu 
+  ChevronRight, 
+  Sparkles,
+  FileText,
+  Clock,
+  ArrowRight
 } from "lucide-react";
 
 export default function Home() {
   const nav = useNavigate();
+  const [dynamicSubjects, setDynamicSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const subjectsData = [
-    {
-      id: "dsa",
-      label: "DSA",
-      name: "Data Structures & Algorithms",
-      shortDesc: "Master tree algorithms, dynamic programming, graph theory, and asymptotic complexity.",
-      icon: Layers,
-      color: "#FB3640",
-      dbQuery: "Data Structures & Algorithms"
-    },
-    {
-      id: "fullstack",
-      label: "WEB",
-      name: "Full Stack Development",
-      shortDesc: "Build enterprise web architectures with React 19, Node.js, REST APIs, and MongoDB.",
-      icon: Code,
-      color: "#FB3640",
-      dbQuery: "Full Stack Development"
-    },
-    {
-      id: "database",
-      label: "DBMS",
-      name: "Database Systems",
-      shortDesc: "Design robust relational schemas, normalization strategies, SQL queries, and transaction locking.",
-      icon: Database,
-      color: "#FB3640",
-      dbQuery: "Database Systems"
-    },
-    {
-      id: "os",
-      label: "OS",
-      name: "Operating Systems",
-      shortDesc: "Understand kernel architectures, process scheduling, concurrency primitives, and virtual memory.",
-      icon: Cpu,
-      color: "#FB3640",
-      dbQuery: "Operating Systems"
+  useEffect(() => {
+    loadDynamicSubjects();
+  }, []);
+
+  const loadDynamicSubjects = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get('/notes/subjects');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setDynamicSubjects(res.data.map(s => s.name || s));
+      } else {
+        setDynamicSubjects([]);
+      }
+    } catch (err) {
+      console.error("Error loading subjects:", err);
+      setDynamicSubjects([]);
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const [activeSubject, setActiveSubject] = useState(subjectsData[0]);
+  };
 
   return (
     <div className="home-page-container">
@@ -153,9 +138,9 @@ export default function Home() {
       </section>
 
       {/* =========================================================================
-          INTERACTIVE SUBJECT SHOWCASE
+          DYNAMIC ACADEMIC DISCIPLINES SECTION (Reflects DB Uploads)
           ========================================================================= */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "2rem 1.5rem 4rem", position: "relative", zIndex: 5 }}>
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem 1.5rem 4rem", position: "relative", zIndex: 5 }}>
         <div 
           className="cyber-panel"
           style={{
@@ -163,109 +148,104 @@ export default function Home() {
             padding: "2.5rem 2rem",
             border: "1px solid rgba(251, 54, 64, 0.2)",
             background: "rgba(0, 15, 8, 0.85)",
-            marginBottom: "4rem"
+            marginBottom: "3rem"
           }}
         >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
             <h2 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.6rem", color: "#ffffff", marginBottom: "0.4rem", textTransform: "uppercase" }}>
-              CORE ACADEMIC DISCIPLINES
+              ACADEMIC REPOSITORY
             </h2>
             <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.95rem", maxWidth: "600px", margin: "0 auto" }}>
-              Select a discipline to jump straight into its lecture notes archive and curriculum guides.
+              Browse lecture notes, continuous study materials, and subject resources uploaded for your current academic session.
             </p>
           </div>
 
-          {/* Subject Pills */}
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "0.75rem",
-            flexWrap: "wrap",
-            marginBottom: "2rem"
-          }}>
-            {subjectsData.map((subj) => {
-              const isSelected = activeSubject.id === subj.id;
-              const Icon = subj.icon;
-              return (
-                <button
-                  key={subj.id}
-                  onClick={() => setActiveSubject(subj)}
+          {/* Dynamic Subject Cards or Clean Empty State */}
+          {dynamicSubjects.length > 0 ? (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: "1.2rem"
+            }}>
+              {dynamicSubjects.map((subjName, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => nav(`/notes?subject=${encodeURIComponent(subjName)}`)}
+                  className="cyber-panel"
                   style={{
-                    background: isSelected ? "var(--accent-orange)" : "rgba(251, 54, 64, 0.05)",
-                    color: isSelected ? "#000000" : "var(--text-secondary)",
-                    border: isSelected ? "1px solid var(--accent-orange)" : "1px solid rgba(251, 54, 64, 0.2)",
-                    borderRadius: "6px",
-                    padding: "0.55rem 1.3rem",
-                    fontFamily: "var(--font-body)",
-                    fontWeight: isSelected ? "700" : "600",
-                    fontSize: "0.92rem",
+                    borderRadius: "8px",
+                    padding: "1.5rem",
+                    border: "1px solid rgba(251, 54, 64, 0.18)",
                     cursor: "pointer",
+                    transition: "all 0.25s ease",
                     display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    transition: "all 0.2s ease"
+                    flexDirection: "column",
+                    justifyContent: "space-between"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = "var(--accent-orange)";
+                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(251, 54, 64, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <Icon size={16} />
-                  <span>{subj.name}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Subject Box */}
-          <div style={{
-            background: "rgba(0, 5, 2, 0.7)",
-            border: "1px solid rgba(251, 54, 64, 0.15)",
-            borderRadius: "8px",
-            padding: "1.8rem 2rem",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1.5rem"
-          }}>
-            <div>
-              <h3 style={{
-                fontFamily: "var(--font-cyber)",
-                fontSize: "1.35rem",
-                color: "#ffffff",
-                marginBottom: "0.4rem"
-              }}>
-                {activeSubject.name}
+                  <div>
+                    <div style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "6px",
+                      background: "rgba(251, 54, 64, 0.1)",
+                      border: "1px solid rgba(251, 54, 64, 0.3)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--accent-orange)",
+                      marginBottom: "1rem"
+                    }}>
+                      <BookOpen size={18} />
+                    </div>
+                    <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.1rem", color: "#ffffff", marginBottom: "0.4rem" }}>
+                      {subjName}
+                    </h3>
+                    <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0 0 1rem 0" }}>
+                      View date-wise lecture notes archive, preview documents, and download PDFs.
+                    </p>
+                  </div>
+                  <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    Open Notes <ChevronRight size={14} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              textAlign: "center",
+              padding: "2.5rem 1.5rem",
+              background: "rgba(0, 5, 2, 0.6)",
+              border: "1px dashed rgba(251, 54, 64, 0.25)",
+              borderRadius: "8px"
+            }}>
+              <BookOpen size={36} style={{ color: "var(--accent-orange)", margin: "0 auto 0.8rem", opacity: 0.8 }} />
+              <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.2rem", color: "#ffffff", marginBottom: "0.4rem" }}>
+                NO SUBJECT NOTES UPLOADED YET
               </h3>
-              <p style={{
-                color: "var(--text-secondary)",
-                fontFamily: "var(--font-body)",
-                fontSize: "0.95rem",
-                maxWidth: "600px",
-                lineHeight: "1.6",
-                margin: 0
-              }}>
-                {activeSubject.shortDesc}
+              <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", maxWidth: "500px", margin: "0 auto 1.5rem" }}>
+                Subjects and notes uploaded from the admin portal will automatically appear here in real-time.
               </p>
-            </div>
-
-            <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
               <button
-                onClick={() => nav(`/notes?subject=${encodeURIComponent(activeSubject.dbQuery)}`)}
-                className="cyber-btn-orange"
-                style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem" }}
-              >
-                <BookOpen size={16} />
-                <span>Open Subject Notes</span>
-              </button>
-
-              <button
-                onClick={() => nav("/syllabus")}
+                onClick={() => nav("/notes")}
                 className="cyber-btn-wire"
-                style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem" }}
+                style={{ padding: "0.6rem 1.5rem", fontSize: "0.9rem" }}
               >
-                <Layers size={16} />
-                <span>View Syllabus</span>
+                <span>Browse All Notes</span>
+                <ArrowRight size={14} />
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -434,7 +414,7 @@ export default function Home() {
         .hero-character-col {
           position: relative;
           display: flex;
-          justifyContent: center;
+          justify-content: center;
           align-items: center;
           min-height: 440px;
         }
@@ -449,7 +429,7 @@ export default function Home() {
           left: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
-          z-index: 1;
+          zIndex: 1;
         }
 
         .hero-character-img {
