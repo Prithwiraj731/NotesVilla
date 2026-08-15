@@ -1,8 +1,24 @@
-const Subject = require('../models/Subject');
-const Note = require('../models/Note');
-const mongoose = require('mongoose');
+const supabase = require('../utils/supabase');
 const path = require('path');
 const fs = require('fs');
+
+// Helper to format Supabase database row to match frontend expectation (_id and camelCase)
+function formatNote(row) {
+  if (!row) return null;
+  return {
+    _id: row.id,
+    id: row.id,
+    title: row.title,
+    description: row.description || '',
+    subjectName: row.subject_name,
+    date: row.date,
+    fileUrl: row.file_url,
+    filename: row.filename,
+    files: Array.isArray(row.files) ? row.files : [],
+    uploadedBy: row.uploaded_by || 'admin',
+    createdAt: row.created_at
+  };
+}
 
 exports.uploadNote = async (req, res) => {
   try {
@@ -10,7 +26,6 @@ exports.uploadNote = async (req, res) => {
     console.log('Body:', req.body);
     console.log('Files:', req.files);
 
-    // Check if files were uploaded
     if (!req.files || req.files.length === 0) {
       console.log('No files uploaded');
       return res.status(400).json({ msg: 'No files uploaded' });
@@ -19,24 +34,12 @@ exports.uploadNote = async (req, res) => {
     const files = req.files;
     let { title, description, subjectName, date } = req.body;
 
-    // Debug logging
-    console.log('📝 Received request body:', req.body);
-    console.log('📁 Received files:', files);
-
-    // Validate strictly required fields: subjectName and date
     if (!subjectName || !date) {
-      console.log('❌ Missing required subjectName or date');
       return res.status(400).json({
-        msg: 'Missing required subject name or date',
-        received: {
-          subjectName: !!subjectName,
-          date: !!date,
-          filesCount: files ? files.length : 0
-        }
+        msg: 'Missing required subject name or date'
       });
     }
 
-    // Auto-generate title if not supplied
     if (!title || !title.trim()) {
       if (files.length === 1) {
         title = files[0].originalname.replace(/\.[^/.]+$/, "");
@@ -47,34 +50,18 @@ exports.uploadNote = async (req, res) => {
     }
     description = description ? description.trim() : '';
 
-    console.log('Creating notes in database...');
-    console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
-
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️  MongoDB not connected, returning early without saving to DB');
-      return res.status(200).json({
-        message: `${files.length} files uploaded successfully! (Database temporarily unavailable)`,
-        filesCount: files.length
-      });
-    }
-
-    console.log('✅ MongoDB is connected, proceeding to save note...');
-
-    // Create file array for multiple files
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://notesvilla.onrender.com'
       : 'http://localhost:5000';
+
     let filesArray = files.map(file => ({
       fileUrl: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
-      originalName: file.originalname,
-      publicId: undefined
+      originalName: file.originalname
     }));
 
-    // Optional: upload to Firebase Storage if configured
+    // Cloudinary upload if configured
     try {
-      // Prefer Cloudinary if available
       if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
         const { uploadLocalFile } = require('../utils/cloudinary');
         const pathLib = require('path');
@@ -82,7 +69,6 @@ exports.uploadNote = async (req, res) => {
         for (const f of files) {
           const localPath = pathLib.join(__dirname, '..', 'uploads', f.filename);
           const publicIdBase = `${Date.now()}-${f.filename.replace(/\.[^.]+$/, '')}`;
-          // Explicitly set resource type for PDFs and other documents
           const ext = f.filename.split('.').pop()?.toLowerCase();
           const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
           const resourceType = isDocument ? 'raw' : 'auto';
@@ -95,43 +81,34 @@ exports.uploadNote = async (req, res) => {
           });
         }
         if (cloudResults.length === files.length) filesArray = cloudResults;
-      } else if (process.env.FIREBASE_BUCKET) {
-        const { uploadFile } = require('../utils/firebase');
-        const cloudResults = [];
-        for (const f of files) {
-          const destName = `notes/${Date.now()}-${f.filename}`;
-          const publicUrl = await uploadFile(require('path').join(__dirname, '..', 'uploads', f.filename), destName);
-          cloudResults.push({
-            fileUrl: publicUrl,
-            filename: f.filename,
-            originalName: f.originalname
-          });
-        }
-        if (cloudResults.length === files.length) filesArray = cloudResults;
       }
     } catch (cloudErr) {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
     }
 
-    // Create single note with multiple files
-    const noteData = {
-      title,
-      description,
-      subjectName,
-      date: new Date(date),
-      files: filesArray,
-      // For backward compatibility, use first file as primary
-      fileUrl: filesArray[0].fileUrl,
-      filename: filesArray[0].originalName,
-      uploadedBy: req.admin?.username || 'admin'
-    };
+    console.log('Inserting note into Supabase...');
+    const { data: insertedNote, error } = await supabase
+      .from('notes')
+      .insert({
+        title,
+        description,
+        subject_name: subjectName,
+        date: new Date(date).toISOString(),
+        file_url: filesArray[0].fileUrl,
+        filename: filesArray[0].originalName || filesArray[0].filename,
+        files: filesArray,
+        uploaded_by: req.admin?.username || 'admin'
+      })
+      .select()
+      .single();
 
-    console.log('📝 Note data to save:', noteData);
-    const note = await Note.create(noteData);
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+      return res.status(500).json({ error: error.message });
+    }
 
-    console.log('🎉 Single note created successfully with multiple files!');
-    console.log('📌 Note ID:', note._id);
-    console.log('📄 Files count:', filesArray.length);
+    const note = formatNote(insertedNote);
+    console.log('🎉 Note created in Supabase:', note._id);
 
     res.json({
       note,
@@ -147,188 +124,119 @@ exports.uploadNote = async (req, res) => {
   }
 };
 
-// Keep the original single file upload as a backup
 exports.uploadSingleNote = async (req, res) => {
   try {
-    console.log('Single file upload request received');
-    console.log('Body:', req.body);
-    console.log('File:', req.file);
-    console.log('Admin user:', req.admin);
-
-    // Check if file was uploaded
     if (!req.file) {
-      console.log('No file uploaded');
       return res.status(400).json({ msg: 'No file uploaded' });
     }
 
     const file = req.file;
     let { title, description, subjectName, date } = req.body;
 
-    // Debug logging
-    console.log('📝 Single file upload - Received request body:', req.body);
-    console.log('📁 Single file upload - Received file:', file);
-
-    // Validate required fields
     if (!subjectName || !date) {
-      console.log('❌ Single file upload - Missing required fields');
-      return res.status(400).json({
-        msg: 'Missing required subject name or date',
-        received: {
-          subjectName: !!subjectName,
-          date: !!date,
-          hasFile: !!file
-        }
-      });
+      return res.status(400).json({ msg: 'Missing required subject name or date' });
     }
 
-    // Auto-generate title if missing
     if (!title || !title.trim()) {
-      title = file.originalname ? file.originalname.replace(/\.[^/.]+$/, "") : `${subjectName} Notes`;
+      title = file.originalname.replace(/\.[^/.]+$/, "");
     }
     description = description ? description.trim() : '';
 
-    // Use appropriate base URL for file access
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://notesvilla.onrender.com'
       : 'http://localhost:5000';
     let fileUrl = `${baseUrl}/uploads/${file.filename}`;
 
-    // Optional: upload to Firebase Storage if configured
     try {
       if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
         const { uploadLocalFile } = require('../utils/cloudinary');
         const pathLib = require('path');
         const publicIdBase = `${Date.now()}-${file.filename.replace(/\.[^.]+$/, '')}`;
-        // Explicitly set resource type for PDFs and other documents
         const ext = file.filename.split('.').pop()?.toLowerCase();
         const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
         const resourceType = isDocument ? 'raw' : 'auto';
         const cloud = await uploadLocalFile(pathLib.join(__dirname, '..', 'uploads', file.filename), publicIdBase, resourceType);
         if (cloud?.url) fileUrl = cloud.url;
-      } else if (process.env.FIREBASE_BUCKET) {
-        const { uploadFile } = require('../utils/firebase');
-        const destName = `notes/${Date.now()}-${file.filename}`;
-        const publicUrl = await uploadFile(require('path').join(__dirname, '..', 'uploads', file.filename), destName);
-        if (publicUrl) fileUrl = publicUrl;
       }
     } catch (cloudErr) {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
     }
 
-    console.log('Creating note in database...');
-    console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
+    const { data: insertedNote, error } = await supabase
+      .from('notes')
+      .insert({
+        title,
+        description,
+        subject_name: subjectName,
+        date: new Date(date).toISOString(),
+        file_url: fileUrl,
+        filename: file.originalname,
+        files: [{ fileUrl, filename: file.filename, originalName: file.originalname }],
+        uploaded_by: req.admin?.username || 'admin'
+      })
+      .select()
+      .single();
 
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️  MongoDB not connected, returning early without saving to DB');
-      return res.status(200).json({
-        message: 'File uploaded successfully! (Database temporarily unavailable)',
-        fileUrl,
-        note: {
-          title,
-          description,
-          subjectName,
-          date: new Date(date),
-          fileUrl,
-          filename: file.originalname,
-          uploadedBy: req.admin?.username || 'admin'
-        }
-      });
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+      return res.status(500).json({ error: error.message });
     }
 
-    console.log('✅ MongoDB is connected, proceeding to save note...');
-
-    // Create note record with direct subject/topic names in MongoDB
-    const noteData = {
-      title,
-      description,
-      subjectName,
-      date: new Date(date),
-      fileUrl,
-      filename: file.originalname,
-      uploadedBy: req.admin?.username || 'admin'
-    };
-
-    console.log('📝 Note data to save:', noteData);
-    const note = await Note.create(noteData);
-
-    console.log('🎉 Note created successfully in MongoDB!');
-    console.log('📌 Note ID:', note._id);
+    const note = formatNote(insertedNote);
     res.json({
       note,
-      message: 'Note uploaded and saved to database successfully!'
+      message: 'Note uploaded and saved to Supabase database successfully!'
     });
   } catch (err) {
-    console.error('Upload error:', err);
-    console.error('Error stack:', err.stack);
-    res.status(500).json({
-      error: err.message,
-      details: 'Check server console for more details',
-      type: err.name || 'UnknownError'
-    });
+    console.error('Single upload error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
 
 exports.listSubjects = async (req, res) => {
   try {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
-      console.log('📋 Fetching subjects...');
+    const { data, error } = await supabase
+      .from('notes')
+      .select('subject_name');
+
+    if (error) {
+      console.error('❌ Error fetching subjects from Supabase:', error);
+      return res.json([]);
     }
 
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      if (isDevelopment) {
-        console.log('⚠️ MongoDB not connected for subjects fetch');
-      }
-      return res.json([]); // Return empty array if DB not connected
-    }
-
-    // Get unique subject names from notes in MongoDB
-    const subjects = await Note.distinct('subjectName');
-    const subjectList = subjects.map(name => ({ name }));
-
-    if (isDevelopment) {
-      console.log('✅ Subjects found:', subjectList.length);
-    }
+    const distinct = [...new Set((data || []).map(r => r.subject_name).filter(Boolean))].sort();
+    const subjectList = distinct.map(name => ({ name }));
 
     res.json(subjectList);
   } catch (err) {
-    console.error('❌ Error fetching subjects:', err);
-    res.json([]); // Return empty array on error instead of 500
+    console.error('❌ Error in listSubjects:', err);
+    res.json([]);
   }
 };
-
 
 exports.listNotesBySubject = async (req, res) => {
   try {
     const { subjectName } = req.params;
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    if (isDevelopment) {
-      console.log(`📋 Fetching notes for subject: ${subjectName}`);
-    }
-
-    // Add pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // Get total count for this subject
-    const total = await Note.countDocuments({ subjectName });
+    const { data, count, error } = await supabase
+      .from('notes')
+      .select('*', { count: 'exact' })
+      .eq('subject_name', subjectName)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(skip, skip + limit - 1);
 
-    // Fetch notes with pagination
-    const notes = await Note.find({ subjectName })
-      .sort({ date: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const totalPages = Math.ceil(total / limit);
-
-    if (isDevelopment) {
-      console.log(`✅ Found ${notes.length}/${total} notes for subject: ${subjectName}`);
+    if (error) {
+      console.error('Error fetching notes by subject:', error);
+      return res.status(500).json({ error: error.message });
     }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+    const notes = (data || []).map(formatNote);
 
     res.json({
       notes,
@@ -342,23 +250,26 @@ exports.listNotesBySubject = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Error fetching notes by subject:', err);
+    console.error('Error in listNotesBySubject:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
 exports.getAllNotes = async (req, res) => {
   try {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
-      console.log('📋 Fetching notes with pagination...');
-    }
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
 
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      if (isDevelopment) {
-        console.log('⚠️ MongoDB not connected for notes fetch');
-      }
+    const { data, count, error } = await supabase
+      .from('notes')
+      .select('*', { count: 'exact' })
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(skip, skip + limit - 1);
+
+    if (error) {
+      console.error('❌ Supabase getAllNotes error:', error);
       return res.json({
         notes: [],
         pagination: {
@@ -371,26 +282,9 @@ exports.getAllNotes = async (req, res) => {
       });
     }
 
-    // Add pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20; // Default 20 notes per page
-    const skip = (page - 1) * limit;
-
-    // Get total count for pagination info
-    const total = await Note.countDocuments();
-
-    // Fetch notes with pagination and lean() for better performance
-    const notes = await Note.find()
-      .sort({ date: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(); // Use lean() for better performance
-
+    const total = count || 0;
     const totalPages = Math.ceil(total / limit);
-
-    if (isDevelopment) {
-      console.log(`✅ Notes found: ${notes.length}/${total} (page ${page}/${totalPages})`);
-    }
+    const notes = (data || []).map(formatNote);
 
     res.json({
       notes,
@@ -404,7 +298,7 @@ exports.getAllNotes = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('❌ Error fetching notes:', err);
+    console.error('❌ Error fetching all notes:', err);
     res.json({
       notes: [],
       pagination: {
@@ -421,38 +315,19 @@ exports.getAllNotes = async (req, res) => {
 exports.getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (isDevelopment) {
-      console.log('📋 Fetching note by ID:', id);
-    }
-
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      if (isDevelopment) {
-        console.log('⚠️ MongoDB not connected for single note fetch');
-      }
-      return res.status(503).json({ error: 'Database not available' });
-    }
-
-    const note = await Note.findById(id);
-    if (!note) {
-      if (isDevelopment) {
-        console.log('❌ Note not found with ID:', id);
-      }
+    if (error || !data) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    if (isDevelopment) {
-      console.log('✅ Note found:', note.title);
-    }
-
-    res.json(note);
+    res.json(formatNote(data));
   } catch (err) {
-    console.error('❌ Error fetching note by ID:', err);
-    if (err.name === 'CastError') {
-      return res.status(400).json({ error: 'Invalid note ID format' });
-    }
+    console.error('Error fetching note by ID:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -462,29 +337,29 @@ exports.updateNote = async (req, res) => {
     const { id } = req.params;
     const { title, description, subjectName, date } = req.body;
 
-    console.log('📝 Update request for note ID:', id);
-    console.log('📝 Update data:', { title, description, subjectName, date });
+    const updatePayload = {};
+    if (title) updatePayload.title = title;
+    if (description !== undefined) updatePayload.description = description;
+    if (subjectName) updatePayload.subject_name = subjectName;
+    if (date) updatePayload.date = new Date(date).toISOString();
 
-    const note = await Note.findById(id);
-    if (!note) {
-      return res.status(404).json({ msg: 'Note not found' });
+    const { data, error } = await supabase
+      .from('notes')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
 
-    // Update fields
-    if (title) note.title = title;
-    if (description) note.description = description;
-    if (subjectName) note.subjectName = subjectName;
-    if (date) note.date = new Date(date);
-
-    await note.save();
-    console.log('✅ Note updated successfully:', note._id);
-
     res.json({
-      note,
-      message: 'Note updated successfully'
+      note: formatNote(data),
+      message: 'Note updated successfully in Supabase'
     });
   } catch (err) {
-    console.error('❌ Error updating note:', err);
+    console.error('Error updating note:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -492,31 +367,37 @@ exports.updateNote = async (req, res) => {
 exports.deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('🗑️ Delete request for note ID:', id);
 
-    const note = await Note.findById(id);
-    if (!note) {
+    const { data: note, error: fetchErr } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !note) {
       return res.status(404).json({ msg: 'Note not found' });
     }
 
-    // Delete from database
-    await Note.findByIdAndDelete(id);
-    console.log('✅ Note deleted from database:', id);
+    const { error: delErr } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id);
 
-    // Optional: Delete file from filesystem if it exists locally
-    // This is a basic implementation; for production, you'd want to handle Cloudinary/Firebase deletion too
-    if (note.fileUrl && note.fileUrl.includes('/uploads/')) {
-      const filename = note.filename || path.basename(note.fileUrl);
+    if (delErr) {
+      return res.status(500).json({ error: delErr.message });
+    }
+
+    if (note.file_url && note.file_url.includes('/uploads/')) {
+      const filename = note.filename || path.basename(note.file_url);
       const filePath = path.join(__dirname, '..', 'uploads', filename);
       if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log('✅ Local file deleted:', filePath);
+        try { fs.unlinkSync(filePath); } catch (e) {}
       }
     }
 
-    res.json({ msg: 'Note deleted successfully' });
+    res.json({ msg: 'Note deleted successfully from Supabase' });
   } catch (err) {
-    console.error('❌ Error deleting note:', err);
+    console.error('Error deleting note:', err);
     res.status(500).json({ error: err.message });
   }
 };
