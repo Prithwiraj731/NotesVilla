@@ -8,20 +8,26 @@ exports.adminLogin = (req, res) => {
   console.log('JWT_SECRET available:', !!process.env.JWT_SECRET);
   
   if (!username || !password) {
-    console.log('\u274c Missing fields');
-    return res.status(400).json({ msg: 'Missing fields' });
+    console.log('❌ Missing login fields');
+    return res.status(400).json({ msg: 'Please provide both username and password' });
   }
 
-  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
-    console.log('\u274c Invalid credentials');
-    return res.status(401).json({ msg: 'Invalid credentials' });
+  const expectedUser = (process.env.ADMIN_USERNAME || 'prithwi1016').trim();
+  const expectedPass = (process.env.ADMIN_PASSWORD || 'Prithwi_1100');
+
+  if (username.trim() !== expectedUser || password !== expectedPass) {
+    console.log('❌ Invalid admin credentials');
+    return res.status(401).json({ msg: 'Invalid username or password' });
   }
 
   try {
-    const token = jwt.sign({ isAdmin: true, username }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
-    console.log('\u2705 Admin token generated successfully');
-    console.log('Token preview:', token.substring(0, 20) + '...');
-    res.json({ token });
+    const token = jwt.sign(
+      { isAdmin: true, username: username.trim() }, 
+      process.env.JWT_SECRET || 'notesvilla_super_secret_jwt_key_2025_very_long_and_secure_string', 
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+    console.log('✅ Admin token generated successfully');
+    res.json({ token, success: true });
   } catch (error) {
     console.log('\u274c Token generation failed:', error.message);
     res.status(500).json({ msg: 'Token generation failed', error: error.message });

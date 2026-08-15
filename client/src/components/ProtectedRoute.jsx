@@ -1,22 +1,41 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { setAuthToken } from '../services/api';
 
-// This component now only protects admin routes
-// Regular routes (dashboard, notes) are public
 export default function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
   
-  // Check if it's an admin token by decoding it
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }
   
   try {
-    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const tokenPayload = JSON.parse(jsonPayload);
+    
+    // Check if user is admin
     if (!tokenPayload.isAdmin) {
+      localStorage.removeItem('token');
+      setAuthToken(null);
+      return <Navigate to="/admin/login" replace />;
+    }
+
+    // Check if token has expired
+    if (tokenPayload.exp && tokenPayload.exp * 1000 < Date.now()) {
+      localStorage.removeItem('token');
+      setAuthToken(null);
       return <Navigate to="/admin/login" replace />;
     }
   } catch (error) {
+    localStorage.removeItem('token');
+    setAuthToken(null);
     return <Navigate to="/admin/login" replace />;
   }
   
