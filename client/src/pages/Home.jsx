@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  ArrowRight, 
   BookOpen, 
   Layers, 
   Database, 
@@ -70,11 +69,11 @@ export default function Home() {
         {/* Background Ambient Radial Glow */}
         <div style={{
           position: "absolute",
-          top: "10%",
-          left: "5%",
-          width: "55vw",
-          height: "55vw",
-          background: "radial-gradient(circle, rgba(251, 54, 64, 0.16) 0%, transparent 65%)",
+          top: "5%",
+          left: "0%",
+          width: "50vw",
+          height: "50vw",
+          background: "radial-gradient(circle, rgba(251, 54, 64, 0.15) 0%, transparent 65%)",
           borderRadius: "50%",
           filter: "blur(90px)",
           pointerEvents: "none",
@@ -83,10 +82,10 @@ export default function Home() {
 
         <div style={{
           position: "absolute",
-          top: "20%",
-          right: "10%",
-          width: "40vw",
-          height: "40vw",
+          top: "10%",
+          right: "5%",
+          width: "45vw",
+          height: "45vw",
           background: "radial-gradient(circle, rgba(251, 54, 64, 0.1) 0%, transparent 65%)",
           borderRadius: "50%",
           filter: "blur(80px)",
@@ -105,15 +104,15 @@ export default function Home() {
               
               {/* Category Pill */}
               <div className="hero-badge">
-                <Sparkles size={14} style={{ color: "var(--accent-orange)" }} />
-                <span>Curated Academic Knowledge Repository</span>
+                <Sparkles size={13} style={{ color: "var(--accent-orange)" }} />
+                <span>Curated Knowledge Repository</span>
               </div>
 
               {/* NOTES VILLA Title Graphic Image */}
               <div className="hero-title-container">
                 <img 
                   src="/hero_text.png" 
-                  alt="NotesVilla" 
+                  alt="NOTES VILLA" 
                   className="hero-title-img"
                 />
               </div>
@@ -130,7 +129,7 @@ export default function Home() {
                   className="hero-play-btn"
                 >
                   <div className="play-icon-circle">
-                    <Play size={13} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "2px" }} />
+                    <Play size={12} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "2px" }} />
                   </div>
                   <span>EXPLORE NOTES</span>
                 </button>
@@ -139,7 +138,7 @@ export default function Home() {
                   onClick={() => nav("/routine")}
                   className="hero-secondary-btn"
                 >
-                  <Calendar size={16} />
+                  <Calendar size={15} />
                   <span>CLASS ROUTINE</span>
                 </button>
               </div>
@@ -166,7 +165,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bottom Interactive Feature Tracks Strip (01, 02, 03) */}
+          {/* Bottom Interactive Feature Tracks Strip (01, 02, 03, 04) */}
           <div className="hero-bottom-tracks">
             <div 
               onClick={() => nav("/routine")}
@@ -218,7 +217,7 @@ export default function Home() {
       {/* =========================================================================
           INTERACTIVE SUBJECT SHOWCASE
           ========================================================================= */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem 4rem", position: "relative", zIndex: 5 }}>
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1rem 1.5rem 4rem", position: "relative", zIndex: 5 }}>
         <div 
           className="cyber-panel"
           style={{
@@ -346,27 +345,27 @@ export default function Home() {
         .cinematic-hero {
           position: relative;
           width: 100%;
-          padding: 6.5rem 1.5rem 3rem;
+          padding: 4.8rem 1.5rem 2rem;
           box-sizing: border-box;
           overflow: hidden;
         }
 
         .hero-content-wrapper {
-          max-width: 1320px;
+          max-width: 1280px;
           margin: 0 auto;
           position: relative;
           z-index: 5;
           display: flex;
           flex-direction: column;
-          gap: 3rem;
+          gap: 1.8rem;
         }
 
         .hero-main-stage {
           display: grid;
-          grid-template-columns: 1.15fr 1fr;
+          grid-template-columns: 1.1fr 1fr;
           align-items: center;
           gap: 2rem;
-          min-height: 520px;
+          min-height: 420px;
         }
 
         @media (max-width: 992px) {
@@ -380,7 +379,7 @@ export default function Home() {
         .hero-left-col {
           display: flex;
           flex-direction: column;
-          gap: 1.25rem;
+          gap: 1rem;
           text-align: left;
           z-index: 6;
         }
@@ -395,16 +394,16 @@ export default function Home() {
         .hero-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.4rem;
           background: rgba(251, 54, 64, 0.08);
           border: 1px solid rgba(251, 54, 64, 0.3);
           border-radius: 30px;
-          padding: 0.35rem 1.1rem;
+          padding: 0.3rem 0.95rem;
           box-shadow: 0 0 15px rgba(251, 54, 64, 0.15);
           width: fit-content;
           color: #ffffff;
           font-family: var(--font-body);
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -412,22 +411,38 @@ export default function Home() {
 
         .hero-title-container {
           width: 100%;
-          max-width: 520px;
+          max-width: 440px;
+          margin: -0.5rem 0 0 -0.5rem;
+        }
+
+        @media (max-width: 992px) {
+          .hero-title-container {
+            margin: 0 auto;
+          }
         }
 
         .hero-title-img {
           width: 100%;
+          max-height: 190px;
           height: auto;
+          object-fit: contain;
+          object-position: left center;
           display: block;
           filter: drop-shadow(0 0 25px rgba(251, 54, 64, 0.45));
           user-select: none;
         }
 
+        @media (max-width: 992px) {
+          .hero-title-img {
+            object-position: center;
+          }
+        }
+
         .hero-narrative {
           color: var(--text-secondary);
-          font-size: 1.05rem;
-          line-height: 1.65;
-          max-width: 520px;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          max-width: 460px;
           font-family: var(--font-body);
           margin: 0;
         }
@@ -435,9 +450,9 @@ export default function Home() {
         .hero-actions {
           display: flex;
           align-items: center;
-          gap: 1.2rem;
+          gap: 1rem;
           flex-wrap: wrap;
-          margin-top: 0.5rem;
+          margin-top: 0.3rem;
         }
 
         @media (max-width: 992px) {
@@ -449,14 +464,14 @@ export default function Home() {
         .hero-play-btn {
           display: inline-flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.65rem;
           background: var(--accent-orange);
           color: #000000;
           border: none;
           border-radius: 30px;
-          padding: 0.65rem 1.6rem 0.65rem 0.75rem;
+          padding: 0.6rem 1.4rem 0.6rem 0.65rem;
           font-family: var(--font-cyber);
-          font-size: 0.95rem;
+          font-size: 0.88rem;
           font-weight: 900;
           cursor: pointer;
           transition: all 0.2s ease;
@@ -470,8 +485,8 @@ export default function Home() {
         }
 
         .play-icon-circle {
-          width: 32px;
-          height: 32px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: #000000;
           display: flex;
@@ -482,14 +497,14 @@ export default function Home() {
         .hero-secondary-btn {
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.45rem;
           background: rgba(251, 54, 64, 0.08);
           color: #ffffff;
           border: 1px solid rgba(251, 54, 64, 0.35);
           border-radius: 30px;
-          padding: 0.75rem 1.6rem;
+          padding: 0.68rem 1.4rem;
           font-family: var(--font-cyber);
-          font-size: 0.9rem;
+          font-size: 0.84rem;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
@@ -506,19 +521,19 @@ export default function Home() {
         .hero-character-col {
           position: relative;
           display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 480px;
+          justifyContent: center;
+          align-items: flex-end;
+          min-height: 380px;
         }
 
         .char-glow-underlay {
           position: absolute;
-          width: 380px;
-          height: 380px;
-          background: radial-gradient(circle, rgba(251, 54, 64, 0.3) 0%, transparent 70%);
-          filter: blur(60px);
+          width: 320px;
+          height: 320px;
+          background: radial-gradient(circle, rgba(251, 54, 64, 0.25) 0%, transparent 70%);
+          filter: blur(55px);
           top: 50%;
-          left: 50%;
+          left: "50%";
           transform: translate(-50%, -50%);
           pointer-events: none;
           z-index: 1;
@@ -526,12 +541,13 @@ export default function Home() {
 
         .hero-character-img {
           width: 100%;
-          max-width: 480px;
+          max-width: 400px;
+          max-height: 420px;
           height: auto;
           object-fit: contain;
           z-index: 4;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.3)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
+          filter: drop-shadow(0 15px 35px rgba(251, 54, 64, 0.25)) drop-shadow(0 10px 25px rgba(0, 0, 0, 0.8));
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
           -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
         }
@@ -543,7 +559,7 @@ export default function Home() {
           transform: translateY(-50%);
           display: flex;
           flex-direction: column;
-          gap: 0.6rem;
+          gap: 0.5rem;
           z-index: 5;
         }
 
@@ -554,15 +570,15 @@ export default function Home() {
         }
 
         .vertical-pagination .dot {
-          width: 6px;
-          height: 6px;
+          width: 5px;
+          height: 5px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.25);
           transition: all 0.2s ease;
         }
 
         .vertical-pagination .dot.active {
-          height: 18px;
+          height: 16px;
           border-radius: 4px;
           background: var(--accent-orange);
           box-shadow: 0 0 8px var(--accent-orange);
@@ -571,9 +587,9 @@ export default function Home() {
         /* Bottom Feature Tracks */
         .hero-bottom-tracks {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 1.5rem;
-          padding-top: 2rem;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 1.2rem;
+          padding-top: 1.5rem;
           border-top: 1px solid rgba(251, 54, 64, 0.15);
           position: relative;
           z-index: 5;
@@ -582,8 +598,8 @@ export default function Home() {
         .track-item {
           display: flex;
           align-items: flex-start;
-          gap: 0.9rem;
-          padding: 0.8rem 1rem;
+          gap: 0.8rem;
+          padding: 0.75rem 0.9rem;
           border-radius: 8px;
           background: rgba(0, 15, 8, 0.6);
           border: 1px solid rgba(251, 54, 64, 0.12);
@@ -594,13 +610,13 @@ export default function Home() {
         .track-item:hover {
           background: rgba(251, 54, 64, 0.08);
           border-color: var(--accent-orange);
-          transform: translateY(-3px);
+          transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(251, 54, 64, 0.15);
         }
 
         .track-index {
           font-family: var(--font-cyber);
-          font-size: 1.1rem;
+          font-size: 1rem;
           font-weight: 900;
           color: var(--accent-orange);
           opacity: 0.9;
@@ -612,16 +628,16 @@ export default function Home() {
 
         .track-title {
           font-family: var(--font-cyber);
-          font-size: 0.92rem;
+          font-size: 0.88rem;
           font-weight: 700;
           color: #ffffff;
-          margin-bottom: 0.2rem;
+          margin-bottom: 0.15rem;
           letter-spacing: 0.04em;
         }
 
         .track-sub {
           font-family: var(--font-body);
-          font-size: 0.78rem;
+          font-size: 0.76rem;
           color: var(--text-muted);
         }
       `}</style>
