@@ -1,63 +1,142 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield } from 'lucide-react';
+import { BookOpen, Calendar, Layers, HelpCircle, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer
       style={{
         width: "100%",
-        background: "rgba(0, 15, 8, 0.95)",
+        background: "rgba(0, 15, 8, 0.98)",
         color: "var(--text-secondary)",
-        textAlign: "center",
-        padding: "1.5rem 0",
+        padding: "2.5rem 1.5rem 1.8rem",
         fontSize: "0.95rem",
-        borderTop: "1px solid rgba(251, 54, 64, 0.1)",
-        marginTop: "auto", // Push to bottom in flex containers
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "1.5rem",
+        borderTop: "1px solid rgba(251, 54, 64, 0.12)",
+        marginTop: "auto",
         fontFamily: "var(--font-tech)",
         zIndex: 99,
-        flexWrap: "wrap"
+        boxSizing: "border-box"
       }}
     >
-      <small style={{ letterSpacing: '0.05em' }}>
-        © {new Date().getFullYear()} NOTESVILLA.STUDY — FUTURISTIC ARCHIVE
-      </small>
-      
-      {/* Small Admin Login Link */}
-      <Link
-        to="/admin/login"
-        style={{
+      <div style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "1.5rem"
+      }}>
+        {/* Brand & Tagline */}
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-cyber)',
+            fontSize: '1.2rem',
+            fontWeight: '900',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: '#ffffff',
+            marginBottom: '0.3rem'
+          }}>
+            NOTES<span style={{ color: 'var(--accent-orange)' }}>VILLA</span>.STUDY
+          </div>
+          <p style={{
+            color: 'var(--text-muted)',
+            fontSize: '0.85rem',
+            fontFamily: 'var(--font-body)',
+            margin: 0
+          }}>
+            Curated Academic Knowledge Repository for Engineering & Science Scholars.
+          </p>
+        </div>
+
+        {/* Quick Nav Links */}
+        <div style={{
           display: "flex",
-          alignItems: "center",
-          gap: "0.3rem",
-          padding: "0.3rem 0.75rem",
-          background: "rgba(251, 54, 64, 0.05)",
-          border: "1px solid rgba(251, 54, 64, 0.2)",
-          borderRadius: "4px",
-          color: "var(--accent-orange)",
-          fontSize: "0.8rem",
-          textDecoration: "none",
-          transition: "all 0.2s ease",
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          fontWeight: '700'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(251, 54, 64, 0.15)";
-          e.currentTarget.style.borderColor = "var(--accent-orange)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(251, 54, 64, 0.05)";
-          e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.2)";
-        }}
-      >
-        <Shield size={12} />
-        PORTAL
-      </Link>
+          gap: "1.5rem",
+          flexWrap: "wrap",
+          alignItems: "center"
+        }}>
+          <Link
+            to="/notes"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              fontSize: "0.9rem",
+              transition: "color 0.2s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+          >
+            Notes Library
+          </Link>
+          <Link
+            to="/routine"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              fontSize: "0.9rem",
+              transition: "color 0.2s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+          >
+            Class Routine
+          </Link>
+          <Link
+            to="/syllabus"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              fontSize: "0.9rem",
+              transition: "color 0.2s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+          >
+            Course Syllabus
+          </Link>
+          <Link
+            to="/practice"
+            style={{
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              fontSize: "0.9rem",
+              transition: "color 0.2s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent-orange)"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+          >
+            Practice Sets
+          </Link>
+        </div>
+      </div>
+
+      {/* Bottom Sub-bar */}
+      <div style={{
+        maxWidth: "1280px",
+        margin: "1.8rem auto 0",
+        paddingTop: "1.2rem",
+        borderTop: "1px solid rgba(251, 54, 64, 0.08)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        fontSize: "0.85rem",
+        color: "var(--text-muted)",
+        flexWrap: "wrap",
+        gap: "0.8rem"
+      }}>
+        <span>© {new Date().getFullYear()} NOTESVILLA. ALL RIGHTS RESERVED.</span>
+        <span>ENGINEERED FOR HIGH-FIDELITY LEARNING</span>
+      </div>
     </footer>
   );
 }

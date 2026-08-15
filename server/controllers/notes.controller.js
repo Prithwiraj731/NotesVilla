@@ -17,32 +17,35 @@ exports.uploadNote = async (req, res) => {
     }
 
     const files = req.files;
-    const { title, description, subjectName, date } = req.body;
+    let { title, description, subjectName, date } = req.body;
 
     // Debug logging
     console.log('📝 Received request body:', req.body);
     console.log('📁 Received files:', files);
-    console.log('🔍 Parsed fields:', { title, description, subjectName, date });
 
-    // Validate required fields
-    if (!title || !subjectName || !date) {
-      console.log('❌ Missing required fields');
-      console.log('📊 Field validation:', {
-        title: !!title,
-        subjectName: !!subjectName,
-        date: !!date,
-        filesCount: files ? files.length : 0
-      });
+    // Validate strictly required fields: subjectName and date
+    if (!subjectName || !date) {
+      console.log('❌ Missing required subjectName or date');
       return res.status(400).json({
-        msg: 'Missing required fields',
+        msg: 'Missing required subject name or date',
         received: {
-          title: !!title,
           subjectName: !!subjectName,
           date: !!date,
           filesCount: files ? files.length : 0
         }
       });
     }
+
+    // Auto-generate title if not supplied
+    if (!title || !title.trim()) {
+      if (files.length === 1) {
+        title = files[0].originalname.replace(/\.[^/.]+$/, "");
+      } else {
+        const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        title = `${subjectName} Notes (${formattedDate})`;
+      }
+    }
+    description = description ? description.trim() : '';
 
     console.log('Creating notes in database...');
     console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
@@ -159,39 +162,30 @@ exports.uploadSingleNote = async (req, res) => {
     }
 
     const file = req.file;
-    const { title, description, subjectName, date } = req.body;
+    let { title, description, subjectName, date } = req.body;
 
     // Debug logging
     console.log('📝 Single file upload - Received request body:', req.body);
     console.log('📁 Single file upload - Received file:', file);
-    console.log('🔍 Single file upload - Parsed fields:', { title, description, subjectName, date });
-    console.log('🔍 Single file upload - Raw body keys:', Object.keys(req.body));
-    console.log('🔍 Single file upload - Body values:', {
-      title: req.body.title,
-      subjectName: req.body.subjectName,
-      date: req.body.date,
-      description: req.body.description
-    });
 
     // Validate required fields
-    if (!title || !subjectName || !date) {
+    if (!subjectName || !date) {
       console.log('❌ Single file upload - Missing required fields');
-      console.log('📊 Single file upload - Field validation:', {
-        title: !!title,
-        subjectName: !!subjectName,
-        date: !!date,
-        hasFile: !!file
-      });
       return res.status(400).json({
-        msg: 'Missing required fields',
+        msg: 'Missing required subject name or date',
         received: {
-          title: !!title,
           subjectName: !!subjectName,
           date: !!date,
           hasFile: !!file
         }
       });
     }
+
+    // Auto-generate title if missing
+    if (!title || !title.trim()) {
+      title = file.originalname ? file.originalname.replace(/\.[^/.]+$/, "") : `${subjectName} Notes`;
+    }
+    description = description ? description.trim() : '';
 
     // Use appropriate base URL for file access
     const baseUrl = process.env.NODE_ENV === 'production'
