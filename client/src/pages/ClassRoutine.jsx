@@ -5,13 +5,7 @@ import {
   ZoomIn, 
   ZoomOut, 
   Maximize2, 
-  RotateCcw, 
-  Clock, 
-  BookOpen, 
-  CheckCircle2, 
-  Sparkles,
-  Layers,
-  ChevronRight
+  RotateCcw
 } from 'lucide-react';
 
 export default function ClassRoutine() {
@@ -31,14 +25,6 @@ export default function ClassRoutine() {
     link.click();
     document.body.removeChild(link);
   };
-
-  const scheduleHighlights = [
-    { day: "Monday", slots: "09:30 AM - 04:30 PM", focus: "Data Structures, Discrete Math & Web Tech Lab" },
-    { day: "Tuesday", slots: "09:30 AM - 03:30 PM", focus: "Database Management Systems, Computer Organization" },
-    { day: "Wednesday", slots: "09:30 AM - 04:30 PM", focus: "Algorithms Analysis, Operating Systems Lab" },
-    { day: "Thursday", slots: "09:30 AM - 03:30 PM", focus: "Object-Oriented Programming, Theory of Computation" },
-    { day: "Friday", slots: "09:30 AM - 02:30 PM", focus: "Software Engineering & Project Work" },
-  ];
 
   return (
     <div style={{
@@ -108,7 +94,7 @@ export default function ClassRoutine() {
         className="cyber-panel"
         style={{
           maxWidth: '1200px',
-          margin: '0 auto 3rem',
+          margin: '0 auto 4rem',
           borderRadius: '12px',
           overflow: 'hidden',
           border: '1px solid rgba(251, 54, 64, 0.25)',
@@ -204,7 +190,7 @@ export default function ClassRoutine() {
           position: 'relative',
           background: 'rgba(0, 5, 2, 0.9)',
           padding: '1.5rem',
-          minHeight: '480px',
+          minHeight: '520px',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -223,92 +209,6 @@ export default function ClassRoutine() {
               display: 'block'
             }}
           />
-        </div>
-      </div>
-
-      {/* Weekly Schedule Overview Cards */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto 4rem' }}>
-        <h3 style={{
-          fontFamily: 'var(--font-cyber)',
-          fontSize: '1.4rem',
-          color: '#ffffff',
-          letterSpacing: '0.05em',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem'
-        }}>
-          <Clock size={20} style={{ color: 'var(--accent-orange)' }} />
-          Weekly Schedule Breakdown
-        </h3>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.2rem'
-        }}>
-          {scheduleHighlights.map((item, idx) => (
-            <div
-              key={idx}
-              className="cyber-panel"
-              style={{
-                padding: '1.5rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(251, 54, 64, 0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.borderColor = 'var(--accent-orange)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.15)';
-              }}
-            >
-              <div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.8rem'
-                }}>
-                  <h4 style={{
-                    fontFamily: 'var(--font-cyber)',
-                    fontSize: '1.15rem',
-                    color: 'var(--accent-orange)',
-                    margin: 0
-                  }}>
-                    {item.day}
-                  </h4>
-                  <span style={{
-                    background: 'rgba(251, 54, 64, 0.08)',
-                    border: '1px solid rgba(251, 54, 64, 0.2)',
-                    borderRadius: '4px',
-                    padding: '0.2rem 0.5rem',
-                    fontFamily: 'var(--font-tech)',
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    {item.slots}
-                  </span>
-                </div>
-
-                <p style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.5',
-                  margin: 0
-                }}>
-                  {item.focus}
-                </p>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
