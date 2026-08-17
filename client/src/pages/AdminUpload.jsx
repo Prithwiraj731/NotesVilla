@@ -13,8 +13,7 @@ import {
   LogOut,
   ExternalLink,
   Image as ImageIcon,
-  Type,
-  AlignLeft
+  Type
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -30,7 +29,6 @@ export default function AdminUpload() {
 
   const [form, setForm] = useState({
     title: '',
-    description: '',
     subjectName: '',
     date: new Date().toISOString().split('T')[0],
     files: []
@@ -92,7 +90,6 @@ export default function AdminUpload() {
   const handleFiles = (files) => {
     const fileArray = Array.from(files);
     setForm(prev => {
-      // Auto-suggest title from single file name if title is currently empty
       const updated = { ...prev, files: fileArray };
       if (!prev.title && fileArray.length === 1) {
         updated.title = fileArray[0].name.replace(/\.[^/.]+$/, '');
@@ -109,7 +106,6 @@ export default function AdminUpload() {
           isImage: isImageFile(file.name),
           thumbnailUrl: null
         };
-        // Generate thumbnail for images
         if (preview.isImage && file.type.startsWith('image/')) {
           preview.thumbnailUrl = URL.createObjectURL(file);
         }
@@ -119,7 +115,6 @@ export default function AdminUpload() {
     }
   };
 
-  // Clean up object URLs on unmount
   useEffect(() => {
     return () => {
       filePreview.forEach(p => {
@@ -202,7 +197,6 @@ export default function AdminUpload() {
       return;
     }
 
-    // Always compute a non-empty, robust title so both local and production backends accept it
     let noteTitle = form.title?.trim();
     if (!noteTitle) {
       if (form.files.length === 1) {
@@ -215,11 +209,9 @@ export default function AdminUpload() {
 
     try {
       const data = new FormData();
-      // Crucial: Always pass title, subjectName, date, and description
       data.append('title', noteTitle);
       data.append('subjectName', form.subjectName.trim());
       data.append('date', form.date);
-      data.append('description', form.description?.trim() || '');
 
       const isSingleFile = form.files.length === 1;
       const uploadUrl = isSingleFile ? '/notes/upload-single' : '/notes/upload';
@@ -240,7 +232,6 @@ export default function AdminUpload() {
       // Reset form
       setForm({
         title: '',
-        description: '',
         subjectName: '',
         date: new Date().toISOString().split('T')[0],
         files: []
@@ -478,12 +469,12 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Type size={16} style={{ color: 'var(--accent-orange)' }} />
-              2. Note / Lecture Title <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional - automatically named if left blank)</span>
+              2. Note / Lecture Title <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional - auto-named if left blank)</span>
             </label>
 
             <input 
               type="text"
-              placeholder="e.g. Unit 1 Introduction & Architecture, Chapter 3 Diagram..."
+              placeholder="e.g. Unit 1 Introduction & Architecture, Chapter 3 Diagrams..."
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               style={{
@@ -537,44 +528,7 @@ export default function AdminUpload() {
             />
           </div>
 
-          {/* 4. Description (Optional) */}
-          <div>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#ffffff',
-              fontFamily: 'var(--font-cyber)',
-              fontSize: '0.9rem',
-              fontWeight: '700',
-              marginBottom: '0.6rem',
-              textTransform: 'uppercase'
-            }}>
-              <AlignLeft size={16} style={{ color: 'var(--accent-orange)' }} />
-              4. Description / Topics Covered <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional)</span>
-            </label>
-
-            <textarea 
-              rows={2}
-              placeholder="Brief summary or bullet points of the lecture topics..."
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              style={{
-                width: '100%',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.95rem',
-                padding: '0.85rem 1.2rem',
-                borderRadius: '6px',
-                background: 'rgba(0, 5, 2, 0.8)',
-                border: '1px solid rgba(251, 54, 64, 0.25)',
-                color: '#ffffff',
-                boxSizing: 'border-box',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-
-          {/* 5. Drag & Drop File Upload Area */}
+          {/* 4. Drag & Drop File Upload Area */}
           <div>
             <label style={{
               display: 'flex',
@@ -588,7 +542,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
-              5. Upload Files (Pictures / PDF / DOCX / PPT / ZIP) *
+              4. Upload Files (Pictures / PDF / DOCX / PPT / ZIP) *
             </label>
 
             <div

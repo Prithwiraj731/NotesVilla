@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
+import DocViewer, { getFileCategory } from '../components/DocViewer';
 import { 
   Search, 
   Download, 
@@ -12,10 +13,12 @@ import {
   Grid, 
   List, 
   Eye, 
-  ChevronRight, 
   X, 
   Check,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -28,9 +31,7 @@ function isImageFile(filename) {
 
 function isImageUrl(url) {
   if (!url) return false;
-  // Check common image URL patterns
   if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url)) return true;
-  // Cloudinary image URLs
   if (/res\.cloudinary\.com.*\/image\/upload/i.test(url)) return true;
   return false;
 }
@@ -60,7 +61,9 @@ export default function Notes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Preview modal state
   const [previewNote, setPreviewNote] = useState(null);
+  const [modalFullscreen, setModalFullscreen] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
@@ -124,7 +127,6 @@ export default function Notes() {
       filtered = filtered.filter(note =>
         note.title?.toLowerCase().includes(q) ||
         note.subjectName?.toLowerCase().includes(q) ||
-        note.description?.toLowerCase().includes(q) ||
         note.date?.includes(q)
       );
     }
@@ -231,7 +233,7 @@ export default function Notes() {
   ];
 
   // ──────────────────────────────────────────────
-  // Reusable Note Card component
+  // Note Card Component
   // ──────────────────────────────────────────────
   const NoteCard = ({ note, showDate = false }) => {
     const noteType = getNoteFileType(note);
@@ -356,29 +358,12 @@ export default function Notes() {
               fontSize: '1.25rem',
               fontWeight: '700',
               color: '#ffffff',
-              margin: '0 0 0.6rem',
+              margin: '0 0 0.8rem',
               lineHeight: '1.3',
               wordBreak: 'break-word'
             }}>
               {note.title}
             </h3>
-
-            {note.description && (
-              <p style={{
-                color: 'var(--text-secondary)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.9rem',
-                lineHeight: '1.5',
-                margin: '0 0 1.2rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical'
-              }}>
-                {note.description}
-              </p>
-            )}
           </div>
 
           {/* Card Action Buttons */}
@@ -392,17 +377,17 @@ export default function Notes() {
             <button
               onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
               className="cyber-btn-wire"
-              style={{ flex: '1', padding: '0.45rem', fontSize: '0.85rem', justifyContent: 'center' }}
+              style={{ flex: '1.2', padding: '0.5rem', fontSize: '0.85rem', justifyContent: 'center' }}
             >
-              <Eye size={14} /> Preview
+              <Eye size={14} /> Preview Notes
             </button>
 
             <button
               onClick={(e) => handleDownload(note, e)}
               className="cyber-btn-orange"
               style={{
-                flex: '1.2',
-                padding: '0.45rem',
+                flex: '1',
+                padding: '0.5rem',
                 fontSize: '0.85rem',
                 justifyContent: 'center',
                 clipPath: 'none',
@@ -415,7 +400,7 @@ export default function Notes() {
             <button
               onClick={(e) => shareNote(note, e)}
               className="cyber-btn-wire"
-              style={{ padding: '0.45rem 0.75rem' }}
+              style={{ padding: '0.5rem 0.75rem' }}
               title="Share Link"
             >
               {copiedId === note._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
@@ -485,7 +470,7 @@ export default function Notes() {
           margin: '0 auto',
           lineHeight: '1.6'
         }}>
-          Select a subject to view date-wise lecture notes and images in continuity, preview in-browser, share with peers, or download.
+          Select a subject to view date-wise lecture notes and images in continuity, preview directly in-browser, share with peers, or download.
         </p>
       </div>
 
@@ -661,7 +646,6 @@ export default function Notes() {
         ) : viewMode === 'timeline' ? (
           /* ===== TIMELINE VIEW ===== */
           <div style={{ position: 'relative', paddingLeft: '3rem' }}>
-            {/* Timeline Spine */}
             <div style={{
               position: 'absolute',
               top: 0,
@@ -755,13 +739,16 @@ export default function Notes() {
         )}
       </div>
 
-      {/* ===== PREVIEW MODAL ===== */}
+      {/* ─── FULL IN-WEBSITE INTERACTIVE DOCUMENT & NOTE PREVIEW MODAL ─── */}
       {previewNote && (() => {
-        const previewType = getNoteFileType(previewNote);
-        const previewIsImage = previewType === 'image';
-        const previewImageUrl = previewIsImage 
-          ? (previewNote.files && previewNote.files.length > 0 ? previewNote.files[0].fileUrl : previewNote.fileUrl)
-          : null;
+        const attachedFiles = (previewNote.files && previewNote.files.length > 0)
+          ? previewNote.files
+          : [{
+              fileUrl: previewNote.fileUrl,
+              filename: previewNote.filename,
+              originalName: previewNote.originalName || previewNote.filename || previewNote.title,
+              fileType: previewNote.fileType
+            }];
 
         return (
           <div 
@@ -771,273 +758,121 @@ export default function Notes() {
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'rgba(0, 15, 8, 0.95)',
+              background: 'rgba(0, 15, 8, 0.92)',
+              backdropFilter: 'blur(8px)',
               zIndex: 3000,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.5rem'
+              padding: modalFullscreen ? '0' : '1.5rem',
+              boxSizing: 'border-box'
             }}
             onClick={() => setPreviewNote(null)}
           >
             <div 
-              className="cyber-panel"
               style={{
                 position: 'relative',
-                maxWidth: '900px',
+                maxWidth: modalFullscreen ? '100vw' : '1100px',
                 width: '100%',
-                maxHeight: '90vh',
-                borderRadius: '10px',
+                height: modalFullscreen ? '100vh' : '88vh',
+                borderRadius: modalFullscreen ? '0' : '12px',
                 overflow: 'hidden',
-                background: '#000F08',
-                border: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.35)' : 'rgba(251, 54, 64, 0.35)'}`,
+                background: '#000A05',
+                border: modalFullscreen ? 'none' : '1px solid rgba(251, 54, 64, 0.35)',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.9)',
                 display: 'flex',
                 flexDirection: 'column'
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div style={{
-                padding: '1.2rem 1.5rem',
-                background: previewIsImage ? 'rgba(16, 185, 129, 0.08)' : 'rgba(251, 54, 64, 0.08)',
-                borderBottom: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
-                    <span style={{
-                      background: 'var(--accent-orange)',
-                      color: '#000',
-                      fontFamily: 'var(--font-cyber)',
-                      fontSize: '0.8rem',
-                      fontWeight: '900',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px'
-                    }}>
-                      {previewNote.subjectName}
-                    </span>
-                    {previewIsImage && (
-                      <span style={{
-                        background: '#10B981',
-                        color: '#fff',
-                        fontFamily: 'var(--font-cyber)',
-                        fontSize: '0.7rem',
-                        fontWeight: '900',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px'
-                      }}>
-                        📸 IMAGE
-                      </span>
-                    )}
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.3rem', margin: 0 }}>
-                    {previewNote.title}
-                  </h3>
-                </div>
-
-                <button
-                  onClick={() => setPreviewNote(null)}
-                  className="cyber-btn-wire"
-                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem' }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
-                {previewNote.description && (
-                  <p style={{
-                    color: 'var(--text-secondary)',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '0.95rem',
-                    lineHeight: '1.6',
-                    marginBottom: '1.5rem',
-                    padding: '0.8rem 1rem',
-                    background: 'rgba(251, 54, 64, 0.04)',
-                    borderRadius: '6px',
-                    borderLeft: `3px solid ${previewIsImage ? '#10B981' : 'var(--accent-orange)'}`
-                  }}>
-                    {previewNote.description}
-                  </p>
-                )}
-
-                {/* Inline Image Preview */}
-                {previewIsImage && previewImageUrl && (
-                  <div style={{
-                    marginBottom: '1.5rem',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    background: 'rgba(0, 5, 2, 0.5)',
-                    textAlign: 'center'
-                  }}>
-                    <img 
-                      src={previewImageUrl}
-                      alt={previewNote.title}
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '500px',
-                        objectFit: 'contain',
-                        display: 'block',
-                        margin: '0 auto'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* All images in files array */}
-                {previewNote.files && previewNote.files.length > 1 && previewNote.files.some(f => 
-                  isImageFile(f.originalName || f.filename) || f.fileType === 'image'
-                ) && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '0.8rem',
-                    marginBottom: '1.5rem'
-                  }}>
-                    {previewNote.files
-                      .filter(f => isImageFile(f.originalName || f.filename) || f.fileType === 'image')
-                      .map((file, fIdx) => (
-                        <div key={`img-${fIdx}`} style={{
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          border: '1px solid rgba(16, 185, 129, 0.2)',
-                          background: 'rgba(0, 5, 2, 0.5)'
-                        }}>
-                          <img 
-                            src={file.fileUrl}
-                            alt={file.originalName || `Image ${fIdx + 1}`}
-                            style={{
-                              width: '100%',
-                              height: '180px',
-                              objectFit: 'cover',
-                              display: 'block'
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                          <div style={{
-                            padding: '0.4rem 0.6rem',
-                            fontSize: '0.75rem',
-                            color: 'var(--text-secondary)',
-                            fontFamily: 'var(--font-body)',
-                            borderTop: '1px solid rgba(16, 185, 129, 0.1)'
-                          }}>
-                            {file.originalName || `Image ${fIdx + 1}`}
-                          </div>
-                        </div>
-                      ))
-                    }
-                  </div>
-                )}
-
-                {/* Files Attached List */}
-                <h4 style={{
-                  fontFamily: 'var(--font-cyber)',
-                  fontSize: '1rem',
-                  color: '#ffffff',
-                  marginBottom: '1rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  Attached Files ({previewNote.files?.length || 1})
-                </h4>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
-                  {(previewNote.files && previewNote.files.length > 0 ? previewNote.files : [{
-                    fileUrl: previewNote.fileUrl,
-                    originalName: previewNote.originalName || previewNote.filename || 'Download File'
-                  }]).map((file, fIdx) => {
-                    const fileIsImage = isImageFile(file.originalName || file.filename) || file.fileType === 'image';
-                    return (
-                      <div
-                        key={fIdx}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          background: 'rgba(0, 15, 8, 0.7)',
-                          border: `1px solid ${fileIsImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
-                          borderRadius: '6px',
-                          padding: '0.8rem 1.2rem',
-                          flexWrap: 'wrap',
-                          gap: '0.8rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          {fileIsImage 
-                            ? <ImageIcon size={20} style={{ color: '#10B981' }} />
-                            : <FileText size={20} style={{ color: 'var(--accent-orange)' }} />
-                          }
-                          <span style={{ color: '#ffffff', fontFamily: 'var(--font-tech)', fontSize: '1rem', fontWeight: '600' }}>
-                            {file.originalName || `File ${fIdx + 1}`}
-                          </span>
-                          {fileIsImage && (
-                            <span style={{
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              color: '#10B981',
-                              padding: '0.1rem 0.4rem',
-                              borderRadius: '3px',
-                              fontSize: '0.65rem',
-                              fontWeight: '700'
-                            }}>
-                              IMAGE
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={async () => {
-                            const ok = await downloadFile(file.fileUrl, file.originalName || 'lecture-note');
-                            if (!ok) alert('Download failed.');
-                          }}
-                          className="cyber-btn-wire"
-                          style={{ padding: '0.35rem 0.8rem', fontSize: '0.85rem' }}
-                        >
-                          <Download size={13} /> Download
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Modal Footer */}
+              {/* Modal Top Header Bar */}
               <div style={{
                 padding: '1rem 1.5rem',
-                background: 'rgba(0, 15, 8, 0.9)',
-                borderTop: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`,
+                background: 'rgba(0, 15, 8, 0.98)',
+                borderBottom: '1px solid rgba(251, 54, 64, 0.25)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: '0.8rem'
               }}>
-                <button
-                  onClick={(e) => shareNote(previewNote, e)}
-                  className="cyber-btn-wire"
-                  style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}
-                >
-                  <Share2 size={14} /> Share
-                </button>
+                <div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+                    <span style={{
+                      background: 'var(--accent-orange)',
+                      color: '#000',
+                      fontFamily: 'var(--font-cyber)',
+                      fontSize: '0.75rem',
+                      fontWeight: '900',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px'
+                    }}>
+                      {previewNote.subjectName}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
+                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
 
-                <button
-                  onClick={() => handleDownload(previewNote)}
-                  className="cyber-btn-orange"
-                  style={{ padding: '0.5rem 1.5rem', fontSize: '0.9rem', clipPath: 'none', borderRadius: '4px' }}
-                >
-                  <Download size={14} /> Download All Files
-                </button>
+                  <h2 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.25rem', margin: 0, letterSpacing: '0.03em' }}>
+                    {previewNote.title}
+                  </h2>
+                </div>
+
+                {/* Header Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Share button */}
+                  <button
+                    onClick={(e) => shareNote(previewNote, e)}
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                    title="Share Note Link"
+                  >
+                    {copiedId === previewNote._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
+                    <span>Share</span>
+                  </button>
+
+                  {/* Fullscreen Expand/Collapse */}
+                  <button
+                    onClick={() => setModalFullscreen(prev => !prev)}
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                    title={modalFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen'}
+                  >
+                    {modalFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  </button>
+
+                  {/* Close Cross Trigger */}
+                  <button
+                    onClick={() => setPreviewNote(null)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      borderRadius: '6px',
+                      color: '#ef4444',
+                      width: '34px',
+                      height: '34px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title="Close Viewer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Embedded Interactive DocViewer Component */}
+              <div style={{ flex: 1, height: 'calc(100% - 70px)', overflow: 'hidden' }}>
+                <DocViewer
+                  files={attachedFiles}
+                  title={previewNote.title}
+                  onClose={() => setPreviewNote(null)}
+                  isFullscreenMode={modalFullscreen}
+                />
               </div>
             </div>
           </div>

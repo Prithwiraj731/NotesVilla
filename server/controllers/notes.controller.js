@@ -29,7 +29,6 @@ function formatNote(row) {
     _id: row.id,
     id: row.id,
     title: row.title,
-    description: row.description || '',
     subjectName: row.subject_name,
     date: row.date,
     fileUrl: row.file_url,
@@ -52,7 +51,7 @@ exports.uploadNote = async (req, res) => {
     }
 
     const files = req.files;
-    let { title, description, subjectName, date } = req.body;
+    let { title, subjectName, date } = req.body;
 
     if (!subjectName || !date) {
       return res.status(400).json({ msg: 'Missing required subject name or date' });
@@ -67,9 +66,7 @@ exports.uploadNote = async (req, res) => {
         title = `${subjectName} Notes (${formattedDate})`;
       }
     }
-    description = description ? description.trim() : '';
 
-    // Determine the dominant file type (image if first file is image)
     const primaryFileType = detectFileType(files[0].originalname);
 
     const baseUrl = process.env.NODE_ENV === 'production'
@@ -111,7 +108,6 @@ exports.uploadNote = async (req, res) => {
       .from('notes')
       .insert({
         title,
-        description,
         subject_name: subjectName,
         date: new Date(date).toISOString(),
         file_url: filesArray[0].fileUrl,
@@ -125,13 +121,11 @@ exports.uploadNote = async (req, res) => {
 
     if (error) {
       console.error('❌ Supabase insert error:', error);
-      // If file_type column doesn't exist yet, retry without it
       if (error.message && error.message.includes('file_type')) {
         const { data: retryNote, error: retryErr } = await supabase
           .from('notes')
           .insert({
             title,
-            description,
             subject_name: subjectName,
             date: new Date(date).toISOString(),
             file_url: filesArray[0].fileUrl,
@@ -173,7 +167,7 @@ exports.uploadSingleNote = async (req, res) => {
     }
 
     const file = req.file;
-    let { title, description, subjectName, date } = req.body;
+    let { title, subjectName, date } = req.body;
 
     if (!subjectName || !date) {
       return res.status(400).json({ msg: 'Missing required subject name or date' });
@@ -182,7 +176,6 @@ exports.uploadSingleNote = async (req, res) => {
     if (!title || !title.trim()) {
       title = file.originalname.replace(/\.[^/.]+$/, '');
     }
-    description = description ? description.trim() : '';
 
     const fileType = detectFileType(file.originalname);
 
@@ -207,7 +200,6 @@ exports.uploadSingleNote = async (req, res) => {
       .from('notes')
       .insert({
         title,
-        description,
         subject_name: subjectName,
         date: new Date(date).toISOString(),
         file_url: fileUrl,
@@ -221,13 +213,11 @@ exports.uploadSingleNote = async (req, res) => {
 
     if (error) {
       console.error('❌ Supabase insert error:', error);
-      // If file_type column doesn't exist, retry without it
       if (error.message && error.message.includes('file_type')) {
         const { data: retryNote, error: retryErr } = await supabase
           .from('notes')
           .insert({
             title,
-            description,
             subject_name: subjectName,
             date: new Date(date).toISOString(),
             file_url: fileUrl,
@@ -393,11 +383,10 @@ exports.getNoteById = async (req, res) => {
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, subjectName, date } = req.body;
+    const { title, subjectName, date } = req.body;
 
     const updatePayload = {};
     if (title) updatePayload.title = title;
-    if (description !== undefined) updatePayload.description = description;
     if (subjectName) updatePayload.subject_name = subjectName;
     if (date) updatePayload.date = new Date(date).toISOString();
 
@@ -445,7 +434,6 @@ exports.deleteNote = async (req, res) => {
       return res.status(500).json({ error: delErr.message });
     }
 
-    // Clean up local file if stored locally
     if (note.file_url && note.file_url.includes('/uploads/')) {
       const filename = note.filename || path.basename(note.file_url);
       const filePath = path.join(__dirname, '..', 'uploads', filename);
