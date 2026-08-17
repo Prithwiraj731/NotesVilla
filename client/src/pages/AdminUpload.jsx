@@ -7,13 +7,14 @@ import {
   BookOpen, 
   Calendar, 
   Trash2, 
-  X, 
   CheckCircle, 
   AlertCircle, 
   RefreshCw, 
   LogOut,
   ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Type,
+  AlignLeft
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -28,6 +29,8 @@ export default function AdminUpload() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
+    title: '',
+    description: '',
     subjectName: '',
     date: new Date().toISOString().split('T')[0],
     files: []
@@ -88,7 +91,15 @@ export default function AdminUpload() {
 
   const handleFiles = (files) => {
     const fileArray = Array.from(files);
-    setForm(prev => ({ ...prev, files: fileArray }));
+    setForm(prev => {
+      // Auto-suggest title from single file name if title is currently empty
+      const updated = { ...prev, files: fileArray };
+      if (!prev.title && fileArray.length === 1) {
+        updated.title = fileArray[0].name.replace(/\.[^/.]+$/, '');
+      }
+      return updated;
+    });
+
     if (fileArray.length > 0) {
       const previews = fileArray.map(file => {
         const preview = {
@@ -178,7 +189,7 @@ export default function AdminUpload() {
     }
 
     if (form.files.length === 0) {
-      setError('Please select at least one file to upload');
+      setError('Please select at least one file or image to upload');
       setLoading(false);
       return;
     }
@@ -191,10 +202,24 @@ export default function AdminUpload() {
       return;
     }
 
+    // Always compute a non-empty, robust title so both local and production backends accept it
+    let noteTitle = form.title?.trim();
+    if (!noteTitle) {
+      if (form.files.length === 1) {
+        noteTitle = form.files[0].name.replace(/\.[^/.]+$/, '');
+      } else {
+        const formattedDate = new Date(form.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        noteTitle = `${form.subjectName.trim()} Notes (${formattedDate})`;
+      }
+    }
+
     try {
       const data = new FormData();
+      // Crucial: Always pass title, subjectName, date, and description
+      data.append('title', noteTitle);
       data.append('subjectName', form.subjectName.trim());
       data.append('date', form.date);
+      data.append('description', form.description?.trim() || '');
 
       const isSingleFile = form.files.length === 1;
       const uploadUrl = isSingleFile ? '/notes/upload-single' : '/notes/upload';
@@ -210,10 +235,12 @@ export default function AdminUpload() {
       });
 
       const hasImages = form.files.some(f => isImageFile(f.name));
-      setSuccess(`🎉 Successfully uploaded ${hasImages ? 'images' : 'notes'} for ${form.subjectName.trim()}!`);
+      setSuccess(`🎉 Successfully uploaded "${noteTitle}" for ${form.subjectName.trim()}!`);
       
       // Reset form
       setForm({
+        title: '',
+        description: '',
         subjectName: '',
         date: new Date().toISOString().split('T')[0],
         files: []
@@ -224,7 +251,8 @@ export default function AdminUpload() {
 
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err.response?.data?.msg || err.response?.data?.error || err.message || 'Upload failed');
+      const serverMsg = err.response?.data?.msg || err.response?.data?.error || err.message || 'Upload failed';
+      setError(serverMsg);
     } finally {
       setLoading(false);
     }
@@ -319,7 +347,7 @@ export default function AdminUpload() {
           fontSize: '0.95rem',
           marginBottom: '2rem'
         }}>
-          Enter your 4th-year subject name, select the lecture date, and upload <strong style={{ color: 'var(--accent-orange)' }}>PDF, documents, or images</strong> directly — no need to convert to PDF first!
+          Enter your subject name, lecture date, and upload <strong style={{ color: 'var(--accent-orange)' }}>pictures, PDFs, or documents</strong> directly.
         </p>
 
         {/* Notifications */}
@@ -377,13 +405,13 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <BookOpen size={16} style={{ color: 'var(--accent-orange)' }} />
-              1. Subject Name
+              1. Subject Name *
             </label>
 
             <input 
               type="text"
               list="existing-subjects-list"
-              placeholder="e.g. Cloud Computing, Cyber Security, Deep Learning, Distributed Systems..."
+              placeholder="e.g. E-Commerce & it's Application, Cloud Computing, Cyber Security..."
               value={form.subjectName}
               onChange={(e) => setForm({ ...form, subjectName: e.target.value })}
               required
@@ -436,7 +464,43 @@ export default function AdminUpload() {
             )}
           </div>
 
-          {/* 2. Lecture Date */}
+          {/* 2. Note Title (Optional) */}
+          <div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#ffffff',
+              fontFamily: 'var(--font-cyber)',
+              fontSize: '0.9rem',
+              fontWeight: '700',
+              marginBottom: '0.6rem',
+              textTransform: 'uppercase'
+            }}>
+              <Type size={16} style={{ color: 'var(--accent-orange)' }} />
+              2. Note / Lecture Title <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional - automatically named if left blank)</span>
+            </label>
+
+            <input 
+              type="text"
+              placeholder="e.g. Unit 1 Introduction & Architecture, Chapter 3 Diagram..."
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--font-tech)',
+                fontSize: '1rem',
+                padding: '0.85rem 1.2rem',
+                borderRadius: '6px',
+                background: 'rgba(0, 5, 2, 0.8)',
+                border: '1px solid rgba(251, 54, 64, 0.25)',
+                color: '#ffffff',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* 3. Lecture Date */}
           <div>
             <label style={{
               display: 'flex',
@@ -450,7 +514,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Calendar size={16} style={{ color: 'var(--accent-orange)' }} />
-              2. Lecture Date
+              3. Lecture Date *
             </label>
 
             <input 
@@ -473,7 +537,44 @@ export default function AdminUpload() {
             />
           </div>
 
-          {/* 3. Drag & Drop File Upload Area */}
+          {/* 4. Description (Optional) */}
+          <div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#ffffff',
+              fontFamily: 'var(--font-cyber)',
+              fontSize: '0.9rem',
+              fontWeight: '700',
+              marginBottom: '0.6rem',
+              textTransform: 'uppercase'
+            }}>
+              <AlignLeft size={16} style={{ color: 'var(--accent-orange)' }} />
+              4. Description / Topics Covered <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional)</span>
+            </label>
+
+            <textarea 
+              rows={2}
+              placeholder="Brief summary or bullet points of the lecture topics..."
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.95rem',
+                padding: '0.85rem 1.2rem',
+                borderRadius: '6px',
+                background: 'rgba(0, 5, 2, 0.8)',
+                border: '1px solid rgba(251, 54, 64, 0.25)',
+                color: '#ffffff',
+                boxSizing: 'border-box',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          {/* 5. Drag & Drop File Upload Area */}
           <div>
             <label style={{
               display: 'flex',
@@ -487,7 +588,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
-              3. Upload Files (Images / PDF / DOCX / PPT / ZIP)
+              5. Upload Files (Pictures / PDF / DOCX / PPT / ZIP) *
             </label>
 
             <div
@@ -527,7 +628,7 @@ export default function AdminUpload() {
                 fontSize: '1.05rem',
                 marginBottom: '0.4rem'
               }}>
-                Drag and drop your files here
+                Drag and drop your files or photos here
               </div>
               
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', marginBottom: '0.5rem' }}>
@@ -542,7 +643,7 @@ export default function AdminUpload() {
                 gap: '0.5rem',
                 flexWrap: 'wrap'
               }}>
-                <span style={{ color: '#10B981', fontWeight: '600' }}>📸 Images (JPG, PNG, GIF, WebP)</span>
+                <span style={{ color: '#10B981', fontWeight: '600' }}>📸 Photos (JPG, PNG, WebP, GIF)</span>
                 <span>•</span>
                 <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>📄 Documents (PDF, DOC, PPT, TXT)</span>
                 <span>•</span>
@@ -604,7 +705,7 @@ export default function AdminUpload() {
                   </div>
                 )}
 
-                {/* Document file list */}
+                {/* Document / Image file list */}
                 {filePreview.map((file, idx) => (
                   <div key={idx} style={{
                     display: 'flex',
@@ -664,12 +765,12 @@ export default function AdminUpload() {
             {loading ? (
               <>
                 <RefreshCw size={18} className="spin-animate" />
-                <span>Uploading...</span>
+                <span>Uploading Note...</span>
               </>
             ) : (
               <>
                 <Upload size={18} />
-                <span>Upload & Publish</span>
+                <span>Upload & Publish Note</span>
               </>
             )}
           </button>
