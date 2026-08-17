@@ -18,7 +18,12 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Maximize2,
-  Minimize2
+  Minimize2,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -57,10 +62,13 @@ export default function Notes() {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('timeline');
+  const [viewMode, setViewMode] = useState('timeline'); // 'timeline' | 'grid' | 'list'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Collapsed state for subject sections (all expanded by default)
+  const [collapsedSubjects, setCollapsedSubjects] = useState({});
+
   // Preview modal state
   const [previewNote, setPreviewNote] = useState(null);
   const [modalFullscreen, setModalFullscreen] = useState(false);
@@ -96,7 +104,7 @@ export default function Notes() {
     try {
       setLoading(true);
       setError('');
-      const r = await API.get('/notes?limit=100');
+      const r = await API.get('/notes?limit=150');
 
       if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
         const sorted = r.data.notes.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -142,6 +150,13 @@ export default function Notes() {
     } else {
       navigate(`/notes?subject=${encodeURIComponent(subj)}`, { replace: true });
     }
+  };
+
+  const toggleSubjectCollapse = (subjName) => {
+    setCollapsedSubjects(prev => ({
+      ...prev,
+      [subjName]: !prev[subjName]
+    }));
   };
 
   const shareNote = async (note, e) => {
@@ -217,13 +232,30 @@ export default function Notes() {
     };
   };
 
-  const groupedByDate = filteredNotes.reduce((acc, note) => {
+  // ──────────────────────────────────────────────────────────
+  // Hierarchical Grouping: Subject-Wise -> Date-Wise
+  // ──────────────────────────────────────────────────────────
+  const subjectGroups = filteredNotes.reduce((acc, note) => {
+    const subj = note.subjectName || 'General Notes';
+    if (!acc[subj]) {
+      acc[subj] = {
+        subjectName: subj,
+        notes: [],
+        dates: {}
+      };
+    }
+    acc[subj].notes.push(note);
+
     const dateKey = new Date(note.date).toISOString().split('T')[0];
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(note);
+    if (!acc[subj].dates[dateKey]) {
+      acc[subj].dates[dateKey] = [];
+    }
+    acc[subj].dates[dateKey].push(note);
+
     return acc;
   }, {});
 
+  // Distinct subjects list for top carousel
   const allSubjectNames = [
     'All',
     ...new Set([
@@ -249,25 +281,26 @@ export default function Notes() {
         style={{
           borderRadius: '8px',
           overflow: 'hidden',
-          border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)'}`,
+          border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
           display: 'flex',
           flexDirection: 'column',
           transition: 'all 0.3s ease',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          background: 'rgba(0, 15, 8, 0.85)'
         }}
         onClick={() => setPreviewNote(note)}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = isImage ? '#10B981' : 'var(--accent-orange)';
           e.currentTarget.style.transform = 'translateY(-3px)';
-          e.currentTarget.style.boxShadow = `0 8px 25px ${isImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`;
+          e.currentTarget.style.boxShadow = `0 8px 25px ${isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)'}`;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)';
+          e.currentTarget.style.borderColor = isImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)';
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'none';
         }}
       >
-        {/* Image thumbnail at top of card */}
+        {/* Image thumbnail header if it's an image note */}
         {isImage && imageUrl && (
           <div style={{
             width: '100%',
@@ -292,7 +325,7 @@ export default function Notes() {
               position: 'absolute',
               top: '0.5rem',
               right: '0.5rem',
-              background: 'rgba(16, 185, 129, 0.9)',
+              background: 'rgba(16, 185, 129, 0.95)',
               color: '#fff',
               padding: '0.15rem 0.5rem',
               borderRadius: '4px',
@@ -305,9 +338,9 @@ export default function Notes() {
           </div>
         )}
 
-        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+        <div style={{ padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
           <div>
-            {/* Subject and Files Tag */}
+            {/* Meta Tags Row */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -316,70 +349,74 @@ export default function Notes() {
               flexWrap: 'wrap',
               gap: '0.5rem'
             }}>
-              <span style={{
-                background: 'rgba(251, 54, 64, 0.1)',
-                border: '1px solid rgba(251, 54, 64, 0.3)',
-                color: 'var(--accent-orange)',
-                fontFamily: 'var(--font-tech)',
-                fontSize: '0.85rem',
-                fontWeight: '700',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '4px',
-                textTransform: 'uppercase'
-              }}>
-                {note.subjectName}
-              </span>
-
               <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                {note.files && note.files.length > 0 && (
+                <span style={{
+                  background: isImage ? 'rgba(16, 185, 129, 0.12)' : 'rgba(251, 54, 64, 0.12)',
+                  border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.3)' : 'rgba(251, 54, 64, 0.3)'}`,
+                  color: isImage ? '#10B981' : 'var(--accent-orange)',
+                  fontFamily: 'var(--font-tech)',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  padding: '0.15rem 0.55rem',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem'
+                }}>
+                  {isImage ? <ImageIcon size={12} /> : <FileText size={12} />}
+                  <span>{isImage ? 'IMAGE NOTE' : 'DOCUMENT'}</span>
+                </span>
+
+                {note.files && note.files.length > 1 && (
                   <span style={{
                     color: 'var(--text-muted)',
                     fontFamily: 'var(--font-tech)',
-                    fontSize: '0.85rem',
+                    fontSize: '0.8rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.3rem'
+                    gap: '0.25rem'
                   }}>
-                    {isImage ? <ImageIcon size={13} /> : <FileText size={13} />}
-                    {note.files.length} {note.files.length === 1 ? 'File' : 'Files'}
-                  </span>
-                )}
-                {showDate && (
-                  <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                    📅 {dateInfo.full}
+                    <Layers size={12} />
+                    {note.files.length} Files
                   </span>
                 )}
               </div>
+
+              {showDate && (
+                <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
+                  📅 {dateInfo.full}
+                </span>
+              )}
             </div>
 
-            {/* Title */}
+            {/* Note Title */}
             <h3 style={{
               fontFamily: 'var(--font-tech)',
-              fontSize: '1.25rem',
+              fontSize: '1.2rem',
               fontWeight: '700',
               color: '#ffffff',
               margin: '0 0 0.8rem',
-              lineHeight: '1.3',
+              lineHeight: '1.35',
               wordBreak: 'break-word'
             }}>
               {note.title}
             </h3>
           </div>
 
-          {/* Card Action Buttons */}
+          {/* Action Buttons */}
           <div style={{
             display: 'flex',
             gap: '0.6rem',
             alignItems: 'center',
-            paddingTop: '0.75rem',
-            borderTop: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.1)' : 'rgba(251, 54, 64, 0.1)'}`
+            paddingTop: '0.8rem',
+            borderTop: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.12)' : 'rgba(251, 54, 64, 0.12)'}`
           }}>
             <button
               onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
               className="cyber-btn-wire"
-              style={{ flex: '1.2', padding: '0.5rem', fontSize: '0.85rem', justifyContent: 'center' }}
+              style={{ flex: '1.2', padding: '0.45rem 0.6rem', fontSize: '0.82rem', justifyContent: 'center' }}
             >
-              <Eye size={14} /> Preview Notes
+              <Eye size={13} /> Preview
             </button>
 
             <button
@@ -387,23 +424,23 @@ export default function Notes() {
               className="cyber-btn-orange"
               style={{
                 flex: '1',
-                padding: '0.5rem',
-                fontSize: '0.85rem',
+                padding: '0.45rem 0.6rem',
+                fontSize: '0.82rem',
                 justifyContent: 'center',
                 clipPath: 'none',
                 borderRadius: '4px'
               }}
             >
-              <Download size={14} /> Download
+              <Download size={13} /> Download
             </button>
 
             <button
               onClick={(e) => shareNote(note, e)}
               className="cyber-btn-wire"
-              style={{ padding: '0.5rem 0.75rem' }}
+              style={{ padding: '0.45rem 0.6rem' }}
               title="Share Link"
             >
-              {copiedId === note._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
+              {copiedId === note._id ? <Check size={13} style={{ color: '#10B981' }} /> : <Share2 size={13} />}
             </button>
           </div>
         </div>
@@ -419,7 +456,7 @@ export default function Notes() {
       paddingTop: '6.5rem',
       boxSizing: 'border-box'
     }}>
-      {/* Header */}
+      {/* ─── PAGE HEADER ─────────────────────────────────────── */}
       <div style={{
         maxWidth: '1280px',
         margin: '0 auto 2.5rem',
@@ -444,7 +481,7 @@ export default function Notes() {
             textTransform: 'uppercase',
             fontSize: '0.9rem'
           }}>
-            Chronological Lecture Archive
+            Subject-Wise & Date-Wise Repository
           </span>
         </div>
 
@@ -460,21 +497,21 @@ export default function Notes() {
           backgroundClip: 'text',
           margin: '0 0 1rem'
         }}>
-          ACADEMIC NOTES REPOSITORY
+          ACADEMIC NOTES LIBRARY
         </h1>
         <p style={{
           color: 'var(--text-secondary)',
           fontFamily: 'var(--font-body)',
           fontSize: '1.05rem',
-          maxWidth: '650px',
+          maxWidth: '700px',
           margin: '0 auto',
           lineHeight: '1.6'
         }}>
-          Select a subject to view date-wise lecture notes and images in continuity, preview directly in-browser, share with peers, or download.
+          Browse notes systematically organized by course subjects, followed by chronological lecture dates in continuity.
         </p>
       </div>
 
-      {/* Subject Filter Carousel Pills */}
+      {/* ─── SUBJECT FILTER PILLS CAROUSEL ──────────────────── */}
       <div style={{
         maxWidth: '1280px',
         margin: '0 auto 2rem',
@@ -505,7 +542,7 @@ export default function Notes() {
                 background: isSelected ? 'rgba(251, 54, 64, 0.15)' : 'rgba(0, 15, 8, 0.6)',
                 color: isSelected ? '#ffffff' : 'var(--text-secondary)',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 fontWeight: isSelected ? '700' : '500',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
@@ -513,6 +550,7 @@ export default function Notes() {
                 boxShadow: isSelected ? '0 0 12px rgba(251, 54, 64, 0.25)' : 'none'
               }}
             >
+              <BookOpen size={14} style={{ color: isSelected ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
               <span>{subj}</span>
               <span style={{
                 background: isSelected ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.1)',
@@ -529,7 +567,7 @@ export default function Notes() {
         })}
       </div>
 
-      {/* Search & View Mode Switcher */}
+      {/* ─── SEARCH & VIEW SWITCHER ─────────────────────────── */}
       <div 
         className="cyber-panel"
         style={{
@@ -547,11 +585,11 @@ export default function Notes() {
           flexWrap: 'wrap'
         }}>
           {/* Search Bar */}
-          <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Search lectures by topic, keywords, or date..."
+              placeholder="Search by topic, subject, or lecture date..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{
@@ -576,7 +614,7 @@ export default function Notes() {
                 background: viewMode === 'timeline' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <Calendar size={14} /> Date Continuity
+              <Calendar size={14} /> Subject Timeline
             </button>
 
             <button
@@ -590,7 +628,7 @@ export default function Notes() {
                 background: viewMode === 'grid' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <Grid size={14} /> Grid
+              <Grid size={14} /> Grid View
             </button>
 
             <button
@@ -604,13 +642,13 @@ export default function Notes() {
                 background: viewMode === 'list' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <List size={14} /> List
+              <List size={14} /> List View
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* ─── MAIN CONTENT: SUBJECT-WISE & DATE-WISE SECTIONS ── */}
       <div style={{ maxWidth: '1280px', margin: '0 auto 4rem' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '5rem 0', color: 'var(--text-secondary)' }}>
@@ -623,9 +661,9 @@ export default function Notes() {
               animation: 'spin 1s linear infinite',
               margin: '0 auto 1.5rem'
             }} />
-            <p style={{ fontFamily: 'var(--font-tech)', fontSize: '1.2rem', letterSpacing: '0.05em' }}>FETCHING LECTURE TIMELINE...</p>
+            <p style={{ fontFamily: 'var(--font-tech)', fontSize: '1.2rem', letterSpacing: '0.05em' }}>ORGANIZING SUBJECTS & DATES...</p>
           </div>
-        ) : filteredNotes.length === 0 ? (
+        ) : Object.keys(subjectGroups).length === 0 ? (
           <div 
             className="cyber-panel"
             style={{
@@ -643,103 +681,214 @@ export default function Notes() {
                 : 'No notes match your active search terms.'}
             </p>
           </div>
-        ) : viewMode === 'timeline' ? (
-          /* ===== TIMELINE VIEW ===== */
-          <div style={{ position: 'relative', paddingLeft: '3rem' }}>
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: '20px',
-              width: '2px',
-              background: 'linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.2))'
-            }} />
-
-            {Object.keys(groupedByDate).map((dateKey) => {
-              const notesForDate = groupedByDate[dateKey];
-              const dateInfo = formatDate(dateKey);
+        ) : (
+          /* Render Each Subject Group */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5rem' }}>
+            {Object.keys(subjectGroups).map((subjName) => {
+              const group = subjectGroups[subjName];
+              const isCollapsed = !!collapsedSubjects[subjName];
+              const totalLectures = group.notes.length;
+              const dateKeys = Object.keys(group.dates);
 
               return (
-                <div key={dateKey} style={{ marginBottom: '3rem', position: 'relative' }}>
-                  {/* Date Marker */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    marginBottom: '1.5rem',
-                    position: 'relative'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: '-2.65rem',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      background: 'var(--accent-orange)',
-                      boxShadow: '0 0 12px var(--accent-orange)',
-                      border: '3px solid #000F08'
-                    }} />
-
-                    <div style={{
-                      background: 'rgba(251, 54, 64, 0.1)',
+                <div key={subjName} style={{ position: 'relative' }}>
+                  {/* ─── SUBJECT HEADER BANNER ──────────────────────── */}
+                  <div 
+                    className="cyber-panel"
+                    style={{
+                      borderRadius: '10px',
+                      padding: '1.2rem 1.6rem',
                       border: '1px solid rgba(251, 54, 64, 0.3)',
-                      borderRadius: '6px',
-                      padding: '0.4rem 1rem',
-                      display: 'inline-flex',
+                      background: 'rgba(0, 15, 8, 0.95)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       alignItems: 'center',
-                      gap: '0.6rem'
-                    }}>
-                      <Calendar size={16} style={{ color: 'var(--accent-orange)' }} />
-                      <span style={{
-                        color: '#ffffff',
-                        fontFamily: 'var(--font-cyber)',
-                        fontSize: '1rem',
-                        fontWeight: '700',
-                        letterSpacing: '0.05em'
+                      flexWrap: 'wrap',
+                      gap: '1rem',
+                      marginBottom: isCollapsed ? '0' : '2rem',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.5)',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => toggleSubjectCollapse(subjName)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '8px',
+                        background: 'rgba(251, 54, 64, 0.12)',
+                        border: '1px solid rgba(251, 54, 64, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--accent-orange)'
                       }}>
-                        {dateInfo.full}
-                      </span>
-                      <span style={{
-                        color: 'var(--accent-orange)',
-                        fontFamily: 'var(--font-tech)',
-                        fontSize: '0.85rem',
-                        fontWeight: '700'
+                        <BookOpen size={20} />
+                      </div>
+
+                      <div>
+                        <h2 style={{
+                          fontFamily: 'var(--font-cyber)',
+                          fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
+                          color: '#ffffff',
+                          margin: '0 0 0.2rem 0',
+                          letterSpacing: '0.04em'
+                        }}>
+                          {subjName}
+                        </h2>
+                        <div style={{
+                          color: 'var(--text-muted)',
+                          fontFamily: 'var(--font-tech)',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.6rem'
+                        }}>
+                          <span>{totalLectures} {totalLectures === 1 ? 'Lecture Note' : 'Lecture Notes'}</span>
+                          <span>•</span>
+                          <span>{dateKeys.length} {dateKeys.length === 1 ? 'Active Date' : 'Lecture Dates'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubjectChange(subjName);
+                        }}
+                        className="cyber-btn-wire"
+                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem' }}
+                      >
+                        Focus Subject
+                      </button>
+
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '6px',
+                        background: 'rgba(251, 54, 64, 0.08)',
+                        border: '1px solid rgba(251, 54, 64, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--accent-orange)'
                       }}>
-                        ({notesForDate.length} {notesForDate.length === 1 ? 'Lecture' : 'Lectures'})
-                      </span>
+                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Notes Grid */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                    gap: '1.2rem'
-                  }}>
-                    {notesForDate.map((note) => (
-                      <NoteCard key={note._id} note={note} />
-                    ))}
-                  </div>
+                  {/* ─── DATE-WISE LECTURES UNDER THIS SUBJECT ─────── */}
+                  {!isCollapsed && (
+                    <>
+                      {viewMode === 'timeline' ? (
+                        /* === 1. TIMELINE: Date-wise continuity inside this subject === */
+                        <div style={{ position: 'relative', paddingLeft: '2.5rem', marginLeft: '0.5rem' }}>
+                          {/* Subject Vertical Timeline Spine */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '10px',
+                            bottom: '10px',
+                            left: '12px',
+                            width: '2px',
+                            background: 'linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.15))'
+                          }} />
+
+                          {dateKeys.map((dateKey) => {
+                            const notesOnDate = group.dates[dateKey];
+                            const dateInfo = formatDate(dateKey);
+
+                            return (
+                              <div key={dateKey} style={{ marginBottom: '2.5rem', position: 'relative' }}>
+                                {/* Date Marker & Node */}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.8rem',
+                                  marginBottom: '1.2rem',
+                                  position: 'relative'
+                                }}>
+                                  {/* Glowing Timeline Dot */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-2.55rem',
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    background: 'var(--accent-orange)',
+                                    boxShadow: '0 0 10px var(--accent-orange)',
+                                    border: '3px solid #000F08'
+                                  }} />
+
+                                  {/* Date Badge */}
+                                  <div style={{
+                                    background: 'rgba(251, 54, 64, 0.08)',
+                                    border: '1px solid rgba(251, 54, 64, 0.25)',
+                                    borderRadius: '6px',
+                                    padding: '0.35rem 0.9rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                  }}>
+                                    <Calendar size={15} style={{ color: 'var(--accent-orange)' }} />
+                                    <span style={{
+                                      color: '#ffffff',
+                                      fontFamily: 'var(--font-cyber)',
+                                      fontSize: '0.95rem',
+                                      fontWeight: '700',
+                                      letterSpacing: '0.04em'
+                                    }}>
+                                      {dateInfo.full}
+                                    </span>
+                                    <span style={{
+                                      color: 'var(--accent-orange)',
+                                      fontFamily: 'var(--font-tech)',
+                                      fontSize: '0.8rem',
+                                      fontWeight: '700'
+                                    }}>
+                                      ({notesOnDate.length} {notesOnDate.length === 1 ? 'Lecture' : 'Lectures'})
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Lecture Cards Grid for this Date */}
+                                <div style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                                  gap: '1.2rem'
+                                }}>
+                                  {notesOnDate.map((note) => (
+                                    <NoteCard key={note._id} note={note} />
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* === 2. GRID / LIST: Date-sorted cards for this subject === */
+                        <div style={{
+                          display: viewMode === 'grid' ? 'grid' : 'flex',
+                          gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(340px, 1fr))' : '1fr',
+                          flexDirection: viewMode === 'list' ? 'column' : 'row',
+                          gap: '1.2rem'
+                        }}>
+                          {group.notes.map((note) => (
+                            <NoteCard key={note._id} note={note} showDate={true} />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               );
             })}
           </div>
-        ) : (
-          /* ===== GRID / LIST VIEW ===== */
-          <div style={{
-            display: viewMode === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(360px, 1fr))' : '1fr',
-            flexDirection: viewMode === 'list' ? 'column' : 'row',
-            gap: '1.5rem'
-          }}>
-            {filteredNotes.map((note) => (
-              <NoteCard key={note._id} note={note} showDate={true} />
-            ))}
-          </div>
         )}
       </div>
 
-      {/* ─── FULL IN-WEBSITE INTERACTIVE DOCUMENT & NOTE PREVIEW MODAL ─── */}
+      {/* ─── IN-WEBSITE INTERACTIVE DOCUMENT & PDF PREVIEW MODAL ─── */}
       {previewNote && (() => {
         const attachedFiles = (previewNote.files && previewNote.files.length > 0)
           ? previewNote.files
@@ -821,7 +970,6 @@ export default function Notes() {
 
                 {/* Header Action Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {/* Share button */}
                   <button
                     onClick={(e) => shareNote(previewNote, e)}
                     className="cyber-btn-wire"
@@ -832,7 +980,6 @@ export default function Notes() {
                     <span>Share</span>
                   </button>
 
-                  {/* Fullscreen Expand/Collapse */}
                   <button
                     onClick={() => setModalFullscreen(prev => !prev)}
                     className="cyber-btn-wire"
@@ -842,7 +989,6 @@ export default function Notes() {
                     {modalFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                   </button>
 
-                  {/* Close Cross Trigger */}
                   <button
                     onClick={() => setPreviewNote(null)}
                     style={{
