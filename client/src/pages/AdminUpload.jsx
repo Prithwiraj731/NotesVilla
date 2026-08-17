@@ -12,11 +12,17 @@ import {
   AlertCircle, 
   RefreshCw, 
   LogOut,
-  Layers,
-  Sparkles,
   ExternalLink,
-  Plus
+  Image as ImageIcon
 } from 'lucide-react';
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
+
+function isImageFile(filename) {
+  if (!filename) return false;
+  const ext = filename.split('.').pop().toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
 
 export default function AdminUpload() {
   const navigate = useNavigate();
@@ -63,7 +69,6 @@ export default function AdminUpload() {
       const notesData = Array.isArray(response.data) ? response.data : (response.data.notes || []);
       setNotes(notesData);
       
-      // Update distinct subjects from notes
       const distinct = [...new Set(notesData.map(n => n.subjectName).filter(Boolean))];
       if (distinct.length > 0) {
         setExistingSubjects(prev => [...new Set([...prev, ...distinct])]);
@@ -85,14 +90,32 @@ export default function AdminUpload() {
     const fileArray = Array.from(files);
     setForm(prev => ({ ...prev, files: fileArray }));
     if (fileArray.length > 0) {
-      const previews = fileArray.map(file => ({
-        name: file.name,
-        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-        type: file.type || file.name.split('.').pop().toUpperCase()
-      }));
+      const previews = fileArray.map(file => {
+        const preview = {
+          name: file.name,
+          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+          type: file.type || file.name.split('.').pop().toUpperCase(),
+          isImage: isImageFile(file.name),
+          thumbnailUrl: null
+        };
+        // Generate thumbnail for images
+        if (preview.isImage && file.type.startsWith('image/')) {
+          preview.thumbnailUrl = URL.createObjectURL(file);
+        }
+        return preview;
+      });
       setFilePreview(previews);
     }
   };
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      filePreview.forEach(p => {
+        if (p.thumbnailUrl) URL.revokeObjectURL(p.thumbnailUrl);
+      });
+    };
+  }, [filePreview]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -186,7 +209,8 @@ export default function AdminUpload() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setSuccess(`🎉 Successfully uploaded note for ${form.subjectName.trim()}!`);
+      const hasImages = form.files.some(f => isImageFile(f.name));
+      setSuccess(`🎉 Successfully uploaded ${hasImages ? 'images' : 'notes'} for ${form.subjectName.trim()}!`);
       
       // Reset form
       setForm({
@@ -295,7 +319,7 @@ export default function AdminUpload() {
           fontSize: '0.95rem',
           marginBottom: '2rem'
         }}>
-          Enter your 4th-year subject name, select the lecture date, and upload PDF/document files.
+          Enter your 4th-year subject name, select the lecture date, and upload <strong style={{ color: 'var(--accent-orange)' }}>PDF, documents, or images</strong> directly — no need to convert to PDF first!
         </p>
 
         {/* Notifications */}
@@ -339,7 +363,7 @@ export default function AdminUpload() {
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
           
-          {/* 1. Subject Name Field with dynamic auto-suggestions */}
+          {/* 1. Subject Name Field */}
           <div>
             <label style={{
               display: 'flex',
@@ -376,7 +400,6 @@ export default function AdminUpload() {
               }}
             />
 
-            {/* Datalist for fast auto-complete of existing uploaded subjects */}
             <datalist id="existing-subjects-list">
               {existingSubjects.map((s, i) => (
                 <option key={i} value={s} />
@@ -464,7 +487,7 @@ export default function AdminUpload() {
               textTransform: 'uppercase'
             }}>
               <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
-              3. Upload Files (PDF / DOCX / PPT / ZIP)
+              3. Upload Files (Images / PDF / DOCX / PPT / ZIP)
             </label>
 
             <div
@@ -487,12 +510,15 @@ export default function AdminUpload() {
                 id="note-file-input"
                 type="file"
                 multiple
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.svg"
                 onChange={(e) => handleFiles(e.target.files)}
                 style={{ display: 'none' }}
               />
 
-              <Upload size={36} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.8 }} />
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
+                <Upload size={32} style={{ color: 'var(--accent-orange)', opacity: 0.8 }} />
+                <ImageIcon size={32} style={{ color: '#10B981', opacity: 0.7 }} />
+              </div>
               
               <div style={{
                 fontFamily: 'var(--font-tech)',
@@ -501,39 +527,121 @@ export default function AdminUpload() {
                 fontSize: '1.05rem',
                 marginBottom: '0.4rem'
               }}>
-                Drag and drop your lecture note files here
+                Drag and drop your files here
               </div>
               
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', marginBottom: '0.5rem' }}>
                 or click to browse files from your device
+              </div>
+              <div style={{ 
+                color: 'var(--text-muted)', 
+                fontSize: '0.78rem', 
+                fontFamily: 'var(--font-body)',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                flexWrap: 'wrap'
+              }}>
+                <span style={{ color: '#10B981', fontWeight: '600' }}>📸 Images (JPG, PNG, GIF, WebP)</span>
+                <span>•</span>
+                <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>📄 Documents (PDF, DOC, PPT, TXT)</span>
+                <span>•</span>
+                <span style={{ fontWeight: '600' }}>📦 Archives (ZIP, RAR)</span>
               </div>
             </div>
 
-            {/* Selected File Previews */}
+            {/* Selected File Previews with Image Thumbnails */}
             {filePreview.length > 0 && (
               <div style={{ marginTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)' }}>
                   Selected Files ({filePreview.length}):
                 </div>
+                
+                {/* Image thumbnails grid */}
+                {filePreview.some(f => f.isImage && f.thumbnailUrl) && (
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+                    gap: '0.6rem',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {filePreview.filter(f => f.isImage && f.thumbnailUrl).map((file, idx) => (
+                      <div key={`thumb-${idx}`} style={{
+                        position: 'relative',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: '2px solid rgba(16, 185, 129, 0.3)',
+                        background: 'rgba(0, 5, 2, 0.8)'
+                      }}>
+                        <img 
+                          src={file.thumbnailUrl} 
+                          alt={file.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                          padding: '0.3rem 0.4rem',
+                          fontSize: '0.65rem',
+                          color: '#ffffff',
+                          fontFamily: 'var(--font-body)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {file.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Document file list */}
                 {filePreview.map((file, idx) => (
                   <div key={idx} style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.7rem 1rem',
-                    background: 'rgba(251, 54, 64, 0.06)',
-                    border: '1px solid rgba(251, 54, 64, 0.2)',
+                    background: file.isImage ? 'rgba(16, 185, 129, 0.06)' : 'rgba(251, 54, 64, 0.06)',
+                    border: `1px solid ${file.isImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
                     borderRadius: '6px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <FileText size={16} style={{ color: 'var(--accent-orange)' }} />
+                      {file.isImage 
+                        ? <ImageIcon size={16} style={{ color: '#10B981' }} /> 
+                        : <FileText size={16} style={{ color: 'var(--accent-orange)' }} />
+                      }
                       <span style={{ color: '#ffffff', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}>
                         {file.name}
                       </span>
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}>
-                      {file.size}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {file.isImage && (
+                        <span style={{
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10B981',
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: '3px',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          fontFamily: 'var(--font-tech)'
+                        }}>
+                          IMAGE
+                        </span>
+                      )}
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}>
+                        {file.size}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -556,12 +664,12 @@ export default function AdminUpload() {
             {loading ? (
               <>
                 <RefreshCw size={18} className="spin-animate" />
-                <span>Uploading Note...</span>
+                <span>Uploading...</span>
               </>
             ) : (
               <>
                 <Upload size={18} />
-                <span>Upload & Publish Note</span>
+                <span>Upload & Publish</span>
               </>
             )}
           </button>
@@ -593,7 +701,7 @@ export default function AdminUpload() {
               PUBLISHED NOTES ARCHIVE ({notes.length})
             </h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', margin: 0 }}>
-              Manage, review, or delete uploaded lecture notes in real-time.
+              Manage, review, or delete uploaded lecture notes and images in real-time.
             </p>
           </div>
 
@@ -625,98 +733,117 @@ export default function AdminUpload() {
               No notes published yet
             </div>
             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-              Use the upload form above to add your first 4th-year subject notes.
+              Use the upload form above to add your first 4th-year subject notes or images.
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {notes.map((note) => (
-              <div
-                key={note._id}
-                className="cyber-panel"
-                style={{
-                  borderRadius: '8px',
-                  padding: '1rem 1.25rem',
-                  border: '1px solid rgba(251, 54, 64, 0.15)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '1rem',
-                  background: 'rgba(0, 15, 8, 0.8)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '6px',
-                    background: 'rgba(251, 54, 64, 0.1)',
-                    border: '1px solid rgba(251, 54, 64, 0.25)',
+            {notes.map((note) => {
+              const noteIsImage = note.fileType === 'image' || 
+                isImageFile(note.filename) || 
+                (note.files && note.files.length > 0 && note.files.some(f => isImageFile(f.originalName || f.filename)));
+
+              return (
+                <div
+                  key={note._id}
+                  className="cyber-panel"
+                  style={{
+                    borderRadius: '8px',
+                    padding: '1rem 1.25rem',
+                    border: `1px solid ${noteIsImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`,
                     display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--accent-orange)'
-                  }}>
-                    <FileText size={18} />
-                  </div>
-
-                  <div>
-                    <div style={{ color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
-                      {note.title || note.filename}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                      <span style={{
-                        background: 'rgba(251, 54, 64, 0.12)',
-                        border: '1px solid rgba(251, 54, 64, 0.25)',
-                        color: 'var(--accent-orange)',
-                        padding: '0.1rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700'
-                      }}>
-                        {note.subjectName}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Calendar size={12} />
-                        {new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                  <a
-                    href={note.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="cyber-btn-wire"
-                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}
-                  >
-                    <ExternalLink size={13} />
-                    <span>View File</span>
-                  </a>
-
-                  <button
-                    onClick={() => confirmDelete(note)}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    background: 'rgba(0, 15, 8, 0.8)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      width: '38px',
+                      height: '38px',
                       borderRadius: '6px',
-                      color: '#ef4444',
-                      padding: '0.45rem 0.65rem',
-                      cursor: 'pointer',
+                      background: noteIsImage ? 'rgba(16, 185, 129, 0.1)' : 'rgba(251, 54, 64, 0.1)',
+                      border: `1px solid ${noteIsImage ? 'rgba(16, 185, 129, 0.25)' : 'rgba(251, 54, 64, 0.25)'}`,
                       display: 'flex',
                       alignItems: 'center',
-                      transition: 'all 0.2s ease'
-                    }}
-                    title="Delete Note"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                      justifyContent: 'center',
+                      color: noteIsImage ? '#10B981' : 'var(--accent-orange)'
+                    }}>
+                      {noteIsImage ? <ImageIcon size={18} /> : <FileText size={18} />}
+                    </div>
+
+                    <div>
+                      <div style={{ color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
+                        {note.title || note.filename}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                        <span style={{
+                          background: 'rgba(251, 54, 64, 0.12)',
+                          border: '1px solid rgba(251, 54, 64, 0.25)',
+                          color: 'var(--accent-orange)',
+                          padding: '0.1rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: '700'
+                        }}>
+                          {note.subjectName}
+                        </span>
+                        {noteIsImage && (
+                          <span style={{
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            border: '1px solid rgba(16, 185, 129, 0.25)',
+                            color: '#10B981',
+                            padding: '0.1rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            fontWeight: '700'
+                          }}>
+                            📸 IMAGE
+                          </span>
+                        )}
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Calendar size={12} />
+                          {new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                    <a
+                      href={note.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="cyber-btn-wire"
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}
+                    >
+                      <ExternalLink size={13} />
+                      <span>View File</span>
+                    </a>
+
+                    <button
+                      onClick={() => confirmDelete(note)}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '6px',
+                        color: '#ef4444',
+                        padding: '0.45rem 0.65rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="Delete Note"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -780,7 +907,7 @@ export default function AdminUpload() {
       )}
 
       {/* Spin animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }

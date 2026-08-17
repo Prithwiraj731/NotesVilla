@@ -9,18 +9,44 @@ import {
   Calendar, 
   BookOpen, 
   FileText, 
-  Filter, 
   Grid, 
   List, 
-  Layers, 
   Eye, 
-  Sparkles, 
   ChevronRight, 
   X, 
   Check,
-  Clock,
-  ArrowRight
+  Image as ImageIcon
 } from 'lucide-react';
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
+
+function isImageFile(filename) {
+  if (!filename) return false;
+  const ext = filename.split('.').pop().toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+function isImageUrl(url) {
+  if (!url) return false;
+  // Check common image URL patterns
+  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url)) return true;
+  // Cloudinary image URLs
+  if (/res\.cloudinary\.com.*\/image\/upload/i.test(url)) return true;
+  return false;
+}
+
+function getNoteFileType(note) {
+  if (note.fileType === 'image') return 'image';
+  if (isImageFile(note.filename)) return 'image';
+  if (note.files && note.files.length > 0) {
+    const hasImage = note.files.some(f => 
+      (f.fileType === 'image') || isImageFile(f.originalName || f.filename)
+    );
+    if (hasImage) return 'image';
+  }
+  if (isImageUrl(note.fileUrl)) return 'image';
+  return 'document';
+}
 
 export default function Notes() {
   const navigate = useNavigate();
@@ -30,11 +56,10 @@ export default function Notes() {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('timeline'); // 'timeline' | 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('timeline');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Preview modal state
   const [previewNote, setPreviewNote] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 
@@ -42,7 +67,6 @@ export default function Notes() {
     loadSubjects();
     loadAllNotes();
     
-    // Parse URL query parameter if present
     const params = new URLSearchParams(location.search);
     const subjectParam = params.get('subject');
     if (subjectParam) {
@@ -72,7 +96,6 @@ export default function Notes() {
       const r = await API.get('/notes?limit=100');
 
       if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
-        // Sort notes chronologically descending by date
         const sorted = r.data.notes.sort((a, b) => new Date(b.date) - new Date(a.date));
         setNotes(sorted);
       } else if (Array.isArray(r.data)) {
@@ -106,7 +129,6 @@ export default function Notes() {
       );
     }
 
-    // Always preserve chronological order (most recent lecture first)
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
     setFilteredNotes(filtered);
   };
@@ -193,7 +215,6 @@ export default function Notes() {
     };
   };
 
-  // Group filtered notes by formatted date for continuity view
   const groupedByDate = filteredNotes.reduce((acc, note) => {
     const dateKey = new Date(note.date).toISOString().split('T')[0];
     if (!acc[dateKey]) acc[dateKey] = [];
@@ -201,7 +222,6 @@ export default function Notes() {
     return acc;
   }, {});
 
-  // Distinct subjects list for filter pills
   const allSubjectNames = [
     'All',
     ...new Set([
@@ -209,6 +229,202 @@ export default function Notes() {
       ...notes.map(n => n.subjectName).filter(Boolean)
     ])
   ];
+
+  // ──────────────────────────────────────────────
+  // Reusable Note Card component
+  // ──────────────────────────────────────────────
+  const NoteCard = ({ note, showDate = false }) => {
+    const noteType = getNoteFileType(note);
+    const isImage = noteType === 'image';
+    const dateInfo = formatDate(note.date);
+    const imageUrl = isImage 
+      ? (note.files && note.files.length > 0 ? note.files[0].fileUrl : note.fileUrl) 
+      : null;
+
+    return (
+      <div
+        className="cyber-panel"
+        style={{
+          borderRadius: '8px',
+          overflow: 'hidden',
+          border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)'}`,
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer'
+        }}
+        onClick={() => setPreviewNote(note)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = isImage ? '#10B981' : 'var(--accent-orange)';
+          e.currentTarget.style.transform = 'translateY(-3px)';
+          e.currentTarget.style.boxShadow = `0 8px 25px ${isImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        {/* Image thumbnail at top of card */}
+        {isImage && imageUrl && (
+          <div style={{
+            width: '100%',
+            height: '160px',
+            overflow: 'hidden',
+            background: 'rgba(0, 5, 2, 0.8)',
+            position: 'relative'
+          }}>
+            <img 
+              src={imageUrl} 
+              alt={note.title}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+            <div style={{
+              position: 'absolute',
+              top: '0.5rem',
+              right: '0.5rem',
+              background: 'rgba(16, 185, 129, 0.9)',
+              color: '#fff',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '4px',
+              fontSize: '0.7rem',
+              fontWeight: '700',
+              fontFamily: 'var(--font-tech)'
+            }}>
+              📸 IMAGE
+            </div>
+          </div>
+        )}
+
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+          <div>
+            {/* Subject and Files Tag */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.8rem',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
+              <span style={{
+                background: 'rgba(251, 54, 64, 0.1)',
+                border: '1px solid rgba(251, 54, 64, 0.3)',
+                color: 'var(--accent-orange)',
+                fontFamily: 'var(--font-tech)',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '4px',
+                textTransform: 'uppercase'
+              }}>
+                {note.subjectName}
+              </span>
+
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                {note.files && note.files.length > 0 && (
+                  <span style={{
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-tech)',
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}>
+                    {isImage ? <ImageIcon size={13} /> : <FileText size={13} />}
+                    {note.files.length} {note.files.length === 1 ? 'File' : 'Files'}
+                  </span>
+                )}
+                {showDate && (
+                  <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
+                    📅 {dateInfo.full}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 style={{
+              fontFamily: 'var(--font-tech)',
+              fontSize: '1.25rem',
+              fontWeight: '700',
+              color: '#ffffff',
+              margin: '0 0 0.6rem',
+              lineHeight: '1.3',
+              wordBreak: 'break-word'
+            }}>
+              {note.title}
+            </h3>
+
+            {note.description && (
+              <p style={{
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.9rem',
+                lineHeight: '1.5',
+                margin: '0 0 1.2rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical'
+              }}>
+                {note.description}
+              </p>
+            )}
+          </div>
+
+          {/* Card Action Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: '0.6rem',
+            alignItems: 'center',
+            paddingTop: '0.75rem',
+            borderTop: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.1)' : 'rgba(251, 54, 64, 0.1)'}`
+          }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
+              className="cyber-btn-wire"
+              style={{ flex: '1', padding: '0.45rem', fontSize: '0.85rem', justifyContent: 'center' }}
+            >
+              <Eye size={14} /> Preview
+            </button>
+
+            <button
+              onClick={(e) => handleDownload(note, e)}
+              className="cyber-btn-orange"
+              style={{
+                flex: '1.2',
+                padding: '0.45rem',
+                fontSize: '0.85rem',
+                justifyContent: 'center',
+                clipPath: 'none',
+                borderRadius: '4px'
+              }}
+            >
+              <Download size={14} /> Download
+            </button>
+
+            <button
+              onClick={(e) => shareNote(note, e)}
+              className="cyber-btn-wire"
+              style={{ padding: '0.45rem 0.75rem' }}
+              title="Share Link"
+            >
+              {copiedId === note._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{
@@ -269,7 +485,7 @@ export default function Notes() {
           margin: '0 auto',
           lineHeight: '1.6'
         }}>
-          Select a subject to view date-wise lecture notes in continuity, preview in-browser, share with peers, or download.
+          Select a subject to view date-wise lecture notes and images in continuity, preview in-browser, share with peers, or download.
         </p>
       </div>
 
@@ -340,13 +556,13 @@ export default function Notes() {
       >
         <div style={{
           display: 'flex',
-          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
           gap: '1rem',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexWrap: 'wrap'
         }}>
           {/* Search Bar */}
-          <div style={{ position: 'relative', flex: '1', width: '100%' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
@@ -355,7 +571,7 @@ export default function Notes() {
               onChange={e => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                paddingLeft: '3rem !important',
+                paddingLeft: '3rem',
                 fontFamily: 'var(--font-tech)',
                 fontSize: '1.05rem'
               }}
@@ -363,12 +579,11 @@ export default function Notes() {
           </div>
 
           {/* View Mode Switcher */}
-          <div style={{ display: 'flex', gap: '0.5rem', width: window.innerWidth < 768 ? '100%' : 'auto' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
               onClick={() => setViewMode('timeline')}
               className="cyber-btn-wire"
               style={{
-                flex: '1',
                 padding: '0.5rem 1rem',
                 fontSize: '0.85rem',
                 borderColor: viewMode === 'timeline' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
@@ -383,7 +598,6 @@ export default function Notes() {
               onClick={() => setViewMode('grid')}
               className="cyber-btn-wire"
               style={{
-                flex: '1',
                 padding: '0.5rem 1rem',
                 fontSize: '0.85rem',
                 borderColor: viewMode === 'grid' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
@@ -398,7 +612,6 @@ export default function Notes() {
               onClick={() => setViewMode('list')}
               className="cyber-btn-wire"
               style={{
-                flex: '1',
                 padding: '0.5rem 1rem',
                 fontSize: '0.85rem',
                 borderColor: viewMode === 'list' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
@@ -446,27 +659,25 @@ export default function Notes() {
             </p>
           </div>
         ) : viewMode === 'timeline' ? (
-          /* ===================================================
-             CONTINUITY / DATE-WISE TIMELINE VIEW
-             =================================================== */
-          <div style={{ position: 'relative', paddingLeft: window.innerWidth < 768 ? '1.5rem' : '3rem' }}>
-            {/* Timeline Vertical Spine Line */}
+          /* ===== TIMELINE VIEW ===== */
+          <div style={{ position: 'relative', paddingLeft: '3rem' }}>
+            {/* Timeline Spine */}
             <div style={{
               position: 'absolute',
               top: 0,
               bottom: 0,
-              left: window.innerWidth < 768 ? '10px' : '20px',
+              left: '20px',
               width: '2px',
               background: 'linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.2))'
             }} />
 
-            {Object.keys(groupedByDate).map((dateKey, dateIdx) => {
+            {Object.keys(groupedByDate).map((dateKey) => {
               const notesForDate = groupedByDate[dateKey];
               const dateInfo = formatDate(dateKey);
 
               return (
                 <div key={dateKey} style={{ marginBottom: '3rem', position: 'relative' }}>
-                  {/* Timeline Date Marker */}
+                  {/* Date Marker */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -474,10 +685,9 @@ export default function Notes() {
                     marginBottom: '1.5rem',
                     position: 'relative'
                   }}>
-                    {/* Node Dot */}
                     <div style={{
                       position: 'absolute',
-                      left: window.innerWidth < 768 ? '-1.85rem' : '-2.65rem',
+                      left: '-2.65rem',
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
@@ -486,7 +696,6 @@ export default function Notes() {
                       border: '3px solid #000F08'
                     }} />
 
-                    {/* Date Badge */}
                     <div style={{
                       background: 'rgba(251, 54, 64, 0.1)',
                       border: '1px solid rgba(251, 54, 64, 0.3)',
@@ -517,152 +726,14 @@ export default function Notes() {
                     </div>
                   </div>
 
-                  {/* Notes Cards for This Date */}
+                  {/* Notes Grid */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: window.innerWidth < 992 ? '1fr' : 'repeat(auto-fill, minmax(420px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                     gap: '1.2rem'
                   }}>
                     {notesForDate.map((note) => (
-                      <div
-                        key={note._id}
-                        className="cyber-panel"
-                        style={{
-                          borderRadius: '8px',
-                          padding: '1.5rem',
-                          border: '1px solid rgba(251, 54, 64, 0.18)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          transition: 'all 0.3s ease',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => setPreviewNote(note)}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--accent-orange)';
-                          e.currentTarget.style.transform = 'translateY(-3px)';
-                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(251, 54, 64, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(251, 54, 64, 0.18)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                      >
-                        <div>
-                          {/* Subject and Files Tag */}
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '0.8rem',
-                            flexWrap: 'wrap',
-                            gap: '0.5rem'
-                          }}>
-                            <span style={{
-                              background: 'rgba(251, 54, 64, 0.1)',
-                              border: '1px solid rgba(251, 54, 64, 0.3)',
-                              color: 'var(--accent-orange)',
-                              fontFamily: 'var(--font-tech)',
-                              fontSize: '0.85rem',
-                              fontWeight: '700',
-                              padding: '0.2rem 0.6rem',
-                              borderRadius: '4px',
-                              textTransform: 'uppercase'
-                            }}>
-                              {note.subjectName}
-                            </span>
-
-                            {note.files && note.files.length > 0 && (
-                              <span style={{
-                                color: 'var(--text-muted)',
-                                fontFamily: 'var(--font-tech)',
-                                fontSize: '0.85rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem'
-                              }}>
-                                <FileText size={13} />
-                                {note.files.length} {note.files.length === 1 ? 'File' : 'Files'}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Title */}
-                          <h3 style={{
-                            fontFamily: 'var(--font-tech)',
-                            fontSize: '1.25rem',
-                            fontWeight: '700',
-                            color: '#ffffff',
-                            margin: '0 0 0.6rem',
-                            lineHeight: '1.3',
-                            wordBreak: 'break-word'
-                          }}>
-                            {note.title}
-                          </h3>
-
-                          {note.description && (
-                            <p style={{
-                              color: 'var(--text-secondary)',
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '0.9rem',
-                              lineHeight: '1.5',
-                              margin: '0 0 1.2rem',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical'
-                            }}>
-                              {note.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Card Action Buttons */}
-                        <div style={{
-                          display: 'flex',
-                          gap: '0.6rem',
-                          alignItems: 'center',
-                          paddingTop: '0.75rem',
-                          borderTop: '1px solid rgba(251, 54, 64, 0.1)'
-                        }}>
-                          {/* Preview Action */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
-                            className="cyber-btn-wire"
-                            style={{ flex: '1', padding: '0.45rem', fontSize: '0.85rem', justifyContent: 'center' }}
-                          >
-                            <Eye size={14} /> Preview
-                          </button>
-
-                          {/* Download Action */}
-                          <button
-                            onClick={(e) => handleDownload(note, e)}
-                            className="cyber-btn-orange"
-                            style={{
-                              flex: '1.2',
-                              padding: '0.45rem',
-                              fontSize: '0.85rem',
-                              justifyContent: 'center',
-                              clipPath: 'none',
-                              borderRadius: '4px'
-                            }}
-                          >
-                            <Download size={14} /> Download
-                          </button>
-
-                          {/* Share Action */}
-                          <button
-                            onClick={(e) => shareNote(note, e)}
-                            className="cyber-btn-wire"
-                            style={{ padding: '0.45rem 0.75rem' }}
-                            title="Share Link"
-                          >
-                            {copiedId === note._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
-                          </button>
-                        </div>
-                      </div>
+                      <NoteCard key={note._id} note={note} />
                     ))}
                   </div>
                 </div>
@@ -670,267 +741,315 @@ export default function Notes() {
             })}
           </div>
         ) : (
-          /* ===================================================
-             GRID / LIST VIEW
-             =================================================== */
+          /* ===== GRID / LIST VIEW ===== */
           <div style={{
             display: viewMode === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns: viewMode === 'grid' ? (window.innerWidth < 768 ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))') : '1fr',
+            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(360px, 1fr))' : '1fr',
             flexDirection: viewMode === 'list' ? 'column' : 'row',
             gap: '1.5rem'
           }}>
-            {filteredNotes.map((note) => {
-              const dateInfo = formatDate(note.date);
-              return (
-                <div
-                  key={note._id}
-                  className="cyber-panel"
-                  style={{
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    border: '1px solid rgba(251, 54, 64, 0.18)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setPreviewNote(note)}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                      <span style={{
-                        background: 'rgba(251, 54, 64, 0.1)',
-                        border: '1px solid rgba(251, 54, 64, 0.3)',
-                        color: 'var(--accent-orange)',
-                        fontFamily: 'var(--font-tech)',
-                        fontSize: '0.85rem',
-                        fontWeight: '700',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '4px'
-                      }}>
-                        {note.subjectName}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                        📅 {dateInfo.full}
-                      </span>
-                    </div>
-
-                    <h3 style={{
-                      fontFamily: 'var(--font-tech)',
-                      fontSize: '1.25rem',
-                      fontWeight: '700',
-                      color: '#ffffff',
-                      margin: '0 0 0.6rem'
-                    }}>
-                      {note.title}
-                    </h3>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    gap: '0.6rem',
-                    marginTop: '1rem',
-                    paddingTop: '0.75rem',
-                    borderTop: '1px solid rgba(251, 54, 64, 0.1)'
-                  }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
-                      className="cyber-btn-wire"
-                      style={{ flex: 1, padding: '0.45rem', fontSize: '0.85rem', justifyContent: 'center' }}
-                    >
-                      <Eye size={14} /> Preview
-                    </button>
-                    <button
-                      onClick={(e) => handleDownload(note, e)}
-                      className="cyber-btn-orange"
-                      style={{ flex: 1.2, padding: '0.45rem', fontSize: '0.85rem', justifyContent: 'center', clipPath: 'none', borderRadius: '4px' }}
-                    >
-                      <Download size={14} /> Download
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            {filteredNotes.map((note) => (
+              <NoteCard key={note._id} note={note} showDate={true} />
+            ))}
           </div>
         )}
       </div>
 
-      {/* In-Browser Preview & Modal Dialog */}
-      {previewNote && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 15, 8, 0.95)',
-            zIndex: 3000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setPreviewNote(null)}
-        >
+      {/* ===== PREVIEW MODAL ===== */}
+      {previewNote && (() => {
+        const previewType = getNoteFileType(previewNote);
+        const previewIsImage = previewType === 'image';
+        const previewImageUrl = previewIsImage 
+          ? (previewNote.files && previewNote.files.length > 0 ? previewNote.files[0].fileUrl : previewNote.fileUrl)
+          : null;
+
+        return (
           <div 
-            className="cyber-panel"
             style={{
-              position: 'relative',
-              maxWidth: '900px',
-              width: '100%',
-              maxHeight: '90vh',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              background: '#000F08',
-              border: '1px solid rgba(251, 54, 64, 0.35)',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 15, 8, 0.95)',
+              zIndex: 3000,
               display: 'flex',
-              flexDirection: 'column'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{
-              padding: '1.2rem 1.5rem',
-              background: 'rgba(251, 54, 64, 0.08)',
-              borderBottom: '1px solid rgba(251, 54, 64, 0.2)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start'
-            }}>
-              <div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <span style={{
-                    background: 'var(--accent-orange)',
-                    color: '#000',
-                    fontFamily: 'var(--font-cyber)',
-                    fontSize: '0.8rem',
-                    fontWeight: '900',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '4px'
-                  }}>
-                    {previewNote.subjectName}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                    📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-                <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.3rem', margin: 0 }}>
-                  {previewNote.title}
-                </h3>
-              </div>
-
-              <button
-                onClick={() => setPreviewNote(null)}
-                className="cyber-btn-wire"
-                style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body / Files View */}
-            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
-              {previewNote.description && (
-                <p style={{
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem',
-                  lineHeight: '1.6',
-                  marginBottom: '1.5rem',
-                  padding: '0.8rem 1rem',
-                  background: 'rgba(251, 54, 64, 0.04)',
-                  borderRadius: '6px',
-                  borderLeft: '3px solid var(--accent-orange)'
-                }}>
-                  {previewNote.description}
-                </p>
-              )}
-
-              {/* Files Attached List */}
-              <h4 style={{
-                fontFamily: 'var(--font-cyber)',
-                fontSize: '1rem',
-                color: '#ffffff',
-                marginBottom: '1rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                Attached Study Files ({previewNote.files?.length || 1})
-              </h4>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
-                {(previewNote.files && previewNote.files.length > 0 ? previewNote.files : [{
-                  fileUrl: previewNote.fileUrl,
-                  originalName: previewNote.originalName || previewNote.filename || 'Download File'
-                }]).map((file, fIdx) => (
-                  <div
-                    key={fIdx}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      background: 'rgba(0, 15, 8, 0.7)',
-                      border: '1px solid rgba(251, 54, 64, 0.2)',
-                      borderRadius: '6px',
-                      padding: '0.8rem 1.2rem',
-                      flexWrap: 'wrap',
-                      gap: '0.8rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <FileText size={20} style={{ color: 'var(--accent-orange)' }} />
-                      <span style={{ color: '#ffffff', fontFamily: 'var(--font-tech)', fontSize: '1rem', fontWeight: '600' }}>
-                        {file.originalName || `Document File ${fIdx + 1}`}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={async () => {
-                        const ok = await downloadFile(file.fileUrl, file.originalName || 'lecture-note');
-                        if (!ok) alert('Download failed.');
-                      }}
-                      className="cyber-btn-wire"
-                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.85rem' }}
-                    >
-                      <Download size={13} /> Download
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{
-              padding: '1rem 1.5rem',
-              background: 'rgba(0, 15, 8, 0.9)',
-              borderTop: '1px solid rgba(251, 54, 64, 0.15)',
-              display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.8rem'
-            }}>
-              <button
-                onClick={(e) => shareNote(previewNote, e)}
-                className="cyber-btn-wire"
-                style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}
-              >
-                <Share2 size={14} /> Share Lecture Note
-              </button>
+              justifyContent: 'center',
+              padding: '1.5rem'
+            }}
+            onClick={() => setPreviewNote(null)}
+          >
+            <div 
+              className="cyber-panel"
+              style={{
+                position: 'relative',
+                maxWidth: '900px',
+                width: '100%',
+                maxHeight: '90vh',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                background: '#000F08',
+                border: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.35)' : 'rgba(251, 54, 64, 0.35)'}`,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div style={{
+                padding: '1.2rem 1.5rem',
+                background: previewIsImage ? 'rgba(16, 185, 129, 0.08)' : 'rgba(251, 54, 64, 0.08)',
+                borderBottom: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <span style={{
+                      background: 'var(--accent-orange)',
+                      color: '#000',
+                      fontFamily: 'var(--font-cyber)',
+                      fontSize: '0.8rem',
+                      fontWeight: '900',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px'
+                    }}>
+                      {previewNote.subjectName}
+                    </span>
+                    {previewIsImage && (
+                      <span style={{
+                        background: '#10B981',
+                        color: '#fff',
+                        fontFamily: 'var(--font-cyber)',
+                        fontSize: '0.7rem',
+                        fontWeight: '900',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px'
+                      }}>
+                        📸 IMAGE
+                      </span>
+                    )}
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
+                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.3rem', margin: 0 }}>
+                    {previewNote.title}
+                  </h3>
+                </div>
 
-              <button
-                onClick={() => handleDownload(previewNote)}
-                className="cyber-btn-orange"
-                style={{ padding: '0.5rem 1.5rem', fontSize: '0.9rem', clipPath: 'none', borderRadius: '4px' }}
-              >
-                <Download size={14} /> Download All Files
-              </button>
+                <button
+                  onClick={() => setPreviewNote(null)}
+                  className="cyber-btn-wire"
+                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                {previewNote.description && (
+                  <p style={{
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.6',
+                    marginBottom: '1.5rem',
+                    padding: '0.8rem 1rem',
+                    background: 'rgba(251, 54, 64, 0.04)',
+                    borderRadius: '6px',
+                    borderLeft: `3px solid ${previewIsImage ? '#10B981' : 'var(--accent-orange)'}`
+                  }}>
+                    {previewNote.description}
+                  </p>
+                )}
+
+                {/* Inline Image Preview */}
+                {previewIsImage && previewImageUrl && (
+                  <div style={{
+                    marginBottom: '1.5rem',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                    background: 'rgba(0, 5, 2, 0.5)',
+                    textAlign: 'center'
+                  }}>
+                    <img 
+                      src={previewImageUrl}
+                      alt={previewNote.title}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '500px',
+                        objectFit: 'contain',
+                        display: 'block',
+                        margin: '0 auto'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* All images in files array */}
+                {previewNote.files && previewNote.files.length > 1 && previewNote.files.some(f => 
+                  isImageFile(f.originalName || f.filename) || f.fileType === 'image'
+                ) && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '0.8rem',
+                    marginBottom: '1.5rem'
+                  }}>
+                    {previewNote.files
+                      .filter(f => isImageFile(f.originalName || f.filename) || f.fileType === 'image')
+                      .map((file, fIdx) => (
+                        <div key={`img-${fIdx}`} style={{
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          background: 'rgba(0, 5, 2, 0.5)'
+                        }}>
+                          <img 
+                            src={file.fileUrl}
+                            alt={file.originalName || `Image ${fIdx + 1}`}
+                            style={{
+                              width: '100%',
+                              height: '180px',
+                              objectFit: 'cover',
+                              display: 'block'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div style={{
+                            padding: '0.4rem 0.6rem',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                            fontFamily: 'var(--font-body)',
+                            borderTop: '1px solid rgba(16, 185, 129, 0.1)'
+                          }}>
+                            {file.originalName || `Image ${fIdx + 1}`}
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                )}
+
+                {/* Files Attached List */}
+                <h4 style={{
+                  fontFamily: 'var(--font-cyber)',
+                  fontSize: '1rem',
+                  color: '#ffffff',
+                  marginBottom: '1rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  Attached Files ({previewNote.files?.length || 1})
+                </h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                  {(previewNote.files && previewNote.files.length > 0 ? previewNote.files : [{
+                    fileUrl: previewNote.fileUrl,
+                    originalName: previewNote.originalName || previewNote.filename || 'Download File'
+                  }]).map((file, fIdx) => {
+                    const fileIsImage = isImageFile(file.originalName || file.filename) || file.fileType === 'image';
+                    return (
+                      <div
+                        key={fIdx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: 'rgba(0, 15, 8, 0.7)',
+                          border: `1px solid ${fileIsImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
+                          borderRadius: '6px',
+                          padding: '0.8rem 1.2rem',
+                          flexWrap: 'wrap',
+                          gap: '0.8rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          {fileIsImage 
+                            ? <ImageIcon size={20} style={{ color: '#10B981' }} />
+                            : <FileText size={20} style={{ color: 'var(--accent-orange)' }} />
+                          }
+                          <span style={{ color: '#ffffff', fontFamily: 'var(--font-tech)', fontSize: '1rem', fontWeight: '600' }}>
+                            {file.originalName || `File ${fIdx + 1}`}
+                          </span>
+                          {fileIsImage && (
+                            <span style={{
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#10B981',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '3px',
+                              fontSize: '0.65rem',
+                              fontWeight: '700'
+                            }}>
+                              IMAGE
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={async () => {
+                            const ok = await downloadFile(file.fileUrl, file.originalName || 'lecture-note');
+                            if (!ok) alert('Download failed.');
+                          }}
+                          className="cyber-btn-wire"
+                          style={{ padding: '0.35rem 0.8rem', fontSize: '0.85rem' }}
+                        >
+                          <Download size={13} /> Download
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '1rem 1.5rem',
+                background: 'rgba(0, 15, 8, 0.9)',
+                borderTop: `1px solid ${previewIsImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.8rem'
+              }}>
+                <button
+                  onClick={(e) => shareNote(previewNote, e)}
+                  className="cyber-btn-wire"
+                  style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}
+                >
+                  <Share2 size={14} /> Share
+                </button>
+
+                <button
+                  onClick={() => handleDownload(previewNote)}
+                  className="cyber-btn-orange"
+                  style={{ padding: '0.5rem 1.5rem', fontSize: '0.9rem', clipPath: 'none', borderRadius: '4px' }}
+                >
+                  <Download size={14} /> Download All Files
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

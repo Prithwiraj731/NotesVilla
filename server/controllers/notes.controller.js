@@ -2,7 +2,27 @@ const supabase = require('../utils/supabase');
 const path = require('path');
 const fs = require('fs');
 
-// Helper to format Supabase database row to match frontend expectation (_id and camelCase)
+// ──────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'svg'];
+const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'];
+
+function detectFileType(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'image';
+  return 'document';
+}
+
+function getCloudinaryResourceType(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'image';
+  if (DOCUMENT_EXTENSIONS.includes(ext)) return 'raw';
+  return 'auto';
+}
+
+/** Format Supabase row to match frontend expectation */
 function formatNote(row) {
   if (!row) return null;
   return {
@@ -14,20 +34,20 @@ function formatNote(row) {
     date: row.date,
     fileUrl: row.file_url,
     filename: row.filename,
+    fileType: row.file_type || detectFileType(row.filename || row.file_url || ''),
     files: Array.isArray(row.files) ? row.files : [],
     uploadedBy: row.uploaded_by || 'admin',
     createdAt: row.created_at
   };
 }
 
+// ──────────────────────────────────────────────────────────
+// Upload (multi-file)
+// ──────────────────────────────────────────────────────────
+
 exports.uploadNote = async (req, res) => {
   try {
-    console.log('Upload request received');
-    console.log('Body:', req.body);
-    console.log('Files:', req.files);
-
     if (!req.files || req.files.length === 0) {
-      console.log('No files uploaded');
       return res.status(400).json({ msg: 'No files uploaded' });
     }
 
@@ -35,20 +55,22 @@ exports.uploadNote = async (req, res) => {
     let { title, description, subjectName, date } = req.body;
 
     if (!subjectName || !date) {
-      return res.status(400).json({
-        msg: 'Missing required subject name or date'
-      });
+      return res.status(400).json({ msg: 'Missing required subject name or date' });
     }
 
+    // Auto-generate title if not provided
     if (!title || !title.trim()) {
       if (files.length === 1) {
-        title = files[0].originalname.replace(/\.[^/.]+$/, "");
+        title = files[0].originalname.replace(/\.[^/.]+$/, '');
       } else {
         const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         title = `${subjectName} Notes (${formattedDate})`;
       }
     }
     description = description ? description.trim() : '';
+
+    // Determine the dominant file type (image if first file is image)
+    const primaryFileType = detectFileType(files[0].originalname);
 
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://notesvilla.onrender.com'
@@ -57,27 +79,26 @@ exports.uploadNote = async (req, res) => {
     let filesArray = files.map(file => ({
       fileUrl: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
-      originalName: file.originalname
+      originalName: file.originalname,
+      fileType: detectFileType(file.originalname)
     }));
 
     // Cloudinary upload if configured
     try {
       if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
         const { uploadLocalFile } = require('../utils/cloudinary');
-        const pathLib = require('path');
         const cloudResults = [];
         for (const f of files) {
-          const localPath = pathLib.join(__dirname, '..', 'uploads', f.filename);
+          const localPath = path.join(__dirname, '..', 'uploads', f.filename);
           const publicIdBase = `${Date.now()}-${f.filename.replace(/\.[^.]+$/, '')}`;
-          const ext = f.filename.split('.').pop()?.toLowerCase();
-          const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
-          const resourceType = isDocument ? 'raw' : 'auto';
+          const resourceType = getCloudinaryResourceType(f.originalname);
           const cloud = await uploadLocalFile(localPath, publicIdBase, resourceType);
           cloudResults.push({
             fileUrl: cloud.url,
             filename: f.filename,
             originalName: f.originalname,
-            publicId: cloud.publicId
+            publicId: cloud.publicId,
+            fileType: detectFileType(f.originalname)
           });
         }
         if (cloudResults.length === files.length) filesArray = cloudResults;
@@ -86,7 +107,6 @@ exports.uploadNote = async (req, res) => {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
     }
 
-    console.log('Inserting note into Supabase...');
     const { data: insertedNote, error } = await supabase
       .from('notes')
       .insert({
@@ -96,6 +116,7 @@ exports.uploadNote = async (req, res) => {
         date: new Date(date).toISOString(),
         file_url: filesArray[0].fileUrl,
         filename: filesArray[0].originalName || filesArray[0].filename,
+        file_type: primaryFileType,
         files: filesArray,
         uploaded_by: req.admin?.username || 'admin'
       })
@@ -104,25 +125,46 @@ exports.uploadNote = async (req, res) => {
 
     if (error) {
       console.error('❌ Supabase insert error:', error);
+      // If file_type column doesn't exist yet, retry without it
+      if (error.message && error.message.includes('file_type')) {
+        const { data: retryNote, error: retryErr } = await supabase
+          .from('notes')
+          .insert({
+            title,
+            description,
+            subject_name: subjectName,
+            date: new Date(date).toISOString(),
+            file_url: filesArray[0].fileUrl,
+            filename: filesArray[0].originalName || filesArray[0].filename,
+            files: filesArray,
+            uploaded_by: req.admin?.username || 'admin'
+          })
+          .select()
+          .single();
+        if (retryErr) return res.status(500).json({ error: retryErr.message });
+        return res.json({
+          note: formatNote(retryNote),
+          message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
+          filesUploaded: files.length
+        });
+      }
       return res.status(500).json({ error: error.message });
     }
 
-    const note = formatNote(insertedNote);
-    console.log('🎉 Note created in Supabase:', note._id);
-
     res.json({
-      note,
+      note: formatNote(insertedNote),
       message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
       filesUploaded: files.length
     });
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({
-      error: err.message,
-      details: 'Check server console for more details'
-    });
+    res.status(500).json({ error: err.message });
   }
 };
+
+// ──────────────────────────────────────────────────────────
+// Upload (single file)
+// ──────────────────────────────────────────────────────────
 
 exports.uploadSingleNote = async (req, res) => {
   try {
@@ -138,9 +180,11 @@ exports.uploadSingleNote = async (req, res) => {
     }
 
     if (!title || !title.trim()) {
-      title = file.originalname.replace(/\.[^/.]+$/, "");
+      title = file.originalname.replace(/\.[^/.]+$/, '');
     }
     description = description ? description.trim() : '';
+
+    const fileType = detectFileType(file.originalname);
 
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://notesvilla.onrender.com'
@@ -150,12 +194,9 @@ exports.uploadSingleNote = async (req, res) => {
     try {
       if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
         const { uploadLocalFile } = require('../utils/cloudinary');
-        const pathLib = require('path');
         const publicIdBase = `${Date.now()}-${file.filename.replace(/\.[^.]+$/, '')}`;
-        const ext = file.filename.split('.').pop()?.toLowerCase();
-        const isDocument = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'].includes(ext);
-        const resourceType = isDocument ? 'raw' : 'auto';
-        const cloud = await uploadLocalFile(pathLib.join(__dirname, '..', 'uploads', file.filename), publicIdBase, resourceType);
+        const resourceType = getCloudinaryResourceType(file.originalname);
+        const cloud = await uploadLocalFile(path.join(__dirname, '..', 'uploads', file.filename), publicIdBase, resourceType);
         if (cloud?.url) fileUrl = cloud.url;
       }
     } catch (cloudErr) {
@@ -171,7 +212,8 @@ exports.uploadSingleNote = async (req, res) => {
         date: new Date(date).toISOString(),
         file_url: fileUrl,
         filename: file.originalname,
-        files: [{ fileUrl, filename: file.filename, originalName: file.originalname }],
+        file_type: fileType,
+        files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
         uploaded_by: req.admin?.username || 'admin'
       })
       .select()
@@ -179,19 +221,44 @@ exports.uploadSingleNote = async (req, res) => {
 
     if (error) {
       console.error('❌ Supabase insert error:', error);
+      // If file_type column doesn't exist, retry without it
+      if (error.message && error.message.includes('file_type')) {
+        const { data: retryNote, error: retryErr } = await supabase
+          .from('notes')
+          .insert({
+            title,
+            description,
+            subject_name: subjectName,
+            date: new Date(date).toISOString(),
+            file_url: fileUrl,
+            filename: file.originalname,
+            files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
+            uploaded_by: req.admin?.username || 'admin'
+          })
+          .select()
+          .single();
+        if (retryErr) return res.status(500).json({ error: retryErr.message });
+        return res.json({
+          note: formatNote(retryNote),
+          message: 'Note uploaded successfully!'
+        });
+      }
       return res.status(500).json({ error: error.message });
     }
 
-    const note = formatNote(insertedNote);
     res.json({
-      note,
-      message: 'Note uploaded and saved to Supabase database successfully!'
+      note: formatNote(insertedNote),
+      message: 'Note uploaded successfully!'
     });
   } catch (err) {
     console.error('Single upload error:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
+// ──────────────────────────────────────────────────────────
+// Read endpoints
+// ──────────────────────────────────────────────────────────
 
 exports.listSubjects = async (req, res) => {
   try {
@@ -200,13 +267,12 @@ exports.listSubjects = async (req, res) => {
       .select('subject_name');
 
     if (error) {
-      console.error('❌ Error fetching subjects from Supabase:', error);
+      console.error('❌ Error fetching subjects:', error);
       return res.json([]);
     }
 
     const distinct = [...new Set((data || []).map(r => r.subject_name).filter(Boolean))].sort();
     const subjectList = distinct.map(name => ({ name }));
-
     res.json(subjectList);
   } catch (err) {
     console.error('❌ Error in listSubjects:', err);
@@ -272,13 +338,7 @@ exports.getAllNotes = async (req, res) => {
       console.error('❌ Supabase getAllNotes error:', error);
       return res.json({
         notes: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 0,
-          totalNotes: 0,
-          hasNextPage: false,
-          hasPrevPage: false
-        }
+        pagination: { currentPage: 1, totalPages: 0, totalNotes: 0, hasNextPage: false, hasPrevPage: false }
       });
     }
 
@@ -301,13 +361,7 @@ exports.getAllNotes = async (req, res) => {
     console.error('❌ Error fetching all notes:', err);
     res.json({
       notes: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalNotes: 0,
-        hasNextPage: false,
-        hasPrevPage: false
-      }
+      pagination: { currentPage: 1, totalPages: 0, totalNotes: 0, hasNextPage: false, hasPrevPage: false }
     });
   }
 };
@@ -331,6 +385,10 @@ exports.getNoteById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ──────────────────────────────────────────────────────────
+// Update / Delete
+// ──────────────────────────────────────────────────────────
 
 exports.updateNote = async (req, res) => {
   try {
@@ -356,7 +414,7 @@ exports.updateNote = async (req, res) => {
 
     res.json({
       note: formatNote(data),
-      message: 'Note updated successfully in Supabase'
+      message: 'Note updated successfully'
     });
   } catch (err) {
     console.error('Error updating note:', err);
@@ -387,6 +445,7 @@ exports.deleteNote = async (req, res) => {
       return res.status(500).json({ error: delErr.message });
     }
 
+    // Clean up local file if stored locally
     if (note.file_url && note.file_url.includes('/uploads/')) {
       const filename = note.filename || path.basename(note.file_url);
       const filePath = path.join(__dirname, '..', 'uploads', filename);
@@ -395,7 +454,7 @@ exports.deleteNote = async (req, res) => {
       }
     }
 
-    res.json({ msg: 'Note deleted successfully from Supabase' });
+    res.json({ msg: 'Note deleted successfully' });
   } catch (err) {
     console.error('Error deleting note:', err);
     res.status(500).json({ error: err.message });
