@@ -1,4 +1,6 @@
 const supabase = require('../utils/supabase');
+const mongoose = require('mongoose');
+const Note = require('../models/Note');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,21 +24,22 @@ function getCloudinaryResourceType(filename) {
   return 'auto';
 }
 
-/** Format Supabase row to match frontend expectation */
+/** Format Supabase row or MongoDB document to match frontend expectation */
 function formatNote(row) {
   if (!row) return null;
+  const id = row._id ? row._id.toString() : (row.id ? row.id.toString() : '');
   return {
-    _id: row.id,
-    id: row.id,
+    _id: id,
+    id: id,
     title: row.title,
-    subjectName: row.subject_name,
+    subjectName: row.subjectName || row.subject_name,
     date: row.date,
-    fileUrl: row.file_url,
+    fileUrl: row.fileUrl || row.file_url,
     filename: row.filename,
-    fileType: row.file_type || detectFileType(row.filename || row.file_url || ''),
+    fileType: row.fileType || row.file_type || detectFileType(row.filename || row.fileUrl || row.file_url || ''),
     files: Array.isArray(row.files) ? row.files : [],
-    uploadedBy: row.uploaded_by || 'admin',
-    createdAt: row.created_at
+    uploadedBy: row.uploadedBy || row.uploaded_by || 'admin',
+    createdAt: row.createdAt || row.created_at
   };
 }
 
@@ -46,11 +49,11 @@ function formatNote(row) {
 
 exports.uploadNote = async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
+    const files = req.files && req.files.length > 0 ? req.files : (req.file ? [req.file] : []);
+    if (!files || files.length === 0) {
       return res.status(400).json({ msg: 'No files uploaded' });
     }
 
-    const files = req.files;
     let { title, subjectName, date } = req.body;
 
     if (!subjectName || !date) {
@@ -80,73 +83,79 @@ exports.uploadNote = async (req, res) => {
       fileType: detectFileType(file.originalname)
     }));
 
-    // Cloudinary upload if configured
+    // Cloudinary upload if configured (parallel upload for speed)
     try {
       if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
         const { uploadLocalFile } = require('../utils/cloudinary');
-        const cloudResults = [];
-        for (const f of files) {
-          const localPath = path.join(__dirname, '..', 'uploads', f.filename);
-          const publicIdBase = `${Date.now()}-${f.filename.replace(/\.[^.]+$/, '')}`;
-          const resourceType = getCloudinaryResourceType(f.originalname);
-          const cloud = await uploadLocalFile(localPath, publicIdBase, resourceType);
-          cloudResults.push({
-            fileUrl: cloud.url,
-            filename: f.filename,
-            originalName: f.originalname,
-            publicId: cloud.publicId,
-            fileType: detectFileType(f.originalname)
-          });
-        }
+        const cloudResults = await Promise.all(
+          files.map(async (f, idx) => {
+            const localPath = path.join(__dirname, '..', 'uploads', f.filename);
+            const publicIdBase = `${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}-${f.filename.replace(/\.[^.]+$/, '')}`;
+            const resourceType = getCloudinaryResourceType(f.originalname);
+            const cloud = await uploadLocalFile(localPath, publicIdBase, resourceType);
+            return {
+              fileUrl: cloud.url,
+              filename: f.filename,
+              originalName: f.originalname,
+              publicId: cloud.publicId,
+              fileType: detectFileType(f.originalname)
+            };
+          })
+        );
         if (cloudResults.length === files.length) filesArray = cloudResults;
       }
     } catch (cloudErr) {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
     }
 
-    const { data: insertedNote, error } = await supabase
-      .from('notes')
-      .insert({
-        title,
-        subject_name: subjectName,
-        date: new Date(date).toISOString(),
-        file_url: filesArray[0].fileUrl,
-        filename: filesArray[0].originalName || filesArray[0].filename,
-        file_type: primaryFileType,
-        files: filesArray,
-        uploaded_by: req.admin?.username || 'admin'
-      })
-      .select()
-      .single();
+    let savedNote = null;
 
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-      if (error.message && error.message.includes('file_type')) {
-        const { data: retryNote, error: retryErr } = await supabase
-          .from('notes')
-          .insert({
-            title,
-            subject_name: subjectName,
-            date: new Date(date).toISOString(),
-            file_url: filesArray[0].fileUrl,
-            filename: filesArray[0].originalName || filesArray[0].filename,
-            files: filesArray,
-            uploaded_by: req.admin?.username || 'admin'
-          })
-          .select()
-          .single();
-        if (retryErr) return res.status(500).json({ error: retryErr.message });
-        return res.json({
-          note: formatNote(retryNote),
-          message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
-          filesUploaded: files.length
-        });
+    // 1. Try Supabase
+    try {
+      const { data: insertedNote, error: supabaseError } = await supabase
+        .from('notes')
+        .insert({
+          title,
+          subject_name: subjectName,
+          date: new Date(date).toISOString(),
+          file_url: filesArray[0].fileUrl,
+          filename: filesArray[0].originalName || filesArray[0].filename,
+          file_type: primaryFileType,
+          files: filesArray,
+          uploaded_by: req.admin?.username || 'admin'
+        })
+        .select()
+        .single();
+
+      if (!supabaseError && insertedNote) {
+        savedNote = formatNote(insertedNote);
       }
-      return res.status(500).json({ error: error.message });
+    } catch (e) {
+      console.log('⚠️ Supabase insert exception:', e.message);
+    }
+
+    // 2. Fallback to MongoDB if Supabase failed or table is missing
+    if (!savedNote && mongoose.connection.readyState === 1) {
+      const mongoNote = await Note.create({
+        title,
+        subjectName,
+        date: new Date(date),
+        fileUrl: filesArray[0].fileUrl,
+        filename: filesArray[0].originalName || filesArray[0].filename,
+        fileType: primaryFileType,
+        files: filesArray,
+        uploadedBy: req.admin?.username || 'admin'
+      });
+      savedNote = formatNote(mongoNote);
+      console.log('✅ Note saved successfully to MongoDB!');
+    }
+
+    if (!savedNote) {
+      return res.status(500).json({ error: 'Failed to save note to database' });
     }
 
     res.json({
-      note: formatNote(insertedNote),
+      note: savedNote,
       message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
       filesUploaded: files.length
     });
@@ -162,11 +171,11 @@ exports.uploadNote = async (req, res) => {
 
 exports.uploadSingleNote = async (req, res) => {
   try {
-    if (!req.file) {
+    const file = req.file || (req.files && req.files[0]);
+    if (!file) {
       return res.status(400).json({ msg: 'No file uploaded' });
     }
 
-    const file = req.file;
     let { title, subjectName, date } = req.body;
 
     if (!subjectName || !date) {
@@ -196,48 +205,54 @@ exports.uploadSingleNote = async (req, res) => {
       console.log('⚠️ Cloud upload skipped:', cloudErr.message);
     }
 
-    const { data: insertedNote, error } = await supabase
-      .from('notes')
-      .insert({
-        title,
-        subject_name: subjectName,
-        date: new Date(date).toISOString(),
-        file_url: fileUrl,
-        filename: file.originalname,
-        file_type: fileType,
-        files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
-        uploaded_by: req.admin?.username || 'admin'
-      })
-      .select()
-      .single();
+    let savedNote = null;
 
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-      if (error.message && error.message.includes('file_type')) {
-        const { data: retryNote, error: retryErr } = await supabase
-          .from('notes')
-          .insert({
-            title,
-            subject_name: subjectName,
-            date: new Date(date).toISOString(),
-            file_url: fileUrl,
-            filename: file.originalname,
-            files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
-            uploaded_by: req.admin?.username || 'admin'
-          })
-          .select()
-          .single();
-        if (retryErr) return res.status(500).json({ error: retryErr.message });
-        return res.json({
-          note: formatNote(retryNote),
-          message: 'Note uploaded successfully!'
-        });
+    // 1. Try Supabase
+    try {
+      const { data: insertedNote, error: supabaseError } = await supabase
+        .from('notes')
+        .insert({
+          title,
+          subject_name: subjectName,
+          date: new Date(date).toISOString(),
+          file_url: fileUrl,
+          filename: file.originalname,
+          file_type: fileType,
+          files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
+          uploaded_by: req.admin?.username || 'admin'
+        })
+        .select()
+        .single();
+
+      if (!supabaseError && insertedNote) {
+        savedNote = formatNote(insertedNote);
       }
-      return res.status(500).json({ error: error.message });
+    } catch (e) {
+      console.log('⚠️ Supabase single upload exception:', e.message);
+    }
+
+    // 2. Fallback to MongoDB
+    if (!savedNote && mongoose.connection.readyState === 1) {
+      const mongoNote = await Note.create({
+        title,
+        subjectName,
+        date: new Date(date),
+        fileUrl: fileUrl,
+        filename: file.originalname,
+        fileType: fileType,
+        files: [{ fileUrl, filename: file.filename, originalName: file.originalname, fileType }],
+        uploadedBy: req.admin?.username || 'admin'
+      });
+      savedNote = formatNote(mongoNote);
+      console.log('✅ Single note saved successfully to MongoDB!');
+    }
+
+    if (!savedNote) {
+      return res.status(500).json({ error: 'Failed to save single note to database' });
     }
 
     res.json({
-      note: formatNote(insertedNote),
+      note: savedNote,
       message: 'Note uploaded successfully!'
     });
   } catch (err) {
@@ -256,14 +271,18 @@ exports.listSubjects = async (req, res) => {
       .from('notes')
       .select('subject_name');
 
-    if (error) {
-      console.error('❌ Error fetching subjects:', error);
-      return res.json([]);
+    if (!error && data && data.length > 0) {
+      const distinct = [...new Set(data.map(r => r.subject_name).filter(Boolean))].sort();
+      return res.json(distinct.map(name => ({ name })));
     }
 
-    const distinct = [...new Set((data || []).map(r => r.subject_name).filter(Boolean))].sort();
-    const subjectList = distinct.map(name => ({ name }));
-    res.json(subjectList);
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const subjects = await Note.distinct('subjectName');
+      return res.json(subjects.map(name => ({ name })));
+    }
+
+    res.json([]);
   } catch (err) {
     console.error('❌ Error in listSubjects:', err);
     res.json([]);
@@ -285,23 +304,52 @@ exports.listNotesBySubject = async (req, res) => {
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);
 
-    if (error) {
-      console.error('Error fetching notes by subject:', error);
-      return res.status(500).json({ error: error.message });
+    if (!error && data && data.length > 0) {
+      const total = count || data.length;
+      const totalPages = Math.ceil(total / limit);
+      return res.json({
+        notes: data.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
+      });
     }
 
-    const total = count || 0;
-    const totalPages = Math.ceil(total / limit);
-    const notes = (data || []).map(formatNote);
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const total = await Note.countDocuments({ subjectName });
+      const notes = await Note.find({ subjectName })
+        .sort({ date: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      const totalPages = Math.ceil(total / limit);
+      return res.json({
+        notes: notes.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
+      });
+    }
 
     res.json({
-      notes,
+      notes: [],
       pagination: {
         currentPage: page,
-        totalPages,
-        totalNotes: total,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
+        totalPages: 0,
+        totalNotes: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
         limit
       }
     });
@@ -324,34 +372,65 @@ exports.getAllNotes = async (req, res) => {
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);
 
-    if (error) {
-      console.error('❌ Supabase getAllNotes error:', error);
+    if (!error && data && data.length > 0) {
+      const total = count || data.length;
+      const totalPages = Math.ceil(total / limit);
       return res.json({
-        notes: [],
-        pagination: { currentPage: 1, totalPages: 0, totalNotes: 0, hasNextPage: false, hasPrevPage: false }
+        notes: data.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
       });
     }
 
-    const total = count || 0;
-    const totalPages = Math.ceil(total / limit);
-    const notes = (data || []).map(formatNote);
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const total = await Note.countDocuments();
+      const notes = await Note.find()
+        .sort({ date: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      const totalPages = Math.ceil(total / limit);
+      return res.json({
+        notes: notes.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
+      });
+    }
 
     res.json({
-      notes,
+      notes: [],
       pagination: {
-        currentPage: page,
-        totalPages,
-        totalNotes: total,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-        limit
+        currentPage: 1,
+        totalPages: 0,
+        totalNotes: 0,
+        hasNextPage: false,
+        hasPrevPage: false
       }
     });
   } catch (err) {
     console.error('❌ Error fetching all notes:', err);
     res.json({
       notes: [],
-      pagination: { currentPage: 1, totalPages: 0, totalNotes: 0, hasNextPage: false, hasPrevPage: false }
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalNotes: 0,
+        hasNextPage: false,
+        hasPrevPage: false
+      }
     });
   }
 };
@@ -359,17 +438,26 @@ exports.getAllNotes = async (req, res) => {
 exports.getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
+
     const { data, error } = await supabase
       .from('notes')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (error || !data) {
-      return res.status(404).json({ error: 'Note not found' });
+    if (!error && data) {
+      return res.json(formatNote(data));
     }
 
-    res.json(formatNote(data));
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+      const note = await Note.findById(id);
+      if (note) {
+        return res.json(formatNote(note));
+      }
+    }
+
+    return res.status(404).json({ error: 'Note not found' });
   } catch (err) {
     console.error('Error fetching note by ID:', err);
     res.status(500).json({ error: err.message });
@@ -397,14 +485,29 @@ exports.updateNote = async (req, res) => {
       .select()
       .single();
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    if (!error && data) {
+      return res.json({
+        note: formatNote(data),
+        message: 'Note updated successfully'
+      });
     }
 
-    res.json({
-      note: formatNote(data),
-      message: 'Note updated successfully'
-    });
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+      const note = await Note.findById(id);
+      if (note) {
+        if (title) note.title = title;
+        if (subjectName) note.subjectName = subjectName;
+        if (date) note.date = new Date(date);
+        await note.save();
+        return res.json({
+          note: formatNote(note),
+          message: 'Note updated successfully'
+        });
+      }
+    }
+
+    res.status(404).json({ msg: 'Note not found' });
   } catch (err) {
     console.error('Error updating note:', err);
     res.status(500).json({ error: err.message });
@@ -415,34 +518,42 @@ exports.deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Check Supabase
     const { data: note, error: fetchErr } = await supabase
       .from('notes')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (fetchErr || !note) {
-      return res.status(404).json({ msg: 'Note not found' });
+    if (!fetchErr && note) {
+      await supabase.from('notes').delete().eq('id', id);
+      if (note.file_url && note.file_url.includes('/uploads/')) {
+        const filename = note.filename || path.basename(note.file_url);
+        const filePath = path.join(__dirname, '..', 'uploads', filename);
+        if (fs.existsSync(filePath)) {
+          try { fs.unlinkSync(filePath); } catch (e) {}
+        }
+      }
+      return res.json({ msg: 'Note deleted successfully' });
     }
 
-    const { error: delErr } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', id);
-
-    if (delErr) {
-      return res.status(500).json({ error: delErr.message });
-    }
-
-    if (note.file_url && note.file_url.includes('/uploads/')) {
-      const filename = note.filename || path.basename(note.file_url);
-      const filePath = path.join(__dirname, '..', 'uploads', filename);
-      if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath); } catch (e) {}
+    // Fallback to MongoDB
+    if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+      const mongoNote = await Note.findById(id);
+      if (mongoNote) {
+        await Note.findByIdAndDelete(id);
+        if (mongoNote.fileUrl && mongoNote.fileUrl.includes('/uploads/')) {
+          const filename = mongoNote.filename || path.basename(mongoNote.fileUrl);
+          const filePath = path.join(__dirname, '..', 'uploads', filename);
+          if (fs.existsSync(filePath)) {
+            try { fs.unlinkSync(filePath); } catch (e) {}
+          }
+        }
+        return res.json({ msg: 'Note deleted successfully' });
       }
     }
 
-    res.json({ msg: 'Note deleted successfully' });
+    res.status(404).json({ msg: 'Note not found' });
   } catch (err) {
     console.error('Error deleting note:', err);
     res.status(500).json({ error: err.message });

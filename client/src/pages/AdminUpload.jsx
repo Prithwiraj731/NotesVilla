@@ -218,6 +218,7 @@ export default function AdminUpload() {
 
       if (isSingleFile) {
         data.append('file', form.files[0]);
+        data.append('files', form.files[0]);
       } else {
         form.files.forEach(file => data.append('files', file));
       }
@@ -602,6 +603,8 @@ export default function AdminUpload() {
                 <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>📄 Documents (PDF, DOC, PPT, TXT)</span>
                 <span>•</span>
                 <span style={{ fontWeight: '600' }}>📦 Archives (ZIP, RAR)</span>
+                <span>•</span>
+                <span style={{ color: '#60A5FA', fontWeight: '600' }}>🚀 Up to 100 files</span>
               </div>
             </div>
 

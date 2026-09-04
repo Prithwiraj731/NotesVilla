@@ -27,6 +27,7 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit per file
+    files: 100, // up to 100 files
   },
   fileFilter: (req, file, cb) => {
     // Accept documents + images
@@ -42,56 +43,74 @@ const upload = multer({
 });
 
 // ──────────────────────────────────────────────────────────
-// Multer 2.x + Express 5 compatibility wrapper
-// multer 2.x returns a Promise instead of calling next().
-// We must await it inside an async route handler.
+// Multer middleware wrappers
+// Properly invoke multer handler with callback so files are parsed
+// before moving to the next handler.
 // ──────────────────────────────────────────────────────────
-function multerSingle(fieldName) {
-  return async (req, res, next) => {
-    try {
-      await upload.single(fieldName)(req, res);
+function multerSingle(fieldName = 'file') {
+  const handler = upload.any();
+  return (req, res, next) => {
+    handler(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ msg: 'File too large. Maximum size is 50MB.' });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ msg: 'Too many files uploaded.' });
+          }
+          if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ msg: 'Unexpected file upload error. Please try again.' });
+          }
+          return res.status(400).json({ msg: 'File upload error: ' + err.message });
+        }
+        if (err.message) {
+          return res.status(400).json({ msg: err.message });
+        }
+        return next(err);
+      }
+
+      if (req.files && req.files.length > 0) {
+        req.file = req.files[0];
+      }
       next();
-    } catch (err) {
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ msg: 'File too large. Maximum size is 50MB.' });
-        }
-        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-          return res.status(400).json({ msg: 'Unexpected field name for file upload.' });
-        }
-        return res.status(400).json({ msg: 'File upload error: ' + err.message });
-      }
-      if (err.message) {
-        return res.status(400).json({ msg: err.message });
-      }
-      next(err);
-    }
+    });
   };
 }
 
-function multerArray(fieldName, maxCount) {
-  return async (req, res, next) => {
-    try {
-      await upload.array(fieldName, maxCount)(req, res);
+function multerArray(fieldName = 'files', maxCount = 100) {
+  const handler = upload.any();
+  return (req, res, next) => {
+    handler(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ msg: 'File too large. Maximum size is 50MB per file.' });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ msg: `Too many files. Maximum is ${maxCount} files.` });
+          }
+          if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ msg: `Too many files or unexpected field. Maximum is ${maxCount} files.` });
+          }
+          return res.status(400).json({ msg: 'File upload error: ' + err.message });
+        }
+        if (err.message) {
+          return res.status(400).json({ msg: err.message });
+        }
+        return next(err);
+      }
+
+      if (req.files && req.files.length > maxCount) {
+        return res.status(400).json({ msg: `Too many files. Maximum is ${maxCount} files per note.` });
+      }
+
+      if (req.files && req.files.length > 0 && !req.file) {
+        req.file = req.files[0];
+      }
+
       next();
-    } catch (err) {
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ msg: 'File too large. Maximum size is 50MB.' });
-        }
-        if (err.code === 'LIMIT_FILE_COUNT') {
-          return res.status(400).json({ msg: 'Too many files. Maximum is 10 files.' });
-        }
-        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-          return res.status(400).json({ msg: 'Unexpected field name for file upload.' });
-        }
-        return res.status(400).json({ msg: 'File upload error: ' + err.message });
-      }
-      if (err.message) {
-        return res.status(400).json({ msg: err.message });
-      }
-      next(err);
-    }
+    });
   };
 }
 
@@ -161,7 +180,7 @@ router.get('/download/:filename', (req, res) => {
 
 router.post('/upload',
   adminMiddleware,
-  multerArray('files', 10),
+  multerArray('files', 100),
   notesCtrl.uploadNote
 );
 

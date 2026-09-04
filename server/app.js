@@ -1,8 +1,16 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const supabase = require('./utils/supabase');
+const mongoose = require('mongoose');
+
+// Connect to MongoDB
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ MongoDB connected successfully!'))
+    .catch(err => console.log('⚠️ MongoDB connection note:', err.message));
+}
 
 const adminRoutes = require('./routes/admin.routes');
 const notesRoutes = require('./routes/notes.routes');
