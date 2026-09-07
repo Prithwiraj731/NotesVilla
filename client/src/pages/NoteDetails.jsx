@@ -167,32 +167,18 @@ export default function NoteDetails() {
   const primaryCategory = getFileCategory(note.filename || '', note.fileUrl || '');
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%)',
-      padding: '2rem 1.5rem',
-      paddingTop: '6.5rem',
-      boxSizing: 'border-box'
-    }}>
+    <div className="note-details-page">
       {/* Top Navigation & Action Row */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto 1.5rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
+      <div className="note-details-top-bar">
         <button
           onClick={() => navigate('/notes')}
           className="cyber-btn-wire"
         >
           <ArrowLeft size={16} />
-          Return to Notes
+          <span>Return to Notes</span>
         </button>
 
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
+        <div className="note-details-actions">
           <button
             onClick={handleShare}
             className="cyber-btn-wire"
@@ -212,31 +198,11 @@ export default function NoteDetails() {
       </div>
 
       {/* Main Container */}
-      <div 
-        className="cyber-panel"
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          borderRadius: '10px',
-          overflow: 'hidden',
-          border: '1px solid rgba(251, 54, 64, 0.25)',
-          background: 'rgba(0, 15, 8, 0.95)'
-        }}
-      >
+      <div className="cyber-panel note-details-card">
         {/* Header Block */}
-        <div style={{
-          padding: '1.8rem 2rem',
-          borderBottom: '1px solid rgba(251, 54, 64, 0.2)',
-          background: 'rgba(0, 15, 8, 0.6)'
-        }}>
+        <div className="note-details-header">
           {/* Metadata Badges */}
-          <div style={{
-            display: 'flex',
-            gap: '0.8rem',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            marginBottom: '0.8rem'
-          }}>
+          <div className="note-details-badges">
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -247,11 +213,11 @@ export default function NoteDetails() {
               padding: '0.25rem 0.7rem',
               color: 'var(--accent-orange)',
               fontFamily: 'var(--font-tech)',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: '700',
               textTransform: 'uppercase'
             }}>
-              <BookOpen size={14} />
+              <BookOpen size={13} />
               {note.subjectName}
             </div>
 
@@ -261,9 +227,9 @@ export default function NoteDetails() {
               gap: '0.4rem',
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-tech)',
-              fontSize: '0.9rem'
+              fontSize: '0.82rem'
             }}>
-              <Calendar size={14} />
+              <Calendar size={13} />
               {formatDate(note.date)}
             </div>
 
@@ -278,35 +244,23 @@ export default function NoteDetails() {
                 padding: '0.25rem 0.7rem',
                 color: 'var(--accent-amber, #f59e0b)',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 fontWeight: '700',
                 textTransform: 'uppercase'
               }}>
-                <FileText size={14} />
+                <FileText size={13} />
                 {attachedFiles.length} Attached Files
               </div>
             )}
           </div>
 
-          <h1 style={{
-            fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)',
-            fontWeight: '900',
-            fontFamily: 'var(--font-cyber)',
-            lineHeight: '1.25',
-            color: '#ffffff',
-            margin: 0
-          }}>
+          <h1 className="note-details-title">
             {note.title}
           </h1>
         </div>
 
         {/* Embedded Interactive Viewer */}
-        <div style={{
-          height: '75vh',
-          minHeight: '520px',
-          width: '100%',
-          position: 'relative'
-        }}>
+        <div className="note-details-viewer-stage">
           <DocViewer
             files={attachedFiles}
             title={note.title}
@@ -315,6 +269,122 @@ export default function NoteDetails() {
       </div>
 
       <style>{`
+        .note-details-page {
+          min-height: 100vh;
+          background: radial-gradient(circle at 50% 30%, rgba(251, 54, 64, 0.08) 0%, #000F08 70%);
+          padding: 2rem 1.5rem;
+          padding-top: 6.5rem;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .note-details-page {
+            padding: 1.2rem 1.1rem;
+            padding-top: 5.2rem;
+          }
+        }
+
+        .note-details-top-bar {
+          max-width: 1200px;
+          margin: 0 auto 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+          .note-details-top-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.8rem;
+          }
+          .note-details-top-bar > button {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        .note-details-actions {
+          display: flex;
+          gap: 0.8rem;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+          .note-details-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+          }
+          .note-details-actions button {
+            width: 100%;
+            justify-content: center;
+            padding: 0.55rem 0.7rem !important;
+            font-size: 0.8rem !important;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .note-details-actions {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .note-details-card {
+          max-width: 1200px;
+          margin: 0 auto;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid rgba(251, 54, 64, 0.25);
+          background: rgba(0, 15, 8, 0.95);
+        }
+
+        .note-details-header {
+          padding: 1.6rem 2rem;
+          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(0, 15, 8, 0.6);
+        }
+
+        @media (max-width: 768px) {
+          .note-details-header {
+            padding: 1.2rem 1.1rem;
+          }
+        }
+
+        .note-details-badges {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-bottom: 0.8rem;
+        }
+
+        .note-details-title {
+          font-size: clamp(1.35rem, 4vw, 2.4rem);
+          font-weight: 900;
+          font-family: var(--font-cyber);
+          line-height: 1.25;
+          color: #ffffff;
+          margin: 0;
+          word-break: break-word;
+        }
+
+        .note-details-viewer-stage {
+          height: 75vh;
+          min-height: 520px;
+          width: 100%;
+          position: relative;
+        }
+
+        @media (max-width: 768px) {
+          .note-details-viewer-stage {
+            height: 65vh;
+            min-height: 380px;
+          }
+        }
+
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }

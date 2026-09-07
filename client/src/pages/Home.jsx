@@ -140,48 +140,27 @@ export default function Home() {
       {/* =========================================================================
           DYNAMIC ACADEMIC DISCIPLINES SECTION (Reflects DB Uploads)
           ========================================================================= */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "1.5rem 1.5rem 4rem", position: "relative", zIndex: 5 }}>
+      <div className="home-repo-container">
         <div 
-          className="cyber-panel"
-          style={{
-            borderRadius: "12px",
-            padding: "2.5rem 2rem",
-            border: "1px solid rgba(251, 54, 64, 0.2)",
-            background: "rgba(0, 15, 8, 0.85)",
-            marginBottom: "3rem"
-          }}
+          className="cyber-panel home-repo-panel"
         >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <h2 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.6rem", color: "#ffffff", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+            <h2 style={{ fontFamily: "var(--font-cyber)", fontSize: "clamp(1.25rem, 3.5vw, 1.6rem)", color: "#ffffff", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
               ACADEMIC REPOSITORY
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.95rem", maxWidth: "600px", margin: "0 auto" }}>
+            <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.92rem", maxWidth: "600px", margin: "0 auto", lineHeight: "1.55" }}>
               Browse lecture notes, continuous study materials, and subject resources uploaded for your current academic session.
             </p>
           </div>
 
           {/* Dynamic Subject Cards or Clean Empty State */}
           {dynamicSubjects.length > 0 ? (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "1.2rem"
-            }}>
+            <div className="home-subjects-grid">
               {dynamicSubjects.map((subjName, idx) => (
                 <div
                   key={idx}
                   onClick={() => nav(`/notes?subject=${encodeURIComponent(subjName)}`)}
-                  className="cyber-panel"
-                  style={{
-                    borderRadius: "8px",
-                    padding: "1.5rem",
-                    border: "1px solid rgba(251, 54, 64, 0.18)",
-                    cursor: "pointer",
-                    transition: "all 0.25s ease",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between"
-                  }}
+                  className="cyber-panel home-subject-card"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-3px)";
                     e.currentTarget.style.borderColor = "var(--accent-orange)";
@@ -208,10 +187,10 @@ export default function Home() {
                     }}>
                       <BookOpen size={18} />
                     </div>
-                    <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.1rem", color: "#ffffff", marginBottom: "0.4rem" }}>
+                    <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.05rem", color: "#ffffff", marginBottom: "0.4rem", lineHeight: "1.3" }}>
                       {subjName}
                     </h3>
-                    <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0 0 1rem 0" }}>
+                    <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0 0 1rem 0", lineHeight: "1.5" }}>
                       View date-wise lecture notes archive, preview documents, and download PDFs.
                     </p>
                   </div>
@@ -224,22 +203,22 @@ export default function Home() {
           ) : (
             <div style={{
               textAlign: "center",
-              padding: "2.5rem 1.5rem",
+              padding: "2.5rem 1.25rem",
               background: "rgba(0, 5, 2, 0.6)",
               border: "1px dashed rgba(251, 54, 64, 0.25)",
               borderRadius: "8px"
             }}>
               <BookOpen size={36} style={{ color: "var(--accent-orange)", margin: "0 auto 0.8rem", opacity: 0.8 }} />
-              <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.2rem", color: "#ffffff", marginBottom: "0.4rem" }}>
+              <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.4rem" }}>
                 NO SUBJECT NOTES UPLOADED YET
               </h3>
-              <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.9rem", maxWidth: "500px", margin: "0 auto 1.5rem" }}>
+              <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "0.88rem", maxWidth: "500px", margin: "0 auto 1.5rem", lineHeight: "1.55" }}>
                 Subjects and notes uploaded from the admin portal will automatically appear here in real-time.
               </p>
               <button
                 onClick={() => nav("/notes")}
                 className="cyber-btn-wire"
-                style={{ padding: "0.6rem 1.5rem", fontSize: "0.9rem" }}
+                style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem" }}
               >
                 <span>Browse All Notes</span>
                 <ArrowRight size={14} />
@@ -268,6 +247,18 @@ export default function Home() {
           overflow: hidden;
         }
 
+        @media (max-width: 992px) {
+          .cinematic-hero {
+            padding: 5.5rem 1.5rem 2.5rem;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .cinematic-hero {
+            padding: 4.8rem 1rem 1.8rem;
+          }
+        }
+
         .hero-content-wrapper {
           max-width: 1280px;
           margin: 0 auto;
@@ -287,6 +278,8 @@ export default function Home() {
           .hero-main-stage {
             grid-template-columns: 1fr;
             text-align: center;
+            gap: 2rem;
+            min-height: auto;
           }
         }
 
@@ -304,6 +297,7 @@ export default function Home() {
           .hero-left-col {
             text-align: center;
             align-items: center;
+            gap: 1.5rem;
           }
         }
 
@@ -315,6 +309,13 @@ export default function Home() {
         @media (max-width: 992px) {
           .hero-title-container {
             margin: 0 auto;
+            max-width: 380px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-title-container {
+            max-width: 290px;
           }
         }
 
@@ -332,6 +333,14 @@ export default function Home() {
         @media (max-width: 992px) {
           .hero-title-img {
             object-position: center;
+            max-height: 180px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-title-img {
+            max-height: 120px;
+            filter: drop-shadow(0 0 18px rgba(251, 54, 64, 0.35));
           }
         }
 
@@ -345,6 +354,17 @@ export default function Home() {
         @media (max-width: 992px) {
           .hero-actions {
             justify-content: center;
+            gap: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-actions {
+            width: 100%;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-width: 300px;
+            margin: 0 auto;
           }
         }
 
@@ -366,6 +386,15 @@ export default function Home() {
           box-shadow: 0 4px 25px rgba(251, 54, 64, 0.5), 0 0 10px rgba(251, 54, 64, 0.3);
         }
 
+        @media (max-width: 480px) {
+          .hero-play-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 0.7rem 1.4rem 0.7rem 0.7rem;
+            font-size: 0.85rem;
+          }
+        }
+
         .hero-play-btn:hover {
           transform: translateY(-3px) scale(1.02);
           box-shadow: 0 8px 35px rgba(251, 54, 64, 0.7), 0 0 15px rgba(251, 54, 64, 0.5);
@@ -381,6 +410,14 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.2);
+          flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+          .play-icon-circle {
+            width: 28px;
+            height: 28px;
+          }
         }
 
         .hero-secondary-btn {
@@ -402,6 +439,15 @@ export default function Home() {
           transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
+        @media (max-width: 480px) {
+          .hero-secondary-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 0.75rem 1.4rem;
+            font-size: 0.85rem;
+          }
+        }
+
         .hero-secondary-btn:hover {
           background: rgba(251, 54, 64, 0.2);
           border-color: var(--accent-orange);
@@ -419,6 +465,18 @@ export default function Home() {
           min-height: 440px;
         }
 
+        @media (max-width: 992px) {
+          .hero-character-col {
+            min-height: 320px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-character-col {
+            min-height: 220px;
+          }
+        }
+
         .char-glow-underlay {
           position: absolute;
           width: 360px;
@@ -429,7 +487,16 @@ export default function Home() {
           left: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
-          zIndex: 1;
+          z-index: 1;
+        }
+
+        @media (max-width: 640px) {
+          .char-glow-underlay {
+            width: 220px;
+            height: 220px;
+            filter: blur(40px);
+            opacity: 0.6;
+          }
         }
 
         .hero-character-img {
@@ -443,6 +510,20 @@ export default function Home() {
           filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.3)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
           -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        @media (max-width: 992px) {
+          .hero-character-img {
+            max-width: 340px;
+            max-height: 360px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-character-img {
+            max-width: 240px;
+            max-height: 260px;
+          }
         }
 
         .vertical-pagination {
@@ -475,6 +556,66 @@ export default function Home() {
           border-radius: 4px;
           background: var(--accent-orange);
           box-shadow: 0 0 8px var(--accent-orange);
+        }
+
+        /* Academic Repository Section Styles */
+        .home-repo-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 1.5rem 1.5rem 4rem;
+          position: relative;
+          z-index: 5;
+        }
+
+        @media (max-width: 768px) {
+          .home-repo-container {
+            padding: 0.8rem 1.1rem 3rem;
+          }
+        }
+
+        .home-repo-panel {
+          border-radius: 12px;
+          padding: 2.5rem 2rem;
+          border: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(0, 15, 8, 0.85);
+          margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+          .home-repo-panel {
+            padding: 1.6rem 1.1rem;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+          }
+        }
+
+        .home-subjects-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+          gap: 1.2rem;
+        }
+
+        @media (max-width: 640px) {
+          .home-subjects-grid {
+            gap: 0.9rem;
+          }
+        }
+
+        .home-subject-card {
+          border-radius: 8px;
+          padding: 1.4rem;
+          border: 1px solid rgba(251, 54, 64, 0.18);
+          cursor: pointer;
+          transition: all 0.25s ease;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        @media (max-width: 640px) {
+          .home-subject-card {
+            padding: 1.15rem 1rem;
+          }
         }
       `}</style>
     </div>

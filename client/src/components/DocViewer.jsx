@@ -101,19 +101,9 @@ export default function DocViewer({
       border: isFullscreen ? 'none' : '1px solid rgba(251, 54, 64, 0.3)'
     }}>
       {/* ─── TOP TOOLBAR ─────────────────────────────────────── */}
-      <div style={{
-        padding: '0.8rem 1.2rem',
-        background: 'rgba(0, 15, 8, 0.95)',
-        borderBottom: '1px solid rgba(251, 54, 64, 0.2)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '0.8rem',
-        zIndex: 10
-      }}>
+      <div className="docviewer-toolbar">
         {/* Left: Title & File Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', minWidth: '200px', flex: 1 }}>
+        <div className="docviewer-title-group">
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -121,25 +111,18 @@ export default function DocViewer({
             background: category === 'image' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)',
             border: `1px solid ${category === 'image' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(251, 54, 64, 0.35)'}`,
             color: category === 'image' ? '#10B981' : 'var(--accent-orange, #fb3640)',
-            padding: '0.2rem 0.6rem',
+            padding: '0.2rem 0.5rem',
             borderRadius: '4px',
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             fontWeight: '700',
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            flexShrink: 0
           }}>
-            {category === 'image' ? <ImageIcon size={13} /> : <FileText size={13} />}
+            {category === 'image' ? <ImageIcon size={12} /> : <FileText size={12} />}
             <span>{category.toUpperCase()}</span>
           </div>
 
-          <div style={{
-            color: '#ffffff',
-            fontWeight: '700',
-            fontSize: '0.95rem',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '350px'
-          }} title={fileName}>
+          <div className="docviewer-filename" title={fileName}>
             {fileName}
           </div>
         </div>
@@ -274,11 +257,11 @@ export default function DocViewer({
             target="_blank"
             rel="noopener noreferrer"
             className="cyber-btn-wire"
-            style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', textDecoration: 'none' }}
+            style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             title="Open original file in new browser tab"
           >
             <ExternalLink size={14} />
-            <span style={{ display: 'none', '@media (min-width: 600px)': { display: 'inline' } }}>Open Tab</span>
+            <span className="docviewer-desktop-label">Open Tab</span>
           </a>
 
           {/* Download Button */}
@@ -481,8 +464,62 @@ export default function DocViewer({
         )}
       </div>
 
-      {/* Animation Keyframes */}
+      {/* Responsive Styles & Animation Keyframes */}
       <style>{`
+        .docviewer-toolbar {
+          padding: 0.75rem 1.1rem;
+          background: rgba(0, 15, 8, 0.95);
+          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.65rem;
+          z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+          .docviewer-toolbar {
+            padding: 0.5rem 0.75rem;
+            gap: 0.5rem;
+          }
+        }
+
+        .docviewer-title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .docviewer-filename {
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 0.9rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 320px;
+        }
+
+        @media (max-width: 640px) {
+          .docviewer-filename {
+            max-width: 150px;
+            font-size: 0.82rem;
+          }
+        }
+
+        .docviewer-desktop-label {
+          display: none;
+        }
+
+        @media (min-width: 600px) {
+          .docviewer-desktop-label {
+            display: inline;
+          }
+        }
+
         @keyframes docspin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }

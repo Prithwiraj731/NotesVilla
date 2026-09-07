@@ -29,6 +29,18 @@ export default function Header() {
     setIsMenuOpen(false);
   }, [location]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/notes', label: 'Notes Library', icon: BookOpen },
@@ -74,7 +86,7 @@ export default function Header() {
         </nav>
 
         {/* =========================================
-            SEARCH / EXPLORE CTA BUTTON
+            SEARCH / EXPLORE CTA BUTTON (Desktop Only)
             ========================================= */}
         <div className="header-actions">
           <Link to="/notes" className="header-search-btn">
@@ -92,6 +104,17 @@ export default function Header() {
           </button>
         </div>
       </div>
+
+      {/* =========================================
+          MOBILE BACKDROP OVERLAY
+          ========================================= */}
+      {isMenuOpen && (
+        <div 
+          className="mobile-backdrop"
+          onClick={() => setIsMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* =========================================
           MOBILE DRAWER NAVIGATION
@@ -164,6 +187,13 @@ export default function Header() {
           gap: 1.5rem;
         }
 
+        @media (max-width: 768px) {
+          .header-container {
+            padding: 0.65rem 1.1rem;
+            gap: 0.8rem;
+          }
+        }
+
         /* Brand Logo Image Only */
         .brand-logo {
           text-decoration: none;
@@ -187,8 +217,8 @@ export default function Header() {
 
         @media (max-width: 768px) {
           .brand-logo-img {
-            height: 30px;
-            max-width: 160px;
+            height: 28px;
+            max-width: 145px;
           }
         }
 
@@ -277,7 +307,8 @@ export default function Header() {
           box-shadow: 0 2px 10px rgba(251, 54, 64, 0.3);
         }
 
-        @media (min-width: 520px) {
+        /* Show Search CTA in top bar on desktop viewports */
+        @media (min-width: 900px) {
           .header-search-btn {
             display: inline-flex;
           }
@@ -316,17 +347,39 @@ export default function Header() {
           color: var(--accent-orange);
         }
 
+        /* Mobile Backdrop Overlay */
+        .mobile-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 5, 2, 0.75);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 998;
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
         /* Mobile Drawer */
         .mobile-drawer {
           position: absolute;
           top: 100%;
           left: 0;
           width: 100%;
+          z-index: 999;
           background: rgba(0, 15, 8, 0.98);
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
           border-bottom: 1px solid rgba(251, 54, 64, 0.2);
           box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+          max-height: calc(100vh - 60px);
+          overflow-y: auto;
           animation: slideDown 0.25s ease-out;
         }
 
@@ -342,7 +395,7 @@ export default function Header() {
         }
 
         .mobile-nav-list {
-          padding: 1.25rem 1.5rem 1.5rem;
+          padding: 1.25rem 1.25rem 1.5rem;
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
@@ -352,11 +405,12 @@ export default function Header() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0.75rem 1rem;
+          padding: 0.85rem 1rem;
+          min-height: 48px;
           border-radius: 6px;
           text-decoration: none;
           font-family: var(--font-body);
-          font-size: 0.95rem;
+          font-size: 0.98rem;
           font-weight: 500;
           color: var(--text-secondary);
           background: transparent;

@@ -449,19 +449,9 @@ export default function Notes() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%)',
-      padding: '2rem 1.5rem',
-      paddingTop: '6.5rem',
-      boxSizing: 'border-box'
-    }}>
+    <div className="notes-page-container">
       {/* ─── PAGE HEADER ─────────────────────────────────────── */}
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto 2.5rem',
-        textAlign: 'center'
-      }}>
+      <div className="notes-header-wrapper">
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -469,24 +459,24 @@ export default function Notes() {
           background: 'rgba(251, 54, 64, 0.08)',
           border: '1px solid rgba(251, 54, 64, 0.25)',
           borderRadius: '4px',
-          padding: '0.4rem 1.2rem',
-          marginBottom: '1rem'
+          padding: '0.35rem 1rem',
+          marginBottom: '0.8rem'
         }}>
-          <BookOpen size={16} style={{ color: 'var(--accent-orange)' }} />
+          <BookOpen size={15} style={{ color: 'var(--accent-orange)' }} />
           <span style={{
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-tech)',
             fontWeight: '700',
-            letterSpacing: '0.12em',
+            letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            fontSize: '0.9rem'
+            fontSize: '0.82rem'
           }}>
             Subject-Wise & Date-Wise Repository
           </span>
         </div>
 
         <h1 style={{
-          fontSize: 'clamp(2.2rem, 5vw, 3.8rem)',
+          fontSize: 'clamp(1.8rem, 4.5vw, 3.4rem)',
           fontWeight: '900',
           fontFamily: 'var(--font-cyber)',
           textTransform: 'uppercase',
@@ -495,32 +485,25 @@ export default function Notes() {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
-          margin: '0 0 1rem'
+          margin: '0 0 0.8rem',
+          lineHeight: '1.2'
         }}>
           ACADEMIC NOTES LIBRARY
         </h1>
         <p style={{
           color: 'var(--text-secondary)',
           fontFamily: 'var(--font-body)',
-          fontSize: '1.05rem',
+          fontSize: '0.95rem',
           maxWidth: '700px',
           margin: '0 auto',
-          lineHeight: '1.6'
+          lineHeight: '1.55'
         }}>
           Browse notes systematically organized by course subjects, followed by chronological lecture dates in continuity.
         </p>
       </div>
 
       {/* ─── SUBJECT FILTER PILLS CAROUSEL ──────────────────── */}
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto 2rem',
-        display: 'flex',
-        gap: '0.6rem',
-        overflowX: 'auto',
-        paddingBottom: '0.5rem',
-        scrollbarWidth: 'none'
-      }}>
+      <div className="notes-subject-carousel hide-scrollbar touch-scroll">
         {allSubjectNames.map((subj, idx) => {
           const isSelected = selectedSubject === subj;
           const count = subj === 'All' 
@@ -535,29 +518,30 @@ export default function Notes() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.6rem 1.2rem',
+                gap: '0.45rem',
+                padding: '0.5rem 1rem',
                 borderRadius: '6px',
                 border: isSelected ? '1px solid var(--accent-orange)' : '1px solid rgba(251, 54, 64, 0.15)',
                 background: isSelected ? 'rgba(251, 54, 64, 0.15)' : 'rgba(0, 15, 8, 0.6)',
                 color: isSelected ? '#ffffff' : 'var(--text-secondary)',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '0.95rem',
+                fontSize: '0.88rem',
                 fontWeight: isSelected ? '700' : '500',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
-                boxShadow: isSelected ? '0 0 12px rgba(251, 54, 64, 0.25)' : 'none'
+                boxShadow: isSelected ? '0 0 12px rgba(251, 54, 64, 0.25)' : 'none',
+                flexShrink: 0
               }}
             >
-              <BookOpen size={14} style={{ color: isSelected ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
+              <BookOpen size={13} style={{ color: isSelected ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
               <span>{subj}</span>
               <span style={{
                 background: isSelected ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.1)',
                 color: isSelected ? '#000000' : 'var(--accent-orange)',
                 borderRadius: '10px',
-                padding: '0.1rem 0.45rem',
-                fontSize: '0.75rem',
+                padding: '0.1rem 0.4rem',
+                fontSize: '0.72rem',
                 fontWeight: '700'
               }}>
                 {count}
@@ -569,80 +553,68 @@ export default function Notes() {
 
       {/* ─── SEARCH & VIEW SWITCHER ─────────────────────────── */}
       <div 
-        className="cyber-panel"
-        style={{
-          maxWidth: '1280px',
-          margin: '0 auto 2.5rem',
-          borderRadius: '8px',
-          padding: '1.2rem 1.5rem'
-        }}
+        className="cyber-panel notes-toolbar-panel"
       >
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap'
-        }}>
+        <div className="notes-toolbar-inner">
           {/* Search Bar */}
-          <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <div className="notes-search-wrapper">
+            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
             <input
               type="text"
               placeholder="Search by topic, subject, or lecture date..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              className="search-input-with-icon"
               style={{
                 width: '100%',
-                paddingLeft: '3rem',
                 fontFamily: 'var(--font-tech)',
-                fontSize: '1.05rem'
+                fontSize: '0.95rem'
               }}
             />
           </div>
 
           {/* View Mode Switcher */}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="notes-view-switcher">
             <button
               onClick={() => setViewMode('timeline')}
-              className="cyber-btn-wire"
+              className="cyber-btn-wire view-toggle-btn"
               style={{
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
                 borderColor: viewMode === 'timeline' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
                 color: viewMode === 'timeline' ? 'var(--accent-orange)' : 'var(--text-secondary)',
                 background: viewMode === 'timeline' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <Calendar size={14} /> Subject Timeline
+              <Calendar size={14} />
+              <span className="view-btn-text-full">Subject Timeline</span>
+              <span className="view-btn-text-short">Timeline</span>
             </button>
 
             <button
               onClick={() => setViewMode('grid')}
-              className="cyber-btn-wire"
+              className="cyber-btn-wire view-toggle-btn"
               style={{
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
                 borderColor: viewMode === 'grid' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
                 color: viewMode === 'grid' ? 'var(--accent-orange)' : 'var(--text-secondary)',
                 background: viewMode === 'grid' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <Grid size={14} /> Grid View
+              <Grid size={14} />
+              <span className="view-btn-text-full">Grid View</span>
+              <span className="view-btn-text-short">Grid</span>
             </button>
 
             <button
               onClick={() => setViewMode('list')}
-              className="cyber-btn-wire"
+              className="cyber-btn-wire view-toggle-btn"
               style={{
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
                 borderColor: viewMode === 'list' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
                 color: viewMode === 'list' ? 'var(--accent-orange)' : 'var(--text-secondary)',
                 background: viewMode === 'list' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
               }}
             >
-              <List size={14} /> List View
+              <List size={14} />
+              <span className="view-btn-text-full">List View</span>
+              <span className="view-btn-text-short">List</span>
             </button>
           </div>
         </div>
@@ -694,55 +666,48 @@ export default function Notes() {
                 <div key={subjName} style={{ position: 'relative' }}>
                   {/* ─── SUBJECT HEADER BANNER ──────────────────────── */}
                   <div 
-                    className="cyber-panel"
+                    className="cyber-panel notes-subject-banner"
                     style={{
-                      borderRadius: '10px',
-                      padding: '1.2rem 1.6rem',
-                      border: '1px solid rgba(251, 54, 64, 0.3)',
-                      background: 'rgba(0, 15, 8, 0.95)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '1rem',
-                      marginBottom: isCollapsed ? '0' : '2rem',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.5)',
+                      marginBottom: isCollapsed ? '0' : '1.5rem',
                       cursor: 'pointer'
                     }}
                     onClick={() => toggleSubjectCollapse(subjName)}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                       <div style={{
-                        width: '42px',
-                        height: '42px',
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '8px',
                         background: 'rgba(251, 54, 64, 0.12)',
                         border: '1px solid rgba(251, 54, 64, 0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'var(--accent-orange)'
+                        color: 'var(--accent-orange)',
+                        flexShrink: 0
                       }}>
-                        <BookOpen size={20} />
+                        <BookOpen size={18} />
                       </div>
 
                       <div>
                         <h2 style={{
                           fontFamily: 'var(--font-cyber)',
-                          fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
+                          fontSize: 'clamp(1.1rem, 3vw, 1.45rem)',
                           color: '#ffffff',
-                          margin: '0 0 0.2rem 0',
-                          letterSpacing: '0.04em'
+                          margin: '0 0 0.15rem 0',
+                          letterSpacing: '0.03em',
+                          lineHeight: '1.3'
                         }}>
                           {subjName}
                         </h2>
                         <div style={{
                           color: 'var(--text-muted)',
                           fontFamily: 'var(--font-tech)',
-                          fontSize: '0.85rem',
+                          fontSize: '0.82rem',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.6rem'
+                          gap: '0.5rem',
+                          flexWrap: 'wrap'
                         }}>
                           <span>{totalLectures} {totalLectures === 1 ? 'Lecture Note' : 'Lecture Notes'}</span>
                           <span>•</span>
@@ -751,14 +716,14 @@ export default function Notes() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSubjectChange(subjName);
                         }}
                         className="cyber-btn-wire"
-                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem' }}
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
                       >
                         Focus Subject
                       </button>
@@ -772,7 +737,8 @@ export default function Notes() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'var(--accent-orange)'
+                        color: 'var(--accent-orange)',
+                        flexShrink: 0
                       }}>
                         {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                       </div>
@@ -784,67 +750,37 @@ export default function Notes() {
                     <>
                       {viewMode === 'timeline' ? (
                         /* === 1. TIMELINE: Date-wise continuity inside this subject === */
-                        <div style={{ position: 'relative', paddingLeft: '2.5rem', marginLeft: '0.5rem' }}>
+                        <div className="notes-timeline-container">
                           {/* Subject Vertical Timeline Spine */}
-                          <div style={{
-                            position: 'absolute',
-                            top: '10px',
-                            bottom: '10px',
-                            left: '12px',
-                            width: '2px',
-                            background: 'linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.15))'
-                          }} />
+                          <div className="notes-timeline-spine" />
 
                           {dateKeys.map((dateKey) => {
                             const notesOnDate = group.dates[dateKey];
                             const dateInfo = formatDate(dateKey);
 
                             return (
-                              <div key={dateKey} style={{ marginBottom: '2.5rem', position: 'relative' }}>
+                              <div key={dateKey} style={{ marginBottom: '2.2rem', position: 'relative' }}>
                                 {/* Date Marker & Node */}
-                                <div style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.8rem',
-                                  marginBottom: '1.2rem',
-                                  position: 'relative'
-                                }}>
+                                <div className="notes-date-marker-row">
                                   {/* Glowing Timeline Dot */}
-                                  <div style={{
-                                    position: 'absolute',
-                                    left: '-2.55rem',
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    background: 'var(--accent-orange)',
-                                    boxShadow: '0 0 10px var(--accent-orange)',
-                                    border: '3px solid #000F08'
-                                  }} />
+                                  <div className="notes-timeline-dot" />
 
                                   {/* Date Badge */}
-                                  <div style={{
-                                    background: 'rgba(251, 54, 64, 0.08)',
-                                    border: '1px solid rgba(251, 54, 64, 0.25)',
-                                    borderRadius: '6px',
-                                    padding: '0.35rem 0.9rem',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                  }}>
-                                    <Calendar size={15} style={{ color: 'var(--accent-orange)' }} />
+                                  <div className="notes-date-badge">
+                                    <Calendar size={14} style={{ color: 'var(--accent-orange)' }} />
                                     <span style={{
                                       color: '#ffffff',
                                       fontFamily: 'var(--font-cyber)',
-                                      fontSize: '0.95rem',
+                                      fontSize: '0.88rem',
                                       fontWeight: '700',
-                                      letterSpacing: '0.04em'
+                                      letterSpacing: '0.03em'
                                     }}>
                                       {dateInfo.full}
                                     </span>
                                     <span style={{
                                       color: 'var(--accent-orange)',
                                       fontFamily: 'var(--font-tech)',
-                                      fontSize: '0.8rem',
+                                      fontSize: '0.78rem',
                                       fontWeight: '700'
                                     }}>
                                       ({notesOnDate.length} {notesOnDate.length === 1 ? 'Lecture' : 'Lectures'})
@@ -853,11 +789,7 @@ export default function Notes() {
                                 </div>
 
                                 {/* Lecture Cards Grid for this Date */}
-                                <div style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-                                  gap: '1.2rem'
-                                }}>
+                                <div className="notes-card-grid">
                                   {notesOnDate.map((note) => (
                                     <NoteCard key={note._id} note={note} />
                                   ))}
@@ -868,12 +800,7 @@ export default function Notes() {
                         </div>
                       ) : (
                         /* === 2. GRID / LIST: Date-sorted cards for this subject === */
-                        <div style={{
-                          display: viewMode === 'grid' ? 'grid' : 'flex',
-                          gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(340px, 1fr))' : '1fr',
-                          flexDirection: viewMode === 'list' ? 'column' : 'row',
-                          gap: '1.2rem'
-                        }}>
+                        <div className={viewMode === 'grid' ? 'notes-card-grid' : 'notes-card-list'}>
                           {group.notes.map((note) => (
                             <NoteCard key={note._id} note={note} showDate={true} />
                           ))}
@@ -901,92 +828,57 @@ export default function Notes() {
 
         return (
           <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0, 15, 8, 0.92)',
-              backdropFilter: 'blur(8px)',
-              zIndex: 3000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: modalFullscreen ? '0' : '1.5rem',
-              boxSizing: 'border-box'
-            }}
+            className="notes-modal-overlay"
             onClick={() => setPreviewNote(null)}
           >
             <div 
-              style={{
-                position: 'relative',
-                maxWidth: modalFullscreen ? '100vw' : '1100px',
-                width: '100%',
-                height: modalFullscreen ? '100vh' : '88vh',
-                borderRadius: modalFullscreen ? '0' : '12px',
-                overflow: 'hidden',
-                background: '#000A05',
-                border: modalFullscreen ? 'none' : '1px solid rgba(251, 54, 64, 0.35)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.9)',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
+              className={`notes-modal-wrapper ${modalFullscreen ? 'modal-fullscreen' : ''}`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Top Header Bar */}
-              <div style={{
-                padding: '1rem 1.5rem',
-                background: 'rgba(0, 15, 8, 0.98)',
-                borderBottom: '1px solid rgba(251, 54, 64, 0.25)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.8rem'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+              <div className="notes-modal-header">
+                <div style={{ flex: 1, minWidth: '180px' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                     <span style={{
                       background: 'var(--accent-orange)',
                       color: '#000',
                       fontFamily: 'var(--font-cyber)',
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       fontWeight: '900',
-                      padding: '0.15rem 0.5rem',
+                      padding: '0.12rem 0.45rem',
                       borderRadius: '4px'
                     }}>
                       {previewNote.subjectName}
                     </span>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.8rem' }}>
+                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                     </span>
                   </div>
 
-                  <h2 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.25rem', margin: 0, letterSpacing: '0.03em' }}>
+                  <h2 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: 'clamp(1rem, 2.5vw, 1.25rem)', margin: 0, letterSpacing: '0.02em', lineHeight: '1.3' }}>
                     {previewNote.title}
                   </h2>
                 </div>
 
                 {/* Header Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <button
                     onClick={(e) => shareNote(previewNote, e)}
                     className="cyber-btn-wire"
-                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
                     title="Share Note Link"
                   >
-                    {copiedId === previewNote._id ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
-                    <span>Share</span>
+                    {copiedId === previewNote._id ? <Check size={13} style={{ color: '#10B981' }} /> : <Share2 size={13} />}
+                    <span className="modal-btn-label">Share</span>
                   </button>
 
                   <button
                     onClick={() => setModalFullscreen(prev => !prev)}
                     className="cyber-btn-wire"
-                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                    style={{ padding: '0.35rem 0.55rem', fontSize: '0.78rem' }}
                     title={modalFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen'}
                   >
-                    {modalFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                    {modalFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
                   </button>
 
                   <button
@@ -996,23 +888,24 @@ export default function Notes() {
                       border: '1px solid rgba(239, 68, 68, 0.4)',
                       borderRadius: '6px',
                       color: '#ef4444',
-                      width: '34px',
-                      height: '34px',
+                      width: '32px',
+                      height: '32px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
                     }}
                     title="Close Viewer"
                   >
-                    <X size={18} />
+                    <X size={17} />
                   </button>
                 </div>
               </div>
 
               {/* Embedded Interactive DocViewer Component */}
-              <div style={{ flex: 1, height: 'calc(100% - 70px)', overflow: 'hidden' }}>
+              <div style={{ flex: 1, height: 'calc(100% - 60px)', overflow: 'hidden' }}>
                 <DocViewer
                   files={attachedFiles}
                   title={previewNote.title}
@@ -1029,6 +922,296 @@ export default function Notes() {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        .notes-page-container {
+          min-height: 100vh;
+          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%);
+          padding: 2rem 1.5rem;
+          padding-top: 6.5rem;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .notes-page-container {
+            padding: 1.2rem 1.1rem;
+            padding-top: 5.2rem;
+          }
+        }
+
+        .notes-header-wrapper {
+          max-width: 1280px;
+          margin: 0 auto 2.5rem;
+          text-align: center;
+        }
+
+        @media (max-width: 768px) {
+          .notes-header-wrapper {
+            margin-bottom: 1.8rem;
+          }
+        }
+
+        .notes-subject-carousel {
+          max-width: 1280px;
+          margin: 0 auto 1.8rem;
+          display: flex;
+          gap: 0.6rem;
+          overflow-x: auto;
+          padding-bottom: 0.4rem;
+        }
+
+        .notes-toolbar-panel {
+          max-width: 1280px;
+          margin: 0 auto 2.5rem;
+          border-radius: 8px;
+          padding: 1.2rem 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+          .notes-toolbar-panel {
+            padding: 1rem;
+            margin-bottom: 1.8rem;
+          }
+        }
+
+        .notes-toolbar-inner {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+          .notes-toolbar-inner {
+            flex-direction: column;
+            gap: 0.8rem;
+          }
+        }
+
+        .notes-search-wrapper {
+          position: relative;
+          flex: 1;
+          min-width: 240px;
+          width: 100%;
+        }
+
+        .notes-view-switcher {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+          .notes-view-switcher {
+            width: 100%;
+            gap: 0.35rem;
+          }
+        }
+
+        .view-toggle-btn {
+          padding: 0.5rem 0.9rem;
+          font-size: 0.85rem;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+          .view-toggle-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 0.5rem 0.35rem;
+            font-size: 0.8rem;
+          }
+        }
+
+        .view-btn-text-short {
+          display: none;
+        }
+
+        @media (max-width: 640px) {
+          .view-btn-text-full {
+            display: none;
+          }
+          .view-btn-text-short {
+            display: inline;
+          }
+        }
+
+        .notes-subject-banner {
+          border-radius: 10px;
+          padding: 1.1rem 1.4rem;
+          border: 1px solid rgba(251, 54, 64, 0.3);
+          background: rgba(0, 15, 8, 0.95);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        @media (max-width: 640px) {
+          .notes-subject-banner {
+            padding: 0.9rem 1rem;
+          }
+        }
+
+        .notes-timeline-container {
+          position: relative;
+          padding-left: 2.5rem;
+          margin-left: 0.5rem;
+        }
+
+        @media (max-width: 640px) {
+          .notes-timeline-container {
+            padding-left: 1.25rem;
+            margin-left: 0;
+          }
+        }
+
+        .notes-timeline-spine {
+          position: absolute;
+          top: 10px;
+          bottom: 10px;
+          left: 12px;
+          width: 2px;
+          background: linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.15));
+        }
+
+        @media (max-width: 640px) {
+          .notes-timeline-spine {
+            left: 4px;
+          }
+        }
+
+        .notes-date-marker-row {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          margin-bottom: 1rem;
+          position: relative;
+        }
+
+        .notes-timeline-dot {
+          position: absolute;
+          left: -2.55rem;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: var(--accent-orange);
+          box-shadow: 0 0 10px var(--accent-orange);
+          border: 3px solid #000F08;
+        }
+
+        @media (max-width: 640px) {
+          .notes-timeline-dot {
+            left: -1.45rem;
+            width: 12px;
+            height: 12px;
+            border-width: 2px;
+          }
+        }
+
+        .notes-date-badge {
+          background: rgba(251, 54, 64, 0.08);
+          border: 1px solid rgba(251, 54, 64, 0.25);
+          borderRadius: 6px;
+          padding: 0.3rem 0.8rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .notes-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+          gap: 1.2rem;
+        }
+
+        @media (max-width: 640px) {
+          .notes-card-grid {
+            grid-template-columns: 1fr;
+            gap: 0.9rem;
+          }
+        }
+
+        .notes-card-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        /* Modal Styles */
+        .notes-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 15, 8, 0.92);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 3000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 640px) {
+          .notes-modal-overlay {
+            padding: 0;
+          }
+        }
+
+        .notes-modal-wrapper {
+          position: relative;
+          max-width: 1100px;
+          width: 100%;
+          height: 88vh;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #000A05;
+          border: 1px solid rgba(251, 54, 64, 0.35);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+          display: flex;
+          flex-direction: column;
+        }
+
+        @media (max-width: 640px) {
+          .notes-modal-wrapper {
+            max-width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+          }
+        }
+
+        .notes-modal-wrapper.modal-fullscreen {
+          max-width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+          border: none;
+        }
+
+        .notes-modal-header {
+          padding: 0.85rem 1.25rem;
+          background: rgba(0, 15, 8, 0.98);
+          border-bottom: 1px solid rgba(251, 54, 64, 0.25);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        @media (max-width: 480px) {
+          .notes-modal-header {
+            padding: 0.7rem 0.9rem;
+          }
+          .modal-btn-label {
+            display: none;
+          }
         }
       `}</style>
     </div>

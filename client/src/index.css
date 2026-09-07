@@ -100,7 +100,7 @@ input, select, textarea {
   border: 1px solid rgba(251, 54, 64, 0.2) !important;
   border-radius: 6px !important;
   color: var(--text-primary) !important;
-  padding: 0.75rem 1.1rem !important;
+  padding: 0.75rem 1.1rem;
   font-family: var(--font-body);
   font-size: 0.95rem;
   letter-spacing: normal;
@@ -110,6 +110,32 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent-orange) !important;
   box-shadow: 0 0 12px rgba(251, 54, 64, 0.25) !important;
+}
+
+/* Specific Search Input with Icon clearance */
+.search-input-with-icon {
+  padding-left: 2.8rem !important;
+}
+
+/* Touch & Scroll Utilities */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile Touch Tap Targets */
+@media (max-width: 768px) {
+  button, a, input, select {
+    touch-action: manipulation;
+  }
 }
 
 /* Primary Button */

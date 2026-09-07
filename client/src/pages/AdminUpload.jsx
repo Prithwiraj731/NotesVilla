@@ -251,23 +251,9 @@ export default function AdminUpload() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%)',
-      padding: '2rem 1.5rem',
-      paddingTop: '6.5rem',
-      boxSizing: 'border-box'
-    }}>
+    <div className="admin-upload-page">
       {/* Top Admin Bar */}
-      <div style={{
-        maxWidth: '900px',
-        margin: '0 auto 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
+      <div className="admin-upload-topbar">
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -275,7 +261,7 @@ export default function AdminUpload() {
           background: 'rgba(251, 54, 64, 0.08)',
           border: '1px solid rgba(251, 54, 64, 0.25)',
           borderRadius: '4px',
-          padding: '0.4rem 1rem'
+          padding: '0.35rem 0.9rem'
         }}>
           <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
           <span style={{
@@ -284,19 +270,19 @@ export default function AdminUpload() {
             fontWeight: '700',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            fontSize: '0.9rem'
+            fontSize: '0.85rem'
           }}>
             Admin Upload Portal
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => navigate('/notes')}
             className="cyber-btn-wire"
-            style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
+            style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem' }}
           >
-            <BookOpen size={14} /> View Notes Library
+            <BookOpen size={14} /> <span>View Notes</span>
           </button>
 
           <button
@@ -304,26 +290,18 @@ export default function AdminUpload() {
             className="cyber-btn-wire"
             style={{
               padding: '0.4rem 0.9rem',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               borderColor: 'rgba(239, 68, 68, 0.4)',
               color: '#ef4444'
             }}
           >
-            <LogOut size={14} /> Logout
+            <LogOut size={14} /> <span>Logout</span>
           </button>
         </div>
       </div>
 
       {/* Main Upload Card */}
-      <div className="cyber-panel" style={{
-        maxWidth: '900px',
-        margin: '0 auto',
-        borderRadius: '12px',
-        padding: '2.5rem',
-        border: '1px solid rgba(251, 54, 64, 0.25)',
-        background: 'rgba(0, 15, 8, 0.95)',
-        boxShadow: '0 15px 35px rgba(0,0,0,0.6)'
-      }}>
+      <div className="cyber-panel admin-upload-card">
         
         <h2 style={{
           fontFamily: 'var(--font-cyber)',
@@ -547,18 +525,14 @@ export default function AdminUpload() {
             </label>
 
             <div
+              className="admin-dropzone"
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
               style={{
                 border: `2px dashed ${dragActive ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.3)'}`,
-                borderRadius: '8px',
-                padding: '2.5rem 1.5rem',
-                textAlign: 'center',
-                background: dragActive ? 'rgba(251, 54, 64, 0.08)' : 'rgba(0, 5, 2, 0.5)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                background: dragActive ? 'rgba(251, 54, 64, 0.08)' : 'rgba(0, 5, 2, 0.5)'
               }}
               onClick={() => document.getElementById('note-file-input').click()}
             >
@@ -734,13 +708,8 @@ export default function AdminUpload() {
         </form>
       </div>
 
-      {/* =========================================================================
-          EXISTING UPLOADED NOTES MANAGEMENT
-          ========================================================================= */}
-      <div style={{
-        maxWidth: '900px',
-        margin: '3rem auto 0'
-      }}>
+      {/* Published Notes Management Section */}
+      <div className="admin-archive-wrapper">
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -804,20 +773,12 @@ export default function AdminUpload() {
               return (
                 <div
                   key={note._id}
-                  className="cyber-panel"
+                  className="cyber-panel admin-note-item"
                   style={{
-                    borderRadius: '8px',
-                    padding: '1rem 1.25rem',
-                    border: `1px solid ${noteIsImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    background: 'rgba(0, 15, 8, 0.8)'
+                    border: `1px solid ${noteIsImage ? 'rgba(16, 185, 129, 0.15)' : 'rgba(251, 54, 64, 0.15)'}`
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
                     <div style={{
                       width: '38px',
                       height: '38px',
@@ -827,23 +788,24 @@ export default function AdminUpload() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: noteIsImage ? '#10B981' : 'var(--accent-orange)'
+                      color: noteIsImage ? '#10B981' : 'var(--accent-orange)',
+                      flexShrink: 0
                     }}>
                       {noteIsImage ? <ImageIcon size={18} /> : <FileText size={18} />}
                     </div>
 
-                    <div>
-                      <div style={{ color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: '#ffffff', fontWeight: '700', fontFamily: 'var(--font-body)', fontSize: '0.92rem', wordBreak: 'break-word' }}>
                         {note.title || note.filename}
                       </div>
-                      <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
                         <span style={{
                           background: 'rgba(251, 54, 64, 0.12)',
                           border: '1px solid rgba(251, 54, 64, 0.25)',
                           color: 'var(--accent-orange)',
                           padding: '0.1rem 0.5rem',
                           borderRadius: '4px',
-                          fontSize: '0.75rem',
+                          fontSize: '0.72rem',
                           fontWeight: '700'
                         }}>
                           {note.subjectName}
@@ -855,13 +817,13 @@ export default function AdminUpload() {
                             color: '#10B981',
                             padding: '0.1rem 0.5rem',
                             borderRadius: '4px',
-                            fontSize: '0.7rem',
+                            fontSize: '0.68rem',
                             fontWeight: '700'
                           }}>
                             📸 IMAGE
                           </span>
                         )}
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                           <Calendar size={12} />
                           {new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
@@ -869,7 +831,7 @@ export default function AdminUpload() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <div className="admin-note-actions">
                     <a
                       href={note.fileUrl}
                       target="_blank"
@@ -964,8 +926,115 @@ export default function AdminUpload() {
         </div>
       )}
 
-      {/* Spin animation */}
+      {/* Responsive Styles & Animation Keyframes */}
       <style>{`
+        .admin-upload-page {
+          min-height: 100vh;
+          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%);
+          padding: 2rem 1.5rem;
+          padding-top: 6.5rem;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .admin-upload-page {
+            padding: 1.2rem 1.1rem;
+            padding-top: 5.2rem;
+          }
+        }
+
+        .admin-upload-topbar {
+          max-width: 900px;
+          margin: 0 auto 1.8rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+          .admin-upload-topbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.8rem;
+          }
+          .admin-upload-topbar > div:last-child {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+          }
+          .admin-upload-topbar button {
+            justify-content: center;
+          }
+        }
+
+        .admin-upload-card {
+          max-width: 900px;
+          margin: 0 auto;
+          border-radius: 12px;
+          padding: 2.5rem;
+          border: 1px solid rgba(251, 54, 64, 0.25);
+          background: rgba(0, 15, 8, 0.95);
+          box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+
+        @media (max-width: 768px) {
+          .admin-upload-card {
+            padding: 1.35rem 1.1rem;
+            border-radius: 10px;
+          }
+        }
+
+        .admin-dropzone {
+          border-radius: 8px;
+          padding: 2.5rem 1.5rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        @media (max-width: 640px) {
+          .admin-dropzone {
+            padding: 1.6rem 0.85rem;
+          }
+        }
+
+        .admin-archive-wrapper {
+          max-width: 900px;
+          margin: 2.8rem auto 0;
+        }
+
+        @media (max-width: 768px) {
+          .admin-archive-wrapper {
+            margin-top: 2rem;
+          }
+        }
+
+        .admin-note-item {
+          border-radius: 8px;
+          padding: 1rem 1.25rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          background: rgba(0, 15, 8, 0.8);
+        }
+
+        @media (max-width: 600px) {
+          .admin-note-item {
+            padding: 0.9rem 1rem;
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .admin-note-actions {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            margin-top: 0.4rem;
+          }
+        }
+
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }

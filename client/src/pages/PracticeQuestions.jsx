@@ -64,17 +64,11 @@ export default function PracticeQuestions() {
   });
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 50% 15%, rgba(251, 54, 64, 0.08) 0%, #000F08 75%)',
-      padding: '2rem 1.5rem',
-      paddingTop: '6.5rem',
-      boxSizing: 'border-box'
-    }}>
+    <div className="practice-page-container">
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         
         {/* Header Title */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <div className="practice-header">
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -82,15 +76,15 @@ export default function PracticeQuestions() {
             background: 'rgba(251, 54, 64, 0.08)',
             border: '1px solid rgba(251, 54, 64, 0.3)',
             borderRadius: '30px',
-            padding: '0.4rem 1.2rem',
-            marginBottom: '1rem'
+            padding: '0.35rem 1.1rem',
+            marginBottom: '0.85rem'
           }}>
             <Sparkles size={14} style={{ color: 'var(--accent-orange)' }} />
             <span style={{
               fontFamily: 'var(--font-body)',
               fontWeight: '700',
               color: '#ffffff',
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase'
             }}>
@@ -98,44 +92,20 @@ export default function PracticeQuestions() {
             </span>
           </div>
 
-          <h1 style={{
-            fontFamily: 'var(--font-cyber)',
-            fontSize: 'clamp(2rem, 4vw, 3rem)',
-            color: '#ffffff',
-            marginBottom: '0.6rem',
-            fontWeight: '900'
-          }}>
+          <h1 className="practice-title">
             PRACTICE SETS & PYQS
           </h1>
 
-          <p style={{
-            color: 'var(--text-secondary)',
-            fontFamily: 'var(--font-body)',
-            fontSize: '1rem',
-            maxWidth: '620px',
-            margin: '0 auto',
-            lineHeight: '1.6'
-          }}>
+          <p className="practice-subtitle">
             Subject problem sets, practice sheets, and previous year examination question papers.
           </p>
         </div>
 
         {/* Filter Toolbar */}
         {subjects.length > 0 && (
-          <div style={{
-            background: 'rgba(0, 15, 8, 0.9)',
-            border: '1px solid rgba(251, 54, 64, 0.2)',
-            borderRadius: '10px',
-            padding: '1.2rem 1.5rem',
-            marginBottom: '2rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem'
-          }}>
+          <div className="practice-filter-bar">
             {/* Subject Filter Pills */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="practice-filter-pills">
               <button
                 onClick={() => setSelectedSubject('all')}
                 style={{
@@ -143,12 +113,13 @@ export default function PracticeQuestions() {
                   color: selectedSubject === 'all' ? '#000000' : 'var(--text-secondary)',
                   border: selectedSubject === 'all' ? '1px solid var(--accent-orange)' : '1px solid rgba(251, 54, 64, 0.2)',
                   borderRadius: '6px',
-                  padding: '0.4rem 1rem',
+                  padding: '0.4rem 0.9rem',
                   fontFamily: 'var(--font-body)',
                   fontWeight: selectedSubject === 'all' ? '700' : '500',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 All Subjects
@@ -163,12 +134,13 @@ export default function PracticeQuestions() {
                     color: selectedSubject === subj ? '#000000' : 'var(--text-secondary)',
                     border: selectedSubject === subj ? '1px solid var(--accent-orange)' : '1px solid rgba(251, 54, 64, 0.2)',
                     borderRadius: '6px',
-                    padding: '0.4rem 1rem',
+                    padding: '0.4rem 0.9rem',
                     fontFamily: 'var(--font-body)',
                     fontWeight: selectedSubject === subj ? '700' : '500',
-                    fontSize: '0.85rem',
+                    fontSize: '0.82rem',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   {subj}
@@ -177,16 +149,8 @@ export default function PracticeQuestions() {
             </div>
 
             {/* Search Box */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'rgba(0, 5, 2, 0.8)',
-              border: '1px solid rgba(251, 54, 64, 0.25)',
-              borderRadius: '6px',
-              padding: '0.4rem 0.8rem',
-              minWidth: '240px'
-            }}>
-              <Search size={15} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
+            <div className="practice-search-box">
+              <Search size={15} style={{ color: 'var(--text-muted)', marginRight: '0.5rem', flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Search practice materials..."
@@ -198,8 +162,9 @@ export default function PracticeQuestions() {
                   outline: 'none',
                   color: '#ffffff',
                   fontFamily: 'var(--font-body)',
-                  fontSize: '0.88rem',
-                  width: '100%'
+                  fontSize: '0.85rem',
+                  width: '100%',
+                  padding: '0.2rem 0'
                 }}
               />
             </div>
@@ -208,30 +173,16 @@ export default function PracticeQuestions() {
 
         {/* Content Area */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+          <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-muted)' }}>
             <RefreshCw size={28} className="spin-animate" style={{ margin: '0 auto 1rem' }} />
             <div>Loading practice resources...</div>
           </div>
         ) : filteredItems.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '1.5rem'
-          }}>
+          <div className="practice-grid">
             {filteredItems.map((item) => (
               <div
                 key={item._id}
-                className="cyber-panel"
-                style={{
-                  borderRadius: '10px',
-                  padding: '1.8rem',
-                  border: '1px solid rgba(251, 54, 64, 0.2)',
-                  background: 'rgba(0, 15, 8, 0.9)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.25s ease'
-                }}
+                className="cyber-panel practice-card"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
                   e.currentTarget.style.borderColor = 'var(--accent-orange)';
@@ -244,21 +195,25 @@ export default function PracticeQuestions() {
                 }}
               >
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem', flexWrap: 'wrap', gap: '0.4rem' }}>
                     <span style={{
                       background: 'rgba(251, 54, 64, 0.12)',
                       border: '1px solid rgba(251, 54, 64, 0.3)',
                       color: 'var(--accent-orange)',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '4px',
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       fontWeight: '700',
-                      fontFamily: 'var(--font-body)'
+                      fontFamily: 'var(--font-body)',
+                      maxWidth: '180px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}>
                       {item.subjectName}
                     </span>
 
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Calendar size={12} />
                       {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
@@ -266,10 +221,11 @@ export default function PracticeQuestions() {
 
                   <h3 style={{
                     fontFamily: 'var(--font-cyber)',
-                    fontSize: '1.1rem',
+                    fontSize: '1.08rem',
                     color: '#ffffff',
                     marginBottom: '0.5rem',
-                    lineHeight: '1.4'
+                    lineHeight: '1.35',
+                    wordBreak: 'break-word'
                   }}>
                     {item.title || item.filename}
                   </h3>
@@ -277,21 +233,21 @@ export default function PracticeQuestions() {
                   <p style={{
                     color: 'var(--text-secondary)',
                     fontFamily: 'var(--font-body)',
-                    fontSize: '0.88rem',
+                    fontSize: '0.85rem',
                     lineHeight: '1.5',
-                    marginBottom: '1.5rem'
+                    marginBottom: '1.4rem'
                   }}>
                     {item.description || `Practice questions and study materials for ${item.subjectName}.`}
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.8rem' }}>
+                <div className="practice-card-actions">
                   <a
                     href={item.fileUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="cyber-btn-orange"
-                    style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    style={{ padding: '0.55rem 1.1rem', fontSize: '0.82rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
                   >
                     <Download size={14} />
                     <span>Download Paper</span>
@@ -300,7 +256,7 @@ export default function PracticeQuestions() {
                   <button
                     onClick={() => navigate(`/note/${item._id}`)}
                     className="cyber-btn-wire"
-                    style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem' }}
+                    style={{ padding: '0.55rem 1.1rem', fontSize: '0.82rem', justifyContent: 'center' }}
                   >
                     <FileText size={14} />
                     <span>Preview</span>
@@ -310,22 +266,15 @@ export default function PracticeQuestions() {
             ))}
           </div>
         ) : (
-          <div className="cyber-panel" style={{
-            maxWidth: '680px',
-            margin: '0 auto',
-            borderRadius: '10px',
-            padding: '3.5rem 2rem',
-            textAlign: 'center',
-            border: '1px dashed rgba(251, 54, 64, 0.3)',
-            background: 'rgba(0, 15, 8, 0.8)'
-          }}>
-            <HelpCircle size={42} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.8 }} />
+          <div className="cyber-panel practice-empty-panel">
+            <HelpCircle size={38} style={{ color: 'var(--accent-orange)', margin: '0 auto 0.85rem', opacity: 0.8 }} />
             
             <h3 style={{
               fontFamily: 'var(--font-cyber)',
-              fontSize: '1.35rem',
+              fontSize: '1.25rem',
               color: '#ffffff',
-              marginBottom: '0.5rem'
+              marginBottom: '0.5rem',
+              lineHeight: 1.3
             }}>
               4TH YEAR PRACTICE REPOSITORY READY
             </h3>
@@ -333,10 +282,10 @@ export default function PracticeQuestions() {
             <p style={{
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-body)',
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               maxWidth: '520px',
-              margin: '0 auto 2rem',
-              lineHeight: '1.6'
+              margin: '0 auto 1.8rem',
+              lineHeight: '1.55'
             }}>
               No practice sets uploaded yet. As soon as you upload your 4th-year subject question sets and model papers from the admin portal, they will automatically appear here.
             </p>
@@ -344,7 +293,7 @@ export default function PracticeQuestions() {
             <button
               onClick={() => navigate('/notes')}
               className="cyber-btn-orange"
-              style={{ padding: '0.75rem 2rem', fontSize: '0.95rem' }}
+              style={{ padding: '0.75rem 1.8rem', fontSize: '0.9rem' }}
             >
               <span>Explore Notes Library</span>
               <ArrowRight size={15} />
@@ -353,7 +302,168 @@ export default function PracticeQuestions() {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
+        .practice-page-container {
+          min-height: 100vh;
+          background: radial-gradient(circle at 50% 15%, rgba(251, 54, 64, 0.08) 0%, #000F08 75%);
+          padding: 2.2rem 1.5rem;
+          padding-top: 6.5rem;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .practice-page-container {
+            padding: 1.2rem 1.1rem;
+            padding-top: 5.2rem;
+          }
+        }
+
+        .practice-header {
+          text-align: center;
+          margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 768px) {
+          .practice-header {
+            margin-bottom: 1.8rem;
+          }
+        }
+
+        .practice-title {
+          font-family: var(--font-cyber);
+          font-size: clamp(1.45rem, 5vw, 2.6rem);
+          color: #ffffff;
+          margin-bottom: 0.6rem;
+          font-weight: 900;
+          letter-spacing: 0.02em;
+          line-height: 1.2;
+        }
+
+        .practice-subtitle {
+          color: var(--text-secondary);
+          font-family: var(--font-body);
+          font-size: clamp(0.85rem, 2vw, 1rem);
+          max-width: 620px;
+          margin: 0 auto;
+          line-height: 1.6;
+        }
+
+        .practice-filter-bar {
+          background: rgba(0, 15, 8, 0.9);
+          border: 1px solid rgba(251, 54, 64, 0.2);
+          border-radius: 10px;
+          padding: 1.1rem 1.4rem;
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+          .practice-filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0.9rem 1rem;
+            margin-bottom: 1.5rem;
+          }
+        }
+
+        .practice-filter-pills {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        @media (max-width: 600px) {
+          .practice-filter-pills {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 0.4rem;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+
+        .practice-search-box {
+          display: flex;
+          align-items: center;
+          background: rgba(0, 5, 2, 0.8);
+          border: 1px solid rgba(251, 54, 64, 0.25);
+          border-radius: 6px;
+          padding: 0.4rem 0.8rem;
+          min-width: 240px;
+        }
+
+        @media (max-width: 768px) {
+          .practice-search-box {
+            min-width: 100%;
+            width: 100%;
+          }
+        }
+
+        .practice-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+          gap: 1.4rem;
+        }
+
+        @media (max-width: 640px) {
+          .practice-grid {
+            gap: 1.1rem;
+          }
+        }
+
+        .practice-card {
+          border-radius: 10px;
+          padding: 1.6rem;
+          border: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(0, 15, 8, 0.9);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          transition: all 0.25s ease;
+        }
+
+        @media (max-width: 640px) {
+          .practice-card {
+            padding: 1.25rem 1.1rem;
+          }
+        }
+
+        .practice-card-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 440px) {
+          .practice-card-actions {
+            flex-direction: column;
+          }
+          .practice-card-actions button,
+          .practice-card-actions a {
+            width: 100%;
+          }
+        }
+
+        .practice-empty-panel {
+          max-width: 680px;
+          margin: 0 auto;
+          border-radius: 10px;
+          padding: 3rem 1.5rem;
+          textAlign: center;
+          border: 1px dashed rgba(251, 54, 64, 0.3);
+          background: rgba(0, 15, 8, 0.8);
+        }
+
+        @media (max-width: 640px) {
+          .practice-empty-panel {
+            padding: 2.2rem 1.2rem;
+          }
+        }
+
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
