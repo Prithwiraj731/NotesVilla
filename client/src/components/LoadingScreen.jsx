@@ -12,7 +12,7 @@ const LoadingScreen = ({ isLoading }) => {
                     <Loader />
                 </div>
                 <div className="loading-text">
-                    <h2>NOTESVILLA</h2>
+                    <h2>KNOWLEDGE DOCK</h2>
                     <p>Loading your knowledge repository...</p>
                 </div>
             </div>

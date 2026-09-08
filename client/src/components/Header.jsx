@@ -55,10 +55,10 @@ export default function Header() {
         {/* =========================================
             BRAND LOGO (SVG Image Only)
             ========================================= */}
-        <Link to="/" className="brand-logo" aria-label="NotesVilla Home">
+        <Link to="/" className="brand-logo" aria-label="Knowledge Dock Home">
           <img 
             src="/logo.svg" 
-            alt="NotesVilla Logo" 
+            alt="Knowledge Dock Logo" 
             className="brand-logo-img"
           />
         </Link>

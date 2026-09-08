@@ -83,11 +83,11 @@ export default function Home() {
             {/* Left Column: Title Graphic & Action Buttons */}
             <div className="hero-left-col">
               
-              {/* NOTES VILLA Title Graphic Image */}
+              {/* KNOWLEDGE DOCK Title Graphic Image */}
               <div className="hero-title-container">
                 <img 
-                  src="/hero_text.png" 
-                  alt="NOTES VILLA" 
+                  src="/hero_text_main.png" 
+                  alt="KNOWLEDGE DOCK" 
                   className="hero-title-img"
                 />
               </div>
@@ -303,25 +303,25 @@ export default function Home() {
 
         .hero-title-container {
           width: 100%;
-          max-width: 480px;
+          max-width: 520px;
         }
 
         @media (max-width: 992px) {
           .hero-title-container {
             margin: 0 auto;
-            max-width: 380px;
+            max-width: 420px;
           }
         }
 
         @media (max-width: 480px) {
           .hero-title-container {
-            max-width: 290px;
+            max-width: 320px;
           }
         }
 
         .hero-title-img {
           width: 100%;
-          max-height: 220px;
+          max-height: 260px;
           height: auto;
           object-fit: contain;
           object-position: left center;
@@ -333,13 +333,13 @@ export default function Home() {
         @media (max-width: 992px) {
           .hero-title-img {
             object-position: center;
-            max-height: 180px;
+            max-height: 220px;
           }
         }
 
         @media (max-width: 480px) {
           .hero-title-img {
-            max-height: 120px;
+            max-height: 170px;
             filter: drop-shadow(0 0 18px rgba(251, 54, 64, 0.35));
           }
         }

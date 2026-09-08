@@ -8,10 +8,10 @@ export default function Footer() {
       <div className="footer-container">
         {/* Brand Logo & Tagline */}
         <div className="footer-brand">
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '0.5rem' }} aria-label="NotesVilla Home">
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '0.5rem' }} aria-label="Knowledge Dock Home">
             <img 
               src="/logo.svg" 
-              alt="NotesVilla Logo" 
+              alt="Knowledge Dock Logo" 
               className="footer-logo-img"
             />
           </Link>
@@ -51,7 +51,7 @@ export default function Footer() {
       {/* Copyright & Credits */}
       <div className="footer-bottom">
         <div>
-          © {new Date().getFullYear()} NotesVilla. All rights reserved.
+          © {new Date().getFullYear()} Knowledge Dock. All rights reserved.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
           Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students
