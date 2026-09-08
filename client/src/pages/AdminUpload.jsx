@@ -241,6 +241,7 @@ export default function AdminUpload() {
       data.append('title', noteTitle);
       data.append('subjectName', form.subjectName.trim());
       data.append('category', form.category || 'Theory');
+      data.append('date', new Date().toISOString());
 
       const isSingleFile = form.files.length === 1;
       const uploadUrl = isSingleFile ? '/notes/upload-single' : '/notes/upload';
