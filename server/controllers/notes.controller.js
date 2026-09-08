@@ -28,12 +28,25 @@ function getCloudinaryResourceType(filename) {
 function formatNote(row) {
   if (!row) return null;
   const id = row._id ? row._id.toString() : (row.id ? row.id.toString() : '');
+
+  let category = row.category;
+  if (!category || !['Theory', 'Lab', 'Suggestions'].includes(category)) {
+    const text = `${row.title || ''} ${row.filename || ''} ${row.originalName || ''}`.toLowerCase();
+    if (/\b(lab|practical|experiment|manual|viva)\b/i.test(text) || /lab\s*[-_]?\s*\d+/i.test(text)) {
+      category = 'Lab';
+    } else if (/\b(pyq|pyqs|suggestion|suggestions|important\s*questions?|model\s*paper|question\s*paper)\b/i.test(text)) {
+      category = 'Suggestions';
+    } else {
+      category = 'Theory';
+    }
+  }
+
   return {
     _id: id,
     id: id,
     title: row.title,
     subjectName: row.subjectName || row.subject_name,
-    category: row.category || 'Theory',
+    category: category,
     date: row.date || row.createdAt || row.created_at,
     fileUrl: row.fileUrl || row.file_url,
     filename: row.filename,

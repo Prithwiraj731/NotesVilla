@@ -16,7 +16,7 @@ const noteSchema = new mongoose.Schema({
   fileType: { type: String },
   uploadedBy: { type: String },
   createdAt: { type: Date, default: Date.now },
-});
+}, { strict: false });
 
 noteSchema.index({ createdAt: -1 });
 noteSchema.index({ subjectName: 1 });

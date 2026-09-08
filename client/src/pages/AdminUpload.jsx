@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API, { setAuthToken } from '../services/api';
+import { resolveNoteCategory } from '../utils/categoryUtils';
 import { 
   Upload, 
   FileText, 
@@ -182,6 +183,20 @@ export default function AdminUpload() {
     setDeleteModalOpen(true);
   };
 
+  const handleUpdateCategory = async (note, newCategory) => {
+    try {
+      setLoading(true);
+      await API.put(`/notes/note/${note._id || note.id}`, { category: newCategory });
+      setSuccess(`Updated category for "${note.title || note.filename}" to ${newCategory}`);
+      fetchNotes();
+    } catch (err) {
+      console.error('Failed to update category:', err);
+      setError('Failed to update note category');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteNote = async () => {
     if (!noteToDelete) return;
     try {
@@ -241,6 +256,8 @@ export default function AdminUpload() {
       data.append('title', noteTitle);
       data.append('subjectName', form.subjectName.trim());
       data.append('category', form.category || 'Theory');
+      data.append('description', form.category || 'Theory');
+      data.append('topicName', form.category || 'Theory');
       data.append('date', new Date().toISOString());
 
       const isSingleFile = form.files.length === 1;
@@ -675,7 +692,7 @@ export default function AdminUpload() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {notes.map((note) => {
                   const noteIsImage = note.fileType === 'image' || isImageFile(note.filename);
-                  const cat = note.category || 'Theory';
+                  const cat = resolveNoteCategory(note);
 
                   return (
                     <div key={note._id || note.id} className="cyber-panel admin-note-item">
@@ -703,6 +720,27 @@ export default function AdminUpload() {
                             >
                               {cat}
                             </span>
+
+                            <select
+                              value={cat}
+                              onChange={(e) => handleUpdateCategory(note, e.target.value)}
+                              style={{
+                                background: 'rgba(0, 20, 10, 0.85)',
+                                border: '1px solid rgba(251, 54, 64, 0.3)',
+                                borderRadius: '4px',
+                                color: '#ffffff',
+                                fontSize: '0.72rem',
+                                padding: '0.15rem 0.4rem',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                fontFamily: 'var(--font-tech)'
+                              }}
+                              title="Switch Category"
+                            >
+                              <option value="Theory">Theory</option>
+                              <option value="Lab">Lab</option>
+                              <option value="Suggestions">Suggestions</option>
+                            </select>
                           </div>
                         </div>
                       </div>

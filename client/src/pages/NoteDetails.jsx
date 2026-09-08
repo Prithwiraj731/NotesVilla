@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Share2, Layers, BookOpen, FileText, Image as Image
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
+import { resolveNoteCategory } from '../utils/categoryUtils';
 
 export default function NoteDetails() {
   const { id } = useParams();
@@ -211,23 +212,30 @@ export default function NoteDetails() {
               {note.subjectName}
             </div>
 
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: note.category === 'Lab' ? 'rgba(59, 130, 246, 0.12)' : (note.category === 'Suggestions' ? 'rgba(168, 85, 247, 0.12)' : 'rgba(16, 185, 129, 0.12)'),
-              border: `1px solid ${note.category === 'Lab' ? 'rgba(59, 130, 246, 0.3)' : (note.category === 'Suggestions' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(16, 185, 129, 0.3)')}`,
-              borderRadius: '4px',
-              padding: '0.25rem 0.7rem',
-              color: note.category === 'Lab' ? '#60a5fa' : (note.category === 'Suggestions' ? '#c084fc' : '#10b981'),
-              fontFamily: 'var(--font-tech)',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              textTransform: 'uppercase'
-            }}>
-              <Layers size={13} />
-              {note.category || 'Theory'}
-            </div>
+            {(() => {
+              const resolvedCat = resolveNoteCategory(note);
+              const isLab = resolvedCat === 'Lab';
+              const isSuggestions = resolvedCat === 'Suggestions';
+              return (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  background: isLab ? 'rgba(59, 130, 246, 0.12)' : (isSuggestions ? 'rgba(168, 85, 247, 0.12)' : 'rgba(16, 185, 129, 0.12)'),
+                  border: `1px solid ${isLab ? 'rgba(59, 130, 246, 0.3)' : (isSuggestions ? 'rgba(168, 85, 247, 0.3)' : 'rgba(16, 185, 129, 0.3)')}`,
+                  borderRadius: '4px',
+                  padding: '0.25rem 0.7rem',
+                  color: isLab ? '#60a5fa' : (isSuggestions ? '#c084fc' : '#10b981'),
+                  fontFamily: 'var(--font-tech)',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase'
+                }}>
+                  <Layers size={13} />
+                  {resolvedCat}
+                </div>
+              );
+            })()}
 
             {attachedFiles.length > 1 && (
               <div style={{

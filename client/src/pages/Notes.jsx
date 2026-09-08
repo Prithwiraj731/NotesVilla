@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
+import { resolveNoteCategory } from '../utils/categoryUtils';
 import { 
   Search, 
   Download, 
@@ -143,9 +144,9 @@ export default function Notes() {
           map[sName] = { total: 0, theory: 0, lab: 0, suggestions: 0 };
         }
         map[sName].total += 1;
-        const cat = (note.category || 'Theory').toLowerCase();
-        if (cat === 'lab') map[sName].lab += 1;
-        else if (cat === 'suggestions') map[sName].suggestions += 1;
+        const cat = resolveNoteCategory(note);
+        if (cat === 'Lab') map[sName].lab += 1;
+        else if (cat === 'Suggestions') map[sName].suggestions += 1;
         else map[sName].theory += 1;
       }
     });
@@ -158,7 +159,7 @@ export default function Notes() {
     let list = notes.filter(n => n.subjectName?.toLowerCase() === selectedSubject.toLowerCase());
 
     if (selectedCategory && selectedCategory !== 'All') {
-      list = list.filter(n => (n.category || 'Theory').toLowerCase() === selectedCategory.toLowerCase());
+      list = list.filter(n => resolveNoteCategory(n).toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (searchTerm.trim()) {
@@ -504,7 +505,8 @@ export default function Notes() {
                 {currentSubjectNotes.map(note => {
                   const isImage = getNoteFileType(note) === 'image';
                   const filesCount = note.files?.length || (note.fileUrl ? 1 : 0);
-                  const catStyle = getCategoryStyle(note.category);
+                  const resolvedCategory = resolveNoteCategory(note);
+                  const catStyle = getCategoryStyle(resolvedCategory);
                   const CatIcon = catStyle.icon;
 
                   return (
@@ -520,7 +522,7 @@ export default function Notes() {
                           }}
                         >
                           <CatIcon size={12} />
-                          <span>{note.category || 'Theory'}</span>
+                          <span>{resolvedCategory}</span>
                         </div>
 
                         {/* File type badge */}
