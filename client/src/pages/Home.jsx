@@ -118,11 +118,13 @@ export default function Home() {
             <div className="hero-character-col">
               {/* Radial Light Under Character */}
               <div className="char-glow-underlay" />
+              {/* Concentrated Red Rim Highlight */}
+              <div className="char-rim-glow" />
               
               {/* White Sci-Fi Student Character */}
               <img 
                 src="/photo1.png" 
-                alt="NotesVilla Student Character" 
+                alt="Knowledge Dock Academic Character" 
                 className="hero-character-img"
               />
 
@@ -268,9 +270,9 @@ export default function Home() {
 
         .hero-main-stage {
           display: grid;
-          grid-template-columns: 1.15fr 1fr;
+          grid-template-columns: 1.25fr 1fr;
           align-items: center;
-          gap: 3rem;
+          gap: 2.5rem;
           min-height: 480px;
         }
 
@@ -278,7 +280,7 @@ export default function Home() {
           .hero-main-stage {
             grid-template-columns: 1fr;
             text-align: center;
-            gap: 2rem;
+            gap: 2.2rem;
             min-height: auto;
           }
         }
@@ -303,44 +305,62 @@ export default function Home() {
 
         .hero-title-container {
           width: 100%;
-          max-width: 520px;
+          max-width: 640px;
+        }
+
+        @media (max-width: 1200px) {
+          .hero-title-container {
+            max-width: 560px;
+          }
         }
 
         @media (max-width: 992px) {
           .hero-title-container {
             margin: 0 auto;
-            max-width: 420px;
+            max-width: 480px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-title-container {
+            max-width: 410px;
           }
         }
 
         @media (max-width: 480px) {
           .hero-title-container {
-            max-width: 320px;
+            max-width: 350px;
           }
         }
 
         .hero-title-img {
           width: 100%;
-          max-height: 260px;
+          max-height: 330px;
           height: auto;
           object-fit: contain;
           object-position: left center;
           display: block;
-          filter: drop-shadow(0 0 30px rgba(251, 54, 64, 0.45));
+          filter: drop-shadow(0 0 35px rgba(251, 54, 64, 0.5));
           user-select: none;
         }
 
         @media (max-width: 992px) {
           .hero-title-img {
             object-position: center;
-            max-height: 220px;
+            max-height: 270px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-title-img {
+            max-height: 230px;
           }
         }
 
         @media (max-width: 480px) {
           .hero-title-img {
-            max-height: 170px;
-            filter: drop-shadow(0 0 18px rgba(251, 54, 64, 0.35));
+            max-height: 195px;
+            filter: drop-shadow(0 0 22px rgba(251, 54, 64, 0.4));
           }
         }
 
@@ -462,27 +482,30 @@ export default function Home() {
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 440px;
+          min-height: 460px;
         }
 
         @media (max-width: 992px) {
           .hero-character-col {
-            min-height: 320px;
+            min-height: 340px;
           }
         }
 
         @media (max-width: 640px) {
           .hero-character-col {
-            min-height: 220px;
+            min-height: 260px;
           }
         }
 
+        /* Ambient Wide Red Atmospheric Light - Never Cut Off */
         .char-glow-underlay {
           position: absolute;
-          width: 360px;
-          height: 360px;
-          background: radial-gradient(circle, rgba(251, 54, 64, 0.3) 0%, transparent 70%);
-          filter: blur(60px);
+          width: 150%;
+          height: 140%;
+          max-width: 680px;
+          max-height: 640px;
+          background: radial-gradient(ellipse at 52% 48%, rgba(251, 54, 64, 0.45) 0%, rgba(251, 54, 64, 0.25) 35%, rgba(251, 54, 64, 0.08) 60%, transparent 80%);
+          filter: blur(55px);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -490,12 +513,49 @@ export default function Home() {
           z-index: 1;
         }
 
+        @media (max-width: 992px) {
+          .char-glow-underlay {
+            width: 140%;
+            height: 130%;
+            max-width: 480px;
+            max-height: 450px;
+            filter: blur(45px);
+          }
+        }
+
         @media (max-width: 640px) {
           .char-glow-underlay {
-            width: 220px;
-            height: 220px;
-            filter: blur(40px);
-            opacity: 0.6;
+            width: 160%;
+            height: 150%;
+            max-width: 360px;
+            max-height: 360px;
+            filter: blur(35px);
+            opacity: 0.9;
+          }
+        }
+
+        /* Concentrated Red Rim Highlight Behind Neck and Visor */
+        .char-rim-glow {
+          position: absolute;
+          width: 60%;
+          height: 65%;
+          max-width: 270px;
+          max-height: 310px;
+          background: radial-gradient(ellipse at 65% 45%, rgba(251, 54, 64, 0.7) 0%, rgba(251, 54, 64, 0.3) 45%, transparent 75%);
+          filter: blur(28px);
+          top: 48%;
+          left: 52%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        @media (max-width: 640px) {
+          .char-rim-glow {
+            width: 80%;
+            height: 80%;
+            filter: blur(20px);
+            opacity: 0.95;
           }
         }
 
@@ -507,22 +567,23 @@ export default function Home() {
           object-fit: contain;
           z-index: 4;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.3)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
-          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
-          -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 85%, rgba(0, 0, 0, 0) 100%);
+          filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.35)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
+          /* Seamless 360-degree feathered vignette mask eliminating all straight boundary cuts */
+          mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
+          -webkit-mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
         }
 
         @media (max-width: 992px) {
           .hero-character-img {
-            max-width: 340px;
-            max-height: 360px;
+            max-width: 350px;
+            max-height: 370px;
           }
         }
 
         @media (max-width: 640px) {
           .hero-character-img {
-            max-width: 240px;
-            max-height: 260px;
+            max-width: 260px;
+            max-height: 280px;
           }
         }
 
