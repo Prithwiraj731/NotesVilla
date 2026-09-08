@@ -33,9 +33,36 @@ export default function Syllabus() {
     try {
       setLoading(true);
       setError('');
-      const res = await API.get('/syllabus');
-      const items = res.data?.syllabi || [];
-      setSyllabi(items);
+      try {
+        const res = await API.get('/syllabus');
+        const items = res.data?.syllabi || [];
+        setSyllabi(items);
+        return;
+      } catch (err) {
+        if (err.response?.status === 404 || err.message?.includes('404')) {
+          const notesRes = await API.get('/notes?limit=250');
+          const notesList = Array.isArray(notesRes.data) ? notesRes.data : (notesRes.data?.notes || []);
+          const syllabusNotes = notesList.filter(n => 
+            n.category === 'Syllabus' || 
+            /syllabus/i.test(n.title || '') || 
+            /syllabus/i.test(n.filename || '')
+          ).map(n => ({
+            _id: n._id || n.id,
+            id: n._id || n.id,
+            subjectName: n.subjectName,
+            title: n.title,
+            description: n.description || '',
+            fileUrl: n.fileUrl,
+            filename: n.filename,
+            fileType: n.fileType,
+            uploadedBy: n.uploadedBy || 'admin',
+            createdAt: n.createdAt
+          }));
+          setSyllabi(syllabusNotes);
+          return;
+        }
+        throw err;
+      }
     } catch (err) {
       console.error('Error fetching syllabus archive:', err);
       setError('Failed to load syllabus documents.');

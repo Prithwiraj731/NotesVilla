@@ -138,6 +138,7 @@ export default function Notes() {
     });
 
     notes.forEach(note => {
+      if (note.category === 'Syllabus') return;
       const sName = note.subjectName?.trim();
       if (sName) {
         if (!map[sName]) {
@@ -157,6 +158,7 @@ export default function Notes() {
   const currentSubjectNotes = useMemo(() => {
     if (!selectedSubject) return [];
     let list = notes.filter(n => n.subjectName?.toLowerCase() === selectedSubject.toLowerCase());
+    list = list.filter(n => n.category !== 'Syllabus');
 
     if (selectedCategory && selectedCategory !== 'All') {
       list = list.filter(n => resolveNoteCategory(n).toLowerCase() === selectedCategory.toLowerCase());

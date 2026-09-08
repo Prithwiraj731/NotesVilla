@@ -107,8 +107,37 @@ export default function AdminUpload() {
   const fetchSyllabi = async () => {
     try {
       setFetchingSyllabi(true);
-      const res = await API.get('/syllabus');
-      setSyllabi(res.data?.syllabi || []);
+      try {
+        const res = await API.get('/syllabus');
+        if (res.data?.syllabi) {
+          setSyllabi(res.data.syllabi);
+          return;
+        }
+      } catch (err) {
+        if (err.response?.status === 404 || err.message?.includes('404')) {
+          const notesRes = await API.get('/notes?limit=250');
+          const notesList = Array.isArray(notesRes.data) ? notesRes.data : (notesRes.data?.notes || []);
+          const syllabusNotes = notesList.filter(n => 
+            n.category === 'Syllabus' || 
+            /syllabus/i.test(n.title || '') || 
+            /syllabus/i.test(n.filename || '')
+          ).map(n => ({
+            _id: n._id || n.id,
+            id: n._id || n.id,
+            subjectName: n.subjectName,
+            title: n.title,
+            description: n.description || '',
+            fileUrl: n.fileUrl,
+            filename: n.filename,
+            fileType: n.fileType,
+            uploadedBy: n.uploadedBy || 'admin',
+            createdAt: n.createdAt
+          }));
+          setSyllabi(syllabusNotes);
+          return;
+        }
+        throw err;
+      }
     } catch (err) {
       console.error('Error fetching syllabi:', err);
     } finally {
@@ -322,9 +351,30 @@ export default function AdminUpload() {
       data.append('description', syllabusForm.description.trim());
       data.append('file', syllabusForm.file);
 
-      await API.post('/syllabus/upload', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      try {
+        await API.post('/syllabus/upload', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } catch (err) {
+        // Fallback if server hasn't deployed /syllabus routes yet
+        if (err.response?.status === 404 || err.message?.includes('404')) {
+          console.warn('⚠️ /syllabus/upload 404, using resilient /notes/upload-single fallback');
+          const fallbackData = new FormData();
+          fallbackData.append('subjectName', syllabusForm.subjectName.trim());
+          fallbackData.append('title', syllabusForm.title.trim() || `${syllabusForm.subjectName.trim()} Syllabus`);
+          fallbackData.append('category', 'Syllabus');
+          fallbackData.append('description', syllabusForm.description.trim() || 'Official Course Syllabus');
+          fallbackData.append('date', new Date().toISOString());
+          fallbackData.append('file', syllabusForm.file);
+          fallbackData.append('files', syllabusForm.file);
+
+          await API.post('/notes/upload-single', fallbackData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        } else {
+          throw err;
+        }
+      }
 
       setSuccess(`🎉 Successfully uploaded syllabus for ${syllabusForm.subjectName.trim()}!`);
       setSyllabusForm({
@@ -337,7 +387,7 @@ export default function AdminUpload() {
       fetchSubjects();
     } catch (err) {
       console.error('Syllabus upload error:', err);
-      const serverMsg = err.response?.data?.msg || err.message || 'Failed to upload syllabus';
+      const serverMsg = err.response?.data?.msg || err.response?.data?.error || err.message || 'Failed to upload syllabus';
       setError(serverMsg);
     } finally {
       setLoading(false);
@@ -354,7 +404,16 @@ export default function AdminUpload() {
     if (!syllabusToDelete) return;
     try {
       setLoading(true);
-      await API.delete(`/syllabus/${syllabusToDelete._id || syllabusToDelete.id}`);
+      const id = syllabusToDelete._id || syllabusToDelete.id;
+      try {
+        await API.delete(`/syllabus/${id}`);
+      } catch (err) {
+        if (err.response?.status === 404 || err.message?.includes('404')) {
+          await API.delete(`/notes/note/${id}`);
+        } else {
+          throw err;
+        }
+      }
       setSuccess('Syllabus document deleted successfully');
       setDeleteSyllabusModalOpen(false);
       setSyllabusToDelete(null);

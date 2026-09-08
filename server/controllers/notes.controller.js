@@ -74,7 +74,7 @@ exports.uploadNote = async (req, res) => {
       return res.status(400).json({ msg: 'Missing required subject name' });
     }
 
-    const validCategories = ['Theory', 'Lab', 'Suggestions'];
+    const validCategories = ['Theory', 'Lab', 'Suggestions', 'Syllabus'];
     const noteCategory = validCategories.includes(category) ? category : 'Theory';
     const noteDate = date ? new Date(date) : new Date();
 
@@ -201,7 +201,7 @@ exports.uploadSingleNote = async (req, res) => {
       return res.status(400).json({ msg: 'Missing required subject name' });
     }
 
-    const validCategories = ['Theory', 'Lab', 'Suggestions'];
+    const validCategories = ['Theory', 'Lab', 'Suggestions', 'Syllabus'];
     const noteCategory = validCategories.includes(category) ? category : 'Theory';
     const noteDate = date ? new Date(date) : new Date();
 
@@ -327,7 +327,7 @@ exports.listNotesBySubject = async (req, res) => {
       .select('*', { count: 'exact' })
       .eq('subject_name', subjectName);
     
-    if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+    if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
       query = query.eq('category', category);
     }
 
@@ -354,7 +354,7 @@ exports.listNotesBySubject = async (req, res) => {
     // Fallback to MongoDB
     if (mongoose.connection.readyState === 1) {
       const filter = { subjectName };
-      if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+      if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
         filter.category = category;
       }
       const total = await Note.countDocuments(filter);
@@ -408,7 +408,7 @@ exports.getAllNotes = async (req, res) => {
     if (subject && subject !== 'All') {
       query = query.eq('subject_name', subject);
     }
-    if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+    if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
       query = query.eq('category', category);
     }
 
@@ -438,7 +438,7 @@ exports.getAllNotes = async (req, res) => {
       if (subject && subject !== 'All') {
         filter.subjectName = subject;
       }
-      if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+      if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
         filter.category = category;
       }
       const total = await Note.countDocuments(filter);

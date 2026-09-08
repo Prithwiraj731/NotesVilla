@@ -4,7 +4,7 @@ const noteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   subjectName: { type: String, required: true }, // Store subject name directly
   date: { type: Date, default: Date.now },
-  category: { type: String, enum: ['Theory', 'Lab', 'Suggestions'], default: 'Theory' },
+  category: { type: String, enum: ['Theory', 'Lab', 'Suggestions', 'Syllabus'], default: 'Theory' },
   files: [{
     fileUrl: { type: String, required: true },
     filename: { type: String, required: true },
