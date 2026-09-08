@@ -45,14 +45,6 @@ export default function Footer() {
             <Layers size={15} />
             <span>Syllabus</span>
           </Link>
-
-          <Link
-            to="/practice"
-            className="footer-nav-link"
-          >
-            <HelpCircle size={15} />
-            <span>Practice</span>
-          </Link>
         </div>
       </div>
 

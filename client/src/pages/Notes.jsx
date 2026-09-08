@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
@@ -7,23 +7,23 @@ import {
   Search, 
   Download, 
   Share2, 
-  Calendar, 
   BookOpen, 
   FileText, 
-  Grid, 
-  List, 
   Eye, 
   X, 
   Check,
   Image as ImageIcon,
   ExternalLink,
-  Maximize2,
-  Minimize2,
-  ChevronDown,
-  ChevronRight,
+  Layers,
+  ArrowLeft,
+  ArrowRight,
+  FlaskConical,
+  HelpCircle,
   FolderOpen,
   Sparkles,
-  Layers
+  RefreshCw,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -57,43 +57,44 @@ function getNoteFileType(note) {
 export default function Notes() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [subjects, setSubjects] = useState([]);
+
+  const [rawSubjects, setRawSubjects] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [filteredNotes, setFilteredNotes] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('timeline'); // 'timeline' | 'grid' | 'list'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // Collapsed state for subject sections (all expanded by default)
-  const [collapsedSubjects, setCollapsedSubjects] = useState({});
+
+  // Selected subject: null means showing Subject Directory; otherwise subject string
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('All'); // 'All' | 'Theory' | 'Lab' | 'Suggestions'
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Preview modal state
   const [previewNote, setPreviewNote] = useState(null);
   const [modalFullscreen, setModalFullscreen] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
+  // Initial load
   useEffect(() => {
     loadSubjects();
     loadAllNotes();
-    
+  }, []);
+
+  // Sync selectedSubject with URL query param ?subject=...
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const subjectParam = params.get('subject');
-    if (subjectParam) {
-      setSelectedSubject(subjectParam);
+    if (subjectParam && subjectParam.trim()) {
+      setSelectedSubject(subjectParam.trim());
+    } else {
+      setSelectedSubject(null);
     }
   }, [location.search]);
-
-  useEffect(() => {
-    filterNotes();
-  }, [notes, selectedSubject, searchTerm]);
 
   const loadSubjects = async () => {
     try {
       const r = await API.get('/notes/subjects');
       if (Array.isArray(r.data)) {
-        setSubjects(r.data);
+        setRawSubjects(r.data.map(s => (typeof s === 'string' ? s : (s.name || s.subjectName || ''))).filter(Boolean));
       }
     } catch (err) {
       console.error('Error loading subjects:', err);
@@ -104,1054 +105,888 @@ export default function Notes() {
     try {
       setLoading(true);
       setError('');
-      const r = await API.get('/notes?limit=150');
-
-      if (r.data && r.data.notes && Array.isArray(r.data.notes)) {
-        const sorted = r.data.notes.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setNotes(sorted);
-      } else if (Array.isArray(r.data)) {
-        const sorted = r.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setNotes(sorted);
-      }
+      const r = await API.get('/notes?limit=250');
+      const dataNotes = Array.isArray(r.data) ? r.data : (r.data?.notes || []);
+      setNotes(dataNotes);
     } catch (err) {
       console.error('Error loading notes:', err);
-      setError('Could not load notes. Please verify connection.');
+      setError('Could not load notes. Please check connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  const filterNotes = () => {
-    let filtered = notes;
+  // Dynamically compute subjects from both subjects endpoint and notes in DB
+  // This guarantees ANY note uploaded with a new subject automatically creates that subject here!
+  const allSubjects = useMemo(() => {
+    const set = new Set();
+    rawSubjects.forEach(s => s && set.add(s.trim()));
+    notes.forEach(n => {
+      if (n.subjectName && n.subjectName.trim()) {
+        set.add(n.subjectName.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [rawSubjects, notes]);
 
-    if (selectedSubject && selectedSubject !== 'All') {
-      filtered = filtered.filter(note => 
-        note.subjectName?.toLowerCase() === selectedSubject.toLowerCase()
-      );
+  // Aggregate stats per subject (total notes, theory, lab, suggestions)
+  const subjectStats = useMemo(() => {
+    const map = {};
+    allSubjects.forEach(s => {
+      map[s] = { total: 0, theory: 0, lab: 0, suggestions: 0 };
+    });
+
+    notes.forEach(note => {
+      const sName = note.subjectName?.trim();
+      if (sName) {
+        if (!map[sName]) {
+          map[sName] = { total: 0, theory: 0, lab: 0, suggestions: 0 };
+        }
+        map[sName].total += 1;
+        const cat = (note.category || 'Theory').toLowerCase();
+        if (cat === 'lab') map[sName].lab += 1;
+        else if (cat === 'suggestions') map[sName].suggestions += 1;
+        else map[sName].theory += 1;
+      }
+    });
+    return map;
+  }, [allSubjects, notes]);
+
+  // Notes filtered by selected subject, category, and search query
+  const currentSubjectNotes = useMemo(() => {
+    if (!selectedSubject) return [];
+    let list = notes.filter(n => n.subjectName?.toLowerCase() === selectedSubject.toLowerCase());
+
+    if (selectedCategory && selectedCategory !== 'All') {
+      list = list.filter(n => (n.category || 'Theory').toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
-      filtered = filtered.filter(note =>
-        note.title?.toLowerCase().includes(q) ||
-        note.subjectName?.toLowerCase().includes(q) ||
-        note.date?.includes(q)
+      list = list.filter(n => 
+        n.title?.toLowerCase().includes(q) ||
+        n.filename?.toLowerCase().includes(q)
       );
     }
 
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-    setFilteredNotes(filtered);
+    // Sort by createdAt descending
+    return list.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+  }, [notes, selectedSubject, selectedCategory, searchTerm]);
+
+  // Filtered subjects for Subject Directory view
+  const filteredSubjects = useMemo(() => {
+    if (!searchTerm.trim()) return allSubjects;
+    const q = searchTerm.toLowerCase();
+    return allSubjects.filter(s => s.toLowerCase().includes(q));
+  }, [allSubjects, searchTerm]);
+
+  const handleSelectSubject = (subj) => {
+    setSelectedSubject(subj);
+    setSelectedCategory('All');
+    setSearchTerm('');
+    navigate(`/notes?subject=${encodeURIComponent(subj)}`, { replace: false });
   };
 
-  const handleSubjectChange = (subj) => {
-    setSelectedSubject(subj);
-    if (subj === 'All') {
-      navigate('/notes', { replace: true });
-    } else {
-      navigate(`/notes?subject=${encodeURIComponent(subj)}`, { replace: true });
+  const handleBackToSubjects = () => {
+    setSelectedSubject(null);
+    setSelectedCategory('All');
+    setSearchTerm('');
+    navigate('/notes', { replace: false });
+  };
+
+  // Download single note files
+  const handleDownload = async (note) => {
+    try {
+      if (note.files && note.files.length > 1) {
+        const filesToDownload = note.files.map(f => ({
+          fileUrl: f.fileUrl,
+          filename: f.originalName || f.filename || 'download'
+        }));
+        await downloadMultipleFiles(filesToDownload, {
+          staggerDelay: 600,
+          retryAttempts: 2,
+          timeout: 45000,
+          enableLogging: true
+        });
+        return;
+      }
+
+      const fileUrl = note.fileUrl || (note.files && note.files[0]?.fileUrl);
+      const filename = note.originalName || note.filename || (note.files && note.files[0]?.originalName) || `${note.title || 'note'}.pdf`;
+
+      if (fileUrl) {
+        await downloadFile(fileUrl, filename, {
+          enableLogging: true,
+          retryAttempts: 2,
+          timeout: 45000
+        });
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Download error occurred. Please try again.');
     }
   };
 
-  const toggleSubjectCollapse = (subjName) => {
-    setCollapsedSubjects(prev => ({
-      ...prev,
-      [subjName]: !prev[subjName]
-    }));
-  };
-
-  const shareNote = async (note, e) => {
-    if (e) e.stopPropagation();
-    const shareUrl = `${window.location.origin}/note/${note._id}`;
-    
+  // Copy share link
+  const handleShare = async (note, e) => {
+    e.stopPropagation();
+    const noteUrl = `${window.location.origin}/note/${note._id || note.id}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: note.title,
-          text: `Study Notes: ${note.title} (${note.subjectName})`,
-          url: shareUrl
+          url: noteUrl
         });
       } catch (err) {
-        console.log('Share dismissed');
+        console.log('Share cancelled');
       }
     } else {
       try {
-        await navigator.clipboard.writeText(shareUrl);
-        setCopiedId(note._id);
+        await navigator.clipboard.writeText(noteUrl);
+        setCopiedId(note._id || note.id);
         setTimeout(() => setCopiedId(null), 2500);
       } catch (err) {
-        console.error('Failed to copy');
+        console.error('Failed to copy link');
       }
     }
   };
 
-  const handleDownload = async (note, e) => {
-    if (e) e.stopPropagation();
-    try {
-      if (note.files && note.files.length > 1) {
-        const files = note.files.map(f => ({
-          fileUrl: f.fileUrl,
-          filename: f.originalName || f.filename || 'download'
-        }));
-        await downloadMultipleFiles(files, {
-          staggerDelay: 500,
-          retryAttempts: 2,
-          timeout: 45000
-        });
-        return;
-      }
-
-      const fileUrl = note.files && note.files.length > 0 ? note.files[0].fileUrl : note.fileUrl;
-      const filename = note.files && note.files.length > 0
-        ? (note.files[0].originalName || note.files[0].filename || 'download')
-        : (note.originalName || note.filename || 'download');
-
-      if (!fileUrl) {
-        alert('File URL not found');
-        return;
-      }
-
-      const ok = await downloadFile(fileUrl, filename, {
-        enableLogging: true,
-        retryAttempts: 2,
-        timeout: 45000
-      });
-
-      if (!ok) alert('Download failed. Opening in new tab...');
-    } catch (err) {
-      console.error('Download error:', err);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    const d = new Date(dateString);
-    return {
-      month: d.toLocaleDateString('en-US', { month: 'short' }),
-      day: d.toLocaleDateString('en-US', { day: '2-digit' }),
-      year: d.getFullYear(),
-      full: d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
-    };
-  };
-
-  // ──────────────────────────────────────────────────────────
-  // Hierarchical Grouping: Subject-Wise -> Date-Wise
-  // ──────────────────────────────────────────────────────────
-  const subjectGroups = filteredNotes.reduce((acc, note) => {
-    const subj = note.subjectName || 'General Notes';
-    if (!acc[subj]) {
-      acc[subj] = {
-        subjectName: subj,
-        notes: [],
-        dates: {}
+  // Category pill style helper
+  const getCategoryStyle = (category) => {
+    const cat = (category || 'Theory').toLowerCase();
+    if (cat === 'lab') {
+      return {
+        bg: 'rgba(59, 130, 246, 0.12)',
+        border: 'rgba(59, 130, 246, 0.35)',
+        color: '#60a5fa',
+        icon: FlaskConical,
+        label: 'Lab Note'
       };
     }
-    acc[subj].notes.push(note);
-
-    const dateKey = new Date(note.date).toISOString().split('T')[0];
-    if (!acc[subj].dates[dateKey]) {
-      acc[subj].dates[dateKey] = [];
+    if (cat === 'suggestions') {
+      return {
+        bg: 'rgba(168, 85, 247, 0.12)',
+        border: 'rgba(168, 85, 247, 0.35)',
+        color: '#c084fc',
+        icon: HelpCircle,
+        label: 'Suggestions / PYQ'
+      };
     }
-    acc[subj].dates[dateKey].push(note);
-
-    return acc;
-  }, {});
-
-  // Distinct subjects list for top carousel
-  const allSubjectNames = [
-    'All',
-    ...new Set([
-      ...subjects.map(s => s.name),
-      ...notes.map(n => n.subjectName).filter(Boolean)
-    ])
-  ];
-
-  // ──────────────────────────────────────────────
-  // Note Card Component
-  // ──────────────────────────────────────────────
-  const NoteCard = ({ note, showDate = false }) => {
-    const noteType = getNoteFileType(note);
-    const isImage = noteType === 'image';
-    const dateInfo = formatDate(note.date);
-    const imageUrl = isImage 
-      ? (note.files && note.files.length > 0 ? note.files[0].fileUrl : note.fileUrl) 
-      : null;
-
-    return (
-      <div
-        className="cyber-panel"
-        style={{
-          borderRadius: '8px',
-          overflow: 'hidden',
-          border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)'}`,
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'all 0.3s ease',
-          cursor: 'pointer',
-          background: 'rgba(0, 15, 8, 0.85)'
-        }}
-        onClick={() => setPreviewNote(note)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = isImage ? '#10B981' : 'var(--accent-orange)';
-          e.currentTarget.style.transform = 'translateY(-3px)';
-          e.currentTarget.style.boxShadow = `0 8px 25px ${isImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(251, 54, 64, 0.18)'}`;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = isImage ? 'rgba(16, 185, 129, 0.2)' : 'rgba(251, 54, 64, 0.2)';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        {/* Image thumbnail header if it's an image note */}
-        {isImage && imageUrl && (
-          <div style={{
-            width: '100%',
-            height: '160px',
-            overflow: 'hidden',
-            background: 'rgba(0, 5, 2, 0.8)',
-            position: 'relative'
-          }}>
-            <img 
-              src={imageUrl} 
-              alt={note.title}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-            <div style={{
-              position: 'absolute',
-              top: '0.5rem',
-              right: '0.5rem',
-              background: 'rgba(16, 185, 129, 0.95)',
-              color: '#fff',
-              padding: '0.15rem 0.5rem',
-              borderRadius: '4px',
-              fontSize: '0.7rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-tech)'
-            }}>
-              📸 IMAGE
-            </div>
-          </div>
-        )}
-
-        <div style={{ padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
-          <div>
-            {/* Meta Tags Row */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '0.8rem',
-              flexWrap: 'wrap',
-              gap: '0.5rem'
-            }}>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <span style={{
-                  background: isImage ? 'rgba(16, 185, 129, 0.12)' : 'rgba(251, 54, 64, 0.12)',
-                  border: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.3)' : 'rgba(251, 54, 64, 0.3)'}`,
-                  color: isImage ? '#10B981' : 'var(--accent-orange)',
-                  fontFamily: 'var(--font-tech)',
-                  fontSize: '0.78rem',
-                  fontWeight: '700',
-                  padding: '0.15rem 0.55rem',
-                  borderRadius: '4px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.3rem'
-                }}>
-                  {isImage ? <ImageIcon size={12} /> : <FileText size={12} />}
-                  <span>{isImage ? 'IMAGE NOTE' : 'DOCUMENT'}</span>
-                </span>
-
-                {note.files && note.files.length > 1 && (
-                  <span style={{
-                    color: 'var(--text-muted)',
-                    fontFamily: 'var(--font-tech)',
-                    fontSize: '0.8rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    <Layers size={12} />
-                    {note.files.length} Files
-                  </span>
-                )}
-              </div>
-
-              {showDate && (
-                <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.85rem' }}>
-                  📅 {dateInfo.full}
-                </span>
-              )}
-            </div>
-
-            {/* Note Title */}
-            <h3 style={{
-              fontFamily: 'var(--font-tech)',
-              fontSize: '1.2rem',
-              fontWeight: '700',
-              color: '#ffffff',
-              margin: '0 0 0.8rem',
-              lineHeight: '1.35',
-              wordBreak: 'break-word'
-            }}>
-              {note.title}
-            </h3>
-          </div>
-
-          {/* Action Buttons */}
-          <div style={{
-            display: 'flex',
-            gap: '0.6rem',
-            alignItems: 'center',
-            paddingTop: '0.8rem',
-            borderTop: `1px solid ${isImage ? 'rgba(16, 185, 129, 0.12)' : 'rgba(251, 54, 64, 0.12)'}`
-          }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setPreviewNote(note); }}
-              className="cyber-btn-wire"
-              style={{ flex: '1.2', padding: '0.45rem 0.6rem', fontSize: '0.82rem', justifyContent: 'center' }}
-            >
-              <Eye size={13} /> Preview
-            </button>
-
-            <button
-              onClick={(e) => handleDownload(note, e)}
-              className="cyber-btn-orange"
-              style={{
-                flex: '1',
-                padding: '0.45rem 0.6rem',
-                fontSize: '0.82rem',
-                justifyContent: 'center',
-                clipPath: 'none',
-                borderRadius: '4px'
-              }}
-            >
-              <Download size={13} /> Download
-            </button>
-
-            <button
-              onClick={(e) => shareNote(note, e)}
-              className="cyber-btn-wire"
-              style={{ padding: '0.45rem 0.6rem' }}
-              title="Share Link"
-            >
-              {copiedId === note._id ? <Check size={13} style={{ color: '#10B981' }} /> : <Share2 size={13} />}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      bg: 'rgba(16, 185, 129, 0.12)',
+      border: 'rgba(16, 185, 129, 0.35)',
+      color: '#10b981',
+      icon: BookOpen,
+      label: 'Theory Note'
+    };
   };
 
   return (
     <div className="notes-page-container">
-      {/* ─── PAGE HEADER ─────────────────────────────────────── */}
-      <div className="notes-header-wrapper">
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'rgba(251, 54, 64, 0.08)',
-          border: '1px solid rgba(251, 54, 64, 0.25)',
-          borderRadius: '4px',
-          padding: '0.35rem 1rem',
-          marginBottom: '0.8rem'
-        }}>
-          <BookOpen size={15} style={{ color: 'var(--accent-orange)' }} />
-          <span style={{
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-tech)',
-            fontWeight: '700',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            fontSize: '0.82rem'
+      <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+
+        {/* ─── BREADCRUMB / HEADER ─────────────────────────────── */}
+        <div className="notes-header-block">
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(251, 54, 64, 0.08)',
+            border: '1px solid rgba(251, 54, 64, 0.3)',
+            borderRadius: '30px',
+            padding: '0.35rem 1.1rem',
+            marginBottom: '0.85rem'
           }}>
-            Subject-Wise & Date-Wise Repository
-          </span>
+            <Sparkles size={14} style={{ color: 'var(--accent-orange)' }} />
+            <span style={{
+              fontFamily: 'var(--font-body)',
+              fontWeight: '700',
+              color: '#ffffff',
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase'
+            }}>
+              Academic Knowledge Archive
+            </span>
+          </div>
+
+          <h1 className="notes-main-title">
+            {selectedSubject ? selectedSubject.toUpperCase() : 'COURSE NOTES ARCHIVE'}
+          </h1>
         </div>
 
-        <h1 style={{
-          fontSize: 'clamp(1.8rem, 4.5vw, 3.4rem)',
-          fontWeight: '900',
-          fontFamily: 'var(--font-cyber)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.02em',
-          background: 'linear-gradient(135deg, #ffffff 30%, var(--accent-orange) 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          margin: '0 0 0.8rem',
-          lineHeight: '1.2'
-        }}>
-          ACADEMIC NOTES LIBRARY
-        </h1>
-        <p style={{
-          color: 'var(--text-secondary)',
-          fontFamily: 'var(--font-body)',
-          fontSize: '0.95rem',
-          maxWidth: '700px',
-          margin: '0 auto',
-          lineHeight: '1.55'
-        }}>
-          Browse notes systematically organized by course subjects, followed by chronological lecture dates in continuity.
-        </p>
-      </div>
-
-      {/* ─── SUBJECT FILTER PILLS CAROUSEL ──────────────────── */}
-      <div className="notes-subject-carousel hide-scrollbar touch-scroll">
-        {allSubjectNames.map((subj, idx) => {
-          const isSelected = selectedSubject === subj;
-          const count = subj === 'All' 
-            ? notes.length 
-            : notes.filter(n => n.subjectName?.toLowerCase() === subj.toLowerCase()).length;
-          
-          return (
-            <button
-              key={idx}
-              onClick={() => handleSubjectChange(subj)}
-              className="cyber-panel"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                border: isSelected ? '1px solid var(--accent-orange)' : '1px solid rgba(251, 54, 64, 0.15)',
-                background: isSelected ? 'rgba(251, 54, 64, 0.15)' : 'rgba(0, 15, 8, 0.6)',
-                color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                fontFamily: 'var(--font-tech)',
-                fontSize: '0.88rem',
-                fontWeight: isSelected ? '700' : '500',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-                boxShadow: isSelected ? '0 0 12px rgba(251, 54, 64, 0.25)' : 'none',
-                flexShrink: 0
-              }}
-            >
-              <BookOpen size={13} style={{ color: isSelected ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
-              <span>{subj}</span>
-              <span style={{
-                background: isSelected ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.1)',
-                color: isSelected ? '#000000' : 'var(--accent-orange)',
-                borderRadius: '10px',
-                padding: '0.1rem 0.4rem',
-                fontSize: '0.72rem',
-                fontWeight: '700'
-              }}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ─── SEARCH & VIEW SWITCHER ─────────────────────────── */}
-      <div 
-        className="cyber-panel notes-toolbar-panel"
-      >
-        <div className="notes-toolbar-inner">
-          {/* Search Bar */}
-          <div className="notes-search-wrapper">
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-            <input
-              type="text"
-              placeholder="Search by topic, subject, or lecture date..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="search-input-with-icon"
-              style={{
-                width: '100%',
-                fontFamily: 'var(--font-tech)',
-                fontSize: '0.95rem'
-              }}
-            />
-          </div>
-
-          {/* View Mode Switcher */}
-          <div className="notes-view-switcher">
-            <button
-              onClick={() => setViewMode('timeline')}
-              className="cyber-btn-wire view-toggle-btn"
-              style={{
-                borderColor: viewMode === 'timeline' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
-                color: viewMode === 'timeline' ? 'var(--accent-orange)' : 'var(--text-secondary)',
-                background: viewMode === 'timeline' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
-              }}
-            >
-              <Calendar size={14} />
-              <span className="view-btn-text-full">Subject Timeline</span>
-              <span className="view-btn-text-short">Timeline</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('grid')}
-              className="cyber-btn-wire view-toggle-btn"
-              style={{
-                borderColor: viewMode === 'grid' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
-                color: viewMode === 'grid' ? 'var(--accent-orange)' : 'var(--text-secondary)',
-                background: viewMode === 'grid' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
-              }}
-            >
-              <Grid size={14} />
-              <span className="view-btn-text-full">Grid View</span>
-              <span className="view-btn-text-short">Grid</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('list')}
-              className="cyber-btn-wire view-toggle-btn"
-              style={{
-                borderColor: viewMode === 'list' ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.2)',
-                color: viewMode === 'list' ? 'var(--accent-orange)' : 'var(--text-secondary)',
-                background: viewMode === 'list' ? 'rgba(251, 54, 64, 0.1)' : 'transparent'
-              }}
-            >
-              <List size={14} />
-              <span className="view-btn-text-full">List View</span>
-              <span className="view-btn-text-short">List</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── MAIN CONTENT: SUBJECT-WISE & DATE-WISE SECTIONS ── */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto 4rem' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '5rem 0', color: 'var(--text-secondary)' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid rgba(251, 54, 64, 0.2)',
-              borderTop: '3px solid var(--accent-orange)',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 1.5rem'
-            }} />
-            <p style={{ fontFamily: 'var(--font-tech)', fontSize: '1.2rem', letterSpacing: '0.05em' }}>ORGANIZING SUBJECTS & DATES...</p>
-          </div>
-        ) : Object.keys(subjectGroups).length === 0 ? (
-          <div 
-            className="cyber-panel"
-            style={{
-              textAlign: 'center',
-              padding: '4rem 2rem',
-              borderRadius: '8px',
-              color: 'var(--text-secondary)'
-            }}
-          >
-            <FileText size={48} style={{ margin: '0 auto 1rem', color: 'var(--text-muted)' }} />
-            <h3 style={{ fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', color: '#fff', marginBottom: '0.5rem' }}>NO NOTES RECORDED FOR THIS SELECTION</h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
-              {selectedSubject !== 'All' 
-                ? `No notes uploaded yet for ${selectedSubject}.` 
-                : 'No notes match your active search terms.'}
-            </p>
-          </div>
-        ) : (
-          /* Render Each Subject Group */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5rem' }}>
-            {Object.keys(subjectGroups).map((subjName) => {
-              const group = subjectGroups[subjName];
-              const isCollapsed = !!collapsedSubjects[subjName];
-              const totalLectures = group.notes.length;
-              const dateKeys = Object.keys(group.dates);
-
-              return (
-                <div key={subjName} style={{ position: 'relative' }}>
-                  {/* ─── SUBJECT HEADER BANNER ──────────────────────── */}
-                  <div 
-                    className="cyber-panel notes-subject-banner"
-                    style={{
-                      marginBottom: isCollapsed ? '0' : '1.5rem',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => toggleSubjectCollapse(subjName)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '8px',
-                        background: 'rgba(251, 54, 64, 0.12)',
-                        border: '1px solid rgba(251, 54, 64, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--accent-orange)',
-                        flexShrink: 0
-                      }}>
-                        <BookOpen size={18} />
-                      </div>
-
-                      <div>
-                        <h2 style={{
-                          fontFamily: 'var(--font-cyber)',
-                          fontSize: 'clamp(1.1rem, 3vw, 1.45rem)',
-                          color: '#ffffff',
-                          margin: '0 0 0.15rem 0',
-                          letterSpacing: '0.03em',
-                          lineHeight: '1.3'
-                        }}>
-                          {subjName}
-                        </h2>
-                        <div style={{
-                          color: 'var(--text-muted)',
-                          fontFamily: 'var(--font-tech)',
-                          fontSize: '0.82rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          flexWrap: 'wrap'
-                        }}>
-                          <span>{totalLectures} {totalLectures === 1 ? 'Lecture Note' : 'Lecture Notes'}</span>
-                          <span>•</span>
-                          <span>{dateKeys.length} {dateKeys.length === 1 ? 'Active Date' : 'Lecture Dates'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSubjectChange(subjName);
-                        }}
-                        className="cyber-btn-wire"
-                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
-                      >
-                        Focus Subject
-                      </button>
-
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '6px',
-                        background: 'rgba(251, 54, 64, 0.08)',
-                        border: '1px solid rgba(251, 54, 64, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--accent-orange)',
-                        flexShrink: 0
-                      }}>
-                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ─── DATE-WISE LECTURES UNDER THIS SUBJECT ─────── */}
-                  {!isCollapsed && (
-                    <>
-                      {viewMode === 'timeline' ? (
-                        /* === 1. TIMELINE: Date-wise continuity inside this subject === */
-                        <div className="notes-timeline-container">
-                          {/* Subject Vertical Timeline Spine */}
-                          <div className="notes-timeline-spine" />
-
-                          {dateKeys.map((dateKey) => {
-                            const notesOnDate = group.dates[dateKey];
-                            const dateInfo = formatDate(dateKey);
-
-                            return (
-                              <div key={dateKey} style={{ marginBottom: '2.2rem', position: 'relative' }}>
-                                {/* Date Marker & Node */}
-                                <div className="notes-date-marker-row">
-                                  {/* Glowing Timeline Dot */}
-                                  <div className="notes-timeline-dot" />
-
-                                  {/* Date Badge */}
-                                  <div className="notes-date-badge">
-                                    <Calendar size={14} style={{ color: 'var(--accent-orange)' }} />
-                                    <span style={{
-                                      color: '#ffffff',
-                                      fontFamily: 'var(--font-cyber)',
-                                      fontSize: '0.88rem',
-                                      fontWeight: '700',
-                                      letterSpacing: '0.03em'
-                                    }}>
-                                      {dateInfo.full}
-                                    </span>
-                                    <span style={{
-                                      color: 'var(--accent-orange)',
-                                      fontFamily: 'var(--font-tech)',
-                                      fontSize: '0.78rem',
-                                      fontWeight: '700'
-                                    }}>
-                                      ({notesOnDate.length} {notesOnDate.length === 1 ? 'Lecture' : 'Lectures'})
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Lecture Cards Grid for this Date */}
-                                <div className="notes-card-grid">
-                                  {notesOnDate.map((note) => (
-                                    <NoteCard key={note._id} note={note} />
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        /* === 2. GRID / LIST: Date-sorted cards for this subject === */
-                        <div className={viewMode === 'grid' ? 'notes-card-grid' : 'notes-card-list'}>
-                          {group.notes.map((note) => (
-                            <NoteCard key={note._id} note={note} showDate={true} />
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ─── IN-WEBSITE INTERACTIVE DOCUMENT & PDF PREVIEW MODAL ─── */}
-      {previewNote && (() => {
-        const attachedFiles = (previewNote.files && previewNote.files.length > 0)
-          ? previewNote.files
-          : [{
-              fileUrl: previewNote.fileUrl,
-              filename: previewNote.filename,
-              originalName: previewNote.originalName || previewNote.filename || previewNote.title,
-              fileType: previewNote.fileType
-            }];
-
-        return (
-          <div 
-            className="notes-modal-overlay"
-            onClick={() => setPreviewNote(null)}
-          >
-            <div 
-              className={`notes-modal-wrapper ${modalFullscreen ? 'modal-fullscreen' : ''}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Top Header Bar */}
-              <div className="notes-modal-header">
-                <div style={{ flex: 1, minWidth: '180px' }}>
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
-                    <span style={{
-                      background: 'var(--accent-orange)',
-                      color: '#000',
-                      fontFamily: 'var(--font-cyber)',
-                      fontSize: '0.72rem',
-                      fontWeight: '900',
-                      padding: '0.12rem 0.45rem',
-                      borderRadius: '4px'
-                    }}>
-                      {previewNote.subjectName}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-tech)', fontSize: '0.8rem' }}>
-                      📅 {new Date(previewNote.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-
-                  <h2 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: 'clamp(1rem, 2.5vw, 1.25rem)', margin: 0, letterSpacing: '0.02em', lineHeight: '1.3' }}>
-                    {previewNote.title}
-                  </h2>
-                </div>
-
-                {/* Header Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <button
-                    onClick={(e) => shareNote(previewNote, e)}
-                    className="cyber-btn-wire"
-                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                    title="Share Note Link"
-                  >
-                    {copiedId === previewNote._id ? <Check size={13} style={{ color: '#10B981' }} /> : <Share2 size={13} />}
-                    <span className="modal-btn-label">Share</span>
-                  </button>
-
-                  <button
-                    onClick={() => setModalFullscreen(prev => !prev)}
-                    className="cyber-btn-wire"
-                    style={{ padding: '0.35rem 0.55rem', fontSize: '0.78rem' }}
-                    title={modalFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen'}
-                  >
-                    {modalFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-                  </button>
-
-                  <button
-                    onClick={() => setPreviewNote(null)}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.4)',
-                      borderRadius: '6px',
-                      color: '#ef4444',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      flexShrink: 0
-                    }}
-                    title="Close Viewer"
-                  >
-                    <X size={17} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Embedded Interactive DocViewer Component */}
-              <div style={{ flex: 1, height: 'calc(100% - 60px)', overflow: 'hidden' }}>
-                <DocViewer
-                  files={attachedFiles}
-                  title={previewNote.title}
-                  onClose={() => setPreviewNote(null)}
-                  isFullscreenMode={modalFullscreen}
+        {/* ──────────────────────────────────────────────────────────
+            VIEW 1: ALL SUBJECTS DIRECTORY (When no subject is chosen)
+            ────────────────────────────────────────────────────────── */}
+        {!selectedSubject ? (
+          <div className="subjects-directory-view">
+            {/* Search Bar for Subjects */}
+            <div className="notes-search-wrapper" style={{ marginBottom: '2.5rem' }}>
+              <div className="notes-search-box">
+                <Search size={18} style={{ color: 'var(--accent-orange)', opacity: 0.8 }} />
+                <input
+                  type="text"
+                  placeholder="Search subjects or courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="notes-search-input"
                 />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="notes-search-clear">
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             </div>
+
+            {loading ? (
+              <div className="notes-loading-state">
+                <RefreshCw size={28} className="spin-animate" style={{ margin: '0 auto 1rem', color: 'var(--accent-orange)' }} />
+                <div>Loading academic subjects...</div>
+              </div>
+            ) : filteredSubjects.length === 0 ? (
+              <div className="cyber-panel notes-empty-panel">
+                <FolderOpen size={48} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.6 }} />
+                <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                  NO SUBJECTS FOUND
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  {searchTerm ? `No subjects match "${searchTerm}".` : 'No subjects available yet. Upload notes from the admin portal to get started.'}
+                </p>
+              </div>
+            ) : (
+              <div className="subjects-cards-grid">
+                {filteredSubjects.map((subj, idx) => {
+                  const stats = subjectStats[subj] || { total: 0, theory: 0, lab: 0, suggestions: 0 };
+                  return (
+                    <div
+                      key={idx}
+                      className="cyber-panel subject-card-item"
+                      onClick={() => handleSelectSubject(subj)}
+                    >
+                      <div className="subject-card-top">
+                        <div className="subject-icon-box">
+                          <Layers size={22} />
+                        </div>
+                        <span className="subject-total-badge">
+                          {stats.total} {stats.total === 1 ? 'Resource' : 'Resources'}
+                        </span>
+                      </div>
+
+                      <h3 className="subject-card-title">
+                        {subj}
+                      </h3>
+
+                      {/* Bifurcated category badges preview */}
+                      <div className="subject-pills-row">
+                        <span className="category-pill-preview theory-pill">
+                          Theory: <strong>{stats.theory}</strong>
+                        </span>
+                        <span className="category-pill-preview lab-pill">
+                          Lab: <strong>{stats.lab}</strong>
+                        </span>
+                        <span className="category-pill-preview suggestions-pill">
+                          Suggestions: <strong>{stats.suggestions}</strong>
+                        </span>
+                      </div>
+
+                      <div className="subject-card-footer">
+                        <span className="subject-card-cta">
+                          Open Subject
+                        </span>
+                        <ArrowRight size={16} className="subject-arrow-icon" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        );
-      })()}
+        ) : (
+          /* ──────────────────────────────────────────────────────────
+             VIEW 2: SUBJECT DRILLDOWN VIEW (Theory / Lab / Suggestions)
+             ────────────────────────────────────────────────────────── */
+          <div className="subject-drilldown-view">
+            
+            {/* Back to Subjects Navigation */}
+            <div className="subject-drilldown-nav">
+              <button
+                onClick={handleBackToSubjects}
+                className="cyber-btn-wire drilldown-back-btn"
+              >
+                <ArrowLeft size={16} />
+                <span>All Subjects</span>
+              </button>
+
+              <div className="subject-breadcrumb">
+                <span style={{ color: 'var(--text-muted)' }}>Library</span>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>{selectedSubject}</span>
+              </div>
+            </div>
+
+            {/* Category Bifurcation Tabs */}
+            <div className="category-tabs-bar">
+              {[
+                { key: 'All', label: 'All Materials', icon: Layers, count: subjectStats[selectedSubject]?.total || 0 },
+                { key: 'Theory', label: 'Theory Notes', icon: BookOpen, count: subjectStats[selectedSubject]?.theory || 0 },
+                { key: 'Lab', label: 'Lab Notes', icon: FlaskConical, count: subjectStats[selectedSubject]?.lab || 0 },
+                { key: 'Suggestions', label: 'Suggestions / PYQ', icon: HelpCircle, count: subjectStats[selectedSubject]?.suggestions || 0 }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = selectedCategory === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setSelectedCategory(tab.key)}
+                    className={`category-tab-btn ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon size={15} />
+                    <span>{tab.label}</span>
+                    <span className={`category-tab-count ${isActive ? 'active-count' : ''}`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* In-Subject Search Bar */}
+            <div className="notes-search-wrapper" style={{ marginBottom: '2rem' }}>
+              <div className="notes-search-box">
+                <Search size={18} style={{ color: 'var(--accent-orange)', opacity: 0.8 }} />
+                <input
+                  type="text"
+                  placeholder={`Search ${selectedSubject} notes...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="notes-search-input"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="notes-search-clear">
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Notes List for Subject & Category */}
+            {loading ? (
+              <div className="notes-loading-state">
+                <RefreshCw size={28} className="spin-animate" style={{ margin: '0 auto 1rem', color: 'var(--accent-orange)' }} />
+                <div>Loading notes...</div>
+              </div>
+            ) : currentSubjectNotes.length === 0 ? (
+              <div className="cyber-panel notes-empty-panel">
+                <FileText size={46} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.6 }} />
+                <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                  NO NOTES IN THIS CATEGORY
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.5rem', lineHeight: '1.6' }}>
+                  {selectedCategory === 'Suggestions'
+                    ? `No suggestions or PYQs uploaded for ${selectedSubject} yet. Important questions will be added soon!`
+                    : selectedCategory === 'Lab'
+                    ? `No lab notes or experiment materials found for ${selectedSubject}.`
+                    : `No ${selectedCategory !== 'All' ? selectedCategory.toLowerCase() : ''} notes available for ${selectedSubject}.`}
+                </p>
+                {selectedCategory !== 'All' && (
+                  <button
+                    onClick={() => setSelectedCategory('All')}
+                    className="cyber-btn-wire"
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                  >
+                    View All {selectedSubject} Notes
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="subject-notes-grid">
+                {currentSubjectNotes.map(note => {
+                  const isImage = getNoteFileType(note) === 'image';
+                  const filesCount = note.files?.length || (note.fileUrl ? 1 : 0);
+                  const catStyle = getCategoryStyle(note.category);
+                  const CatIcon = catStyle.icon;
+
+                  return (
+                    <div key={note._id || note.id} className="cyber-panel note-card-modern">
+                      <div className="note-card-top-row">
+                        {/* Category badge */}
+                        <div 
+                          className="note-category-badge"
+                          style={{
+                            background: catStyle.bg,
+                            border: `1px solid ${catStyle.border}`,
+                            color: catStyle.color
+                          }}
+                        >
+                          <CatIcon size={12} />
+                          <span>{note.category || 'Theory'}</span>
+                        </div>
+
+                        {/* File type badge */}
+                        <div className="note-file-type-badge">
+                          {isImage ? <ImageIcon size={12} /> : <FileText size={12} />}
+                          <span>{isImage ? 'Image' : 'Document'} {filesCount > 1 ? `(${filesCount})` : ''}</span>
+                        </div>
+                      </div>
+
+                      {/* Note Title */}
+                      <h4 className="note-card-title">
+                        {note.title || note.filename || 'Untitled Note'}
+                      </h4>
+
+                      {/* Card Action Buttons */}
+                      <div className="note-card-actions">
+                        <button
+                          onClick={() => setPreviewNote(note)}
+                          className="cyber-btn-orange note-btn-preview"
+                          title="Preview Note"
+                        >
+                          <Eye size={14} />
+                          <span>Preview</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDownload(note)}
+                          className="cyber-btn-wire note-btn-download"
+                          title="Download Note"
+                        >
+                          <Download size={14} />
+                          <span>Download</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleShare(note, e)}
+                          className="cyber-btn-wire note-btn-share"
+                          title="Share Link"
+                        >
+                          {copiedId === (note._id || note.id) ? (
+                            <Check size={14} style={{ color: '#10B981' }} />
+                          ) : (
+                            <Share2 size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ──────────────────────────────────────────────────────────
+            PREVIEW MODAL (Single Direct High-Performance Viewer)
+            ────────────────────────────────────────────────────────── */}
+        {previewNote && (
+          <div className={`docviewer-modal-backdrop ${modalFullscreen ? 'fullscreen-backdrop' : ''}`}>
+            <div className={`docviewer-modal-dialog ${modalFullscreen ? 'fullscreen-dialog' : ''}`}>
+              <DocViewer
+                files={
+                  previewNote.files && previewNote.files.length > 0
+                    ? previewNote.files
+                    : [{
+                        fileUrl: previewNote.fileUrl,
+                        filename: previewNote.filename,
+                        originalName: previewNote.filename || previewNote.title,
+                        fileType: previewNote.fileType
+                      }]
+                }
+                title={previewNote.title || previewNote.filename || 'Note Preview'}
+                onClose={() => setPreviewNote(null)}
+                isFullscreenMode={modalFullscreen}
+              />
+            </div>
+          </div>
+        )}
+
+      </div>
 
       <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
         .notes-page-container {
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%);
-          padding: 2rem 1.5rem;
-          padding-top: 6.5rem;
+          background: #000804;
+          background-image: 
+            radial-gradient(circle at 15% 15%, rgba(251, 54, 64, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+            linear-gradient(rgba(251, 54, 64, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(251, 54, 64, 0.03) 1px, transparent 1px);
+          background-size: 100% 100%, 100% 100%, 35px 35px, 35px 35px;
+          padding: 6.5rem 1.5rem 4rem;
           box-sizing: border-box;
+          font-family: var(--font-body);
         }
 
-        @media (max-width: 768px) {
-          .notes-page-container {
-            padding: 1.2rem 1.1rem;
-            padding-top: 5.2rem;
-          }
-        }
-
-        .notes-header-wrapper {
-          max-width: 1280px;
-          margin: 0 auto 2.5rem;
+        .notes-header-block {
           text-align: center;
+          margin-bottom: 2.5rem;
         }
 
-        @media (max-width: 768px) {
-          .notes-header-wrapper {
-            margin-bottom: 1.8rem;
-          }
-        }
-
-        .notes-subject-carousel {
-          max-width: 1280px;
-          margin: 0 auto 1.8rem;
-          display: flex;
-          gap: 0.6rem;
-          overflow-x: auto;
-          padding-bottom: 0.4rem;
-        }
-
-        .notes-toolbar-panel {
-          max-width: 1280px;
-          margin: 0 auto 2.5rem;
-          border-radius: 8px;
-          padding: 1.2rem 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-          .notes-toolbar-panel {
-            padding: 1rem;
-            margin-bottom: 1.8rem;
-          }
-        }
-
-        .notes-toolbar-inner {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-        }
-
-        @media (max-width: 768px) {
-          .notes-toolbar-inner {
-            flex-direction: column;
-            gap: 0.8rem;
-          }
+        .notes-main-title {
+          font-family: var(--font-cyber);
+          font-size: clamp(1.8rem, 4vw, 2.5rem);
+          color: #ffffff;
+          letter-spacing: 0.04em;
+          margin: 0;
+          text-transform: uppercase;
         }
 
         .notes-search-wrapper {
-          position: relative;
-          flex: 1;
-          min-width: 240px;
-          width: 100%;
+          max-width: 600px;
+          margin: 0 auto;
         }
 
-        .notes-view-switcher {
+        .notes-search-box {
           display: flex;
-          gap: 0.5rem;
-        }
-
-        @media (max-width: 768px) {
-          .notes-view-switcher {
-            width: 100%;
-            gap: 0.35rem;
-          }
-        }
-
-        .view-toggle-btn {
-          padding: 0.5rem 0.9rem;
-          font-size: 0.85rem;
-          white-space: nowrap;
-        }
-
-        @media (max-width: 768px) {
-          .view-toggle-btn {
-            flex: 1;
-            justify-content: center;
-            padding: 0.5rem 0.35rem;
-            font-size: 0.8rem;
-          }
-        }
-
-        .view-btn-text-short {
-          display: none;
-        }
-
-        @media (max-width: 640px) {
-          .view-btn-text-full {
-            display: none;
-          }
-          .view-btn-text-short {
-            display: inline;
-          }
-        }
-
-        .notes-subject-banner {
-          border-radius: 10px;
-          padding: 1.1rem 1.4rem;
+          align-items: center;
+          gap: 0.75rem;
+          background: rgba(0, 15, 8, 0.9);
           border: 1px solid rgba(251, 54, 64, 0.3);
-          background: rgba(0, 15, 8, 0.95);
+          border-radius: 8px;
+          padding: 0.75rem 1.2rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          transition: border-color 0.2s ease;
+        }
+
+        .notes-search-box:focus-within {
+          border-color: var(--accent-orange);
+          box-shadow: 0 0 15px rgba(251, 54, 64, 0.25);
+        }
+
+        .notes-search-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #ffffff;
+          font-family: var(--font-tech);
+          font-size: 0.95rem;
+        }
+
+        .notes-search-input::placeholder {
+          color: var(--text-muted);
+        }
+
+        .notes-search-clear {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+        }
+
+        /* Subjects Grid */
+        .subjects-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .subject-card-item {
+          padding: 1.6rem;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 190px;
+        }
+
+        .subject-card-item:hover {
+          transform: translateY(-4px);
+          border-color: var(--accent-orange);
+          box-shadow: 0 10px 30px rgba(251, 54, 64, 0.2);
+        }
+
+        .subject-card-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          flex-wrap: wrap;
-          gap: 0.8rem;
-          box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+          margin-bottom: 1rem;
         }
 
-        @media (max-width: 640px) {
-          .notes-subject-banner {
-            padding: 0.9rem 1rem;
-          }
-        }
-
-        .notes-timeline-container {
-          position: relative;
-          padding-left: 2.5rem;
-          margin-left: 0.5rem;
-        }
-
-        @media (max-width: 640px) {
-          .notes-timeline-container {
-            padding-left: 1.25rem;
-            margin-left: 0;
-          }
-        }
-
-        .notes-timeline-spine {
-          position: absolute;
-          top: 10px;
-          bottom: 10px;
-          left: 12px;
-          width: 2px;
-          background: linear-gradient(to bottom, var(--accent-orange), rgba(251, 54, 64, 0.15));
-        }
-
-        @media (max-width: 640px) {
-          .notes-timeline-spine {
-            left: 4px;
-          }
-        }
-
-        .notes-date-marker-row {
+        .subject-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: 8px;
+          background: rgba(251, 54, 64, 0.1);
+          border: 1px solid rgba(251, 54, 64, 0.3);
           display: flex;
           align-items: center;
-          gap: 0.8rem;
-          margin-bottom: 1rem;
-          position: relative;
+          justify-content: center;
+          color: var(--accent-orange);
         }
 
-        .notes-timeline-dot {
-          position: absolute;
-          left: -2.55rem;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: var(--accent-orange);
-          box-shadow: 0 0 10px var(--accent-orange);
-          border: 3px solid #000F08;
-        }
-
-        @media (max-width: 640px) {
-          .notes-timeline-dot {
-            left: -1.45rem;
-            width: 12px;
-            height: 12px;
-            border-width: 2px;
-          }
-        }
-
-        .notes-date-badge {
-          background: rgba(251, 54, 64, 0.08);
+        .subject-total-badge {
+          background: rgba(251, 54, 64, 0.12);
           border: 1px solid rgba(251, 54, 64, 0.25);
-          borderRadius: 6px;
-          padding: 0.3rem 0.8rem;
+          color: var(--accent-orange);
+          padding: 0.2rem 0.65rem;
+          border-radius: 20px;
+          font-family: var(--font-tech);
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .subject-card-title {
+          font-family: var(--font-cyber);
+          font-size: 1.25rem;
+          color: #ffffff;
+          margin: 0 0 1rem;
+          word-break: break-word;
+          line-height: 1.3;
+        }
+
+        .subject-pills-row {
+          display: flex;
+          gap: 0.45rem;
+          flex-wrap: wrap;
+          margin-bottom: 1.4rem;
+        }
+
+        .category-pill-preview {
+          font-size: 0.72rem;
+          padding: 0.2rem 0.5rem;
+          border-radius: 4px;
+          font-family: var(--font-tech);
+        }
+
+        .theory-pill {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: #10B981;
+        }
+
+        .lab-pill {
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          color: #60a5fa;
+        }
+
+        .suggestions-pill {
+          background: rgba(168, 85, 247, 0.1);
+          border: 1px solid rgba(168, 85, 247, 0.3);
+          color: #c084fc;
+        }
+
+        .subject-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 0.9rem;
+          border-top: 1px solid rgba(251, 54, 64, 0.12);
+        }
+
+        .subject-card-cta {
+          color: var(--accent-orange);
+          font-family: var(--font-tech);
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .subject-arrow-icon {
+          color: var(--accent-orange);
+          transition: transform 0.2s ease;
+        }
+
+        .subject-card-item:hover .subject-arrow-icon {
+          transform: translateX(4px);
+        }
+
+        /* Drilldown View */
+        .subject-drilldown-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 1.8rem;
+        }
+
+        .drilldown-back-btn {
+          padding: 0.45rem 1rem;
+          font-size: 0.85rem;
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
+        }
+
+        .subject-breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-family: var(--font-tech);
+          font-size: 0.9rem;
+        }
+
+        /* Category Tabs Bar */
+        .category-tabs-bar {
+          display: flex;
+          gap: 0.6rem;
           flex-wrap: wrap;
+          margin-bottom: 2rem;
+          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
+          padding-bottom: 0.8rem;
         }
 
-        .notes-card-grid {
+        .category-tab-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(0, 15, 8, 0.7);
+          border: 1px solid rgba(251, 54, 64, 0.2);
+          color: var(--text-secondary);
+          padding: 0.55rem 1.1rem;
+          border-radius: 6px;
+          font-family: var(--font-tech);
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .category-tab-btn:hover {
+          border-color: var(--accent-orange);
+          color: #ffffff;
+        }
+
+        .category-tab-btn.active {
+          background: var(--accent-orange);
+          border-color: var(--accent-orange);
+          color: #000000;
+          font-weight: 700;
+        }
+
+        .category-tab-count {
+          background: rgba(255, 255, 255, 0.15);
+          color: var(--text-primary);
+          padding: 0.1rem 0.45rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+        }
+
+        .category-tab-count.active-count {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        /* Notes Grid */
+        .subject-notes-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-          gap: 1.2rem;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1.4rem;
         }
 
-        @media (max-width: 640px) {
-          .notes-card-grid {
-            grid-template-columns: 1fr;
-            gap: 0.9rem;
-          }
-        }
-
-        .notes-card-list {
+        .note-card-modern {
+          padding: 1.4rem;
+          border-radius: 8px;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          justify-content: space-between;
+          transition: all 0.2s ease;
         }
 
-        /* Modal Styles */
-        .notes-modal-overlay {
+        .note-card-modern:hover {
+          border-color: rgba(251, 54, 64, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .note-card-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.9rem;
+        }
+
+        .note-category-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.2rem 0.55rem;
+          border-radius: 4px;
+          font-family: var(--font-tech);
+          font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .note-file-type-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          color: var(--text-muted);
+          font-size: 0.75rem;
+          font-family: var(--font-tech);
+        }
+
+        .note-card-title {
+          color: #ffffff;
+          font-family: var(--font-body);
+          font-size: 1.05rem;
+          font-weight: 700;
+          margin: 0 0 1.3rem;
+          line-height: 1.4;
+          word-break: break-word;
+        }
+
+        .note-card-actions {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        .note-btn-preview {
+          flex: 1;
+          padding: 0.5rem 0.8rem;
+          font-size: 0.8rem;
+          clip-path: none;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+        }
+
+        .note-btn-download {
+          padding: 0.5rem 0.8rem;
+          font-size: 0.8rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+        }
+
+        .note-btn-share {
+          padding: 0.5rem 0.6rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .notes-loading-state,
+        .notes-empty-panel {
+          text-align: center;
+          padding: 4rem 1.5rem;
+          color: var(--text-muted);
+        }
+
+        /* Modal Dialog */
+        .docviewer-modal-backdrop {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 15, 8, 0.92);
+          background: rgba(0, 8, 4, 0.88);
           backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          z-index: 3000;
+          z-index: 9999;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1159,58 +994,48 @@ export default function Notes() {
           box-sizing: border-box;
         }
 
-        @media (max-width: 640px) {
-          .notes-modal-overlay {
-            padding: 0;
-          }
+        .docviewer-modal-backdrop.fullscreen-backdrop {
+          padding: 0;
         }
 
-        .notes-modal-wrapper {
-          position: relative;
-          max-width: 1100px;
+        .docviewer-modal-dialog {
           width: 100%;
-          height: 88vh;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #000A05;
-          border: 1px solid rgba(251, 54, 64, 0.35);
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+          max-width: 1100px;
+          height: 85vh;
           display: flex;
           flex-direction: column;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
         }
 
-        @media (max-width: 640px) {
-          .notes-modal-wrapper {
-            max-width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-            border: none;
-          }
-        }
-
-        .notes-modal-wrapper.modal-fullscreen {
-          max-width: 100vw;
+        .docviewer-modal-dialog.fullscreen-dialog {
+          max-width: 100%;
           height: 100vh;
           border-radius: 0;
-          border: none;
         }
 
-        .notes-modal-header {
-          padding: 0.85rem 1.25rem;
-          background: rgba(0, 15, 8, 0.98);
-          border-bottom: 1px solid rgba(251, 54, 64, 0.25);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 0.6rem;
-        }
-
-        @media (max-width: 480px) {
-          .notes-modal-header {
-            padding: 0.7rem 0.9rem;
+        @media (max-width: 768px) {
+          .notes-page-container {
+            padding: 5.5rem 1rem 3rem;
           }
-          .modal-btn-label {
-            display: none;
+
+          .subjects-cards-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .subject-notes-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .category-tabs-bar {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 0.6rem;
+          }
+
+          .category-tab-btn {
+            white-space: nowrap;
           }
         }
       `}</style>

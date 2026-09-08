@@ -8,7 +8,6 @@ import NoteDetails from './pages/NoteDetails';
 import AdminUpload from './pages/AdminUpload';
 import ClassRoutine from './pages/ClassRoutine';
 import Syllabus from './pages/Syllabus';
-import PracticeQuestions from './pages/PracticeQuestions';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -31,7 +30,7 @@ export default function App() {
           <Route path="/note/:id" element={<NoteDetails />} />
           <Route path="/routine" element={<ClassRoutine />} />
           <Route path="/syllabus" element={<Syllabus />} />
-          <Route path="/practice" element={<PracticeQuestions />} />
+          <Route path="/practice" element={<Navigate to="/notes" replace />} />
 
           {/* Admin routes (hidden from public UI, directly accessed via URL) */}
           <Route 

@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const noteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   subjectName: { type: String, required: true }, // Store subject name directly
-  date: { type: Date, required: true }, // User-specified date
+  date: { type: Date, default: Date.now },
+  category: { type: String, enum: ['Theory', 'Lab', 'Suggestions'], default: 'Theory' },
   files: [{
     fileUrl: { type: String, required: true },
     filename: { type: String, required: true },
@@ -17,9 +18,9 @@ const noteSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-noteSchema.index({ date: -1, createdAt: -1 });
+noteSchema.index({ createdAt: -1 });
 noteSchema.index({ subjectName: 1 });
-noteSchema.index({ subjectName: 1, date: -1, createdAt: -1 });
+noteSchema.index({ subjectName: 1, category: 1, createdAt: -1 });
 noteSchema.index({ title: 'text' });
 
 module.exports = mongoose.model('Note', noteSchema);

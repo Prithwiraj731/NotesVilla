@@ -33,7 +33,8 @@ function formatNote(row) {
     id: id,
     title: row.title,
     subjectName: row.subjectName || row.subject_name,
-    date: row.date,
+    category: row.category || 'Theory',
+    date: row.date || row.createdAt || row.created_at,
     fileUrl: row.fileUrl || row.file_url,
     filename: row.filename,
     fileType: row.fileType || row.file_type || detectFileType(row.filename || row.fileUrl || row.file_url || ''),
@@ -54,19 +55,22 @@ exports.uploadNote = async (req, res) => {
       return res.status(400).json({ msg: 'No files uploaded' });
     }
 
-    let { title, subjectName, date } = req.body;
+    let { title, subjectName, date, category } = req.body;
 
-    if (!subjectName || !date) {
-      return res.status(400).json({ msg: 'Missing required subject name or date' });
+    if (!subjectName || !subjectName.trim()) {
+      return res.status(400).json({ msg: 'Missing required subject name' });
     }
+
+    const validCategories = ['Theory', 'Lab', 'Suggestions'];
+    const noteCategory = validCategories.includes(category) ? category : 'Theory';
+    const noteDate = date ? new Date(date) : new Date();
 
     // Auto-generate title if not provided
     if (!title || !title.trim()) {
       if (files.length === 1) {
         title = files[0].originalname.replace(/\.[^/.]+$/, '');
       } else {
-        const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        title = `${subjectName} Notes (${formattedDate})`;
+        title = `${subjectName} ${noteCategory} Material`;
       }
     }
 
@@ -117,7 +121,8 @@ exports.uploadNote = async (req, res) => {
         .insert({
           title,
           subject_name: subjectName,
-          date: new Date(date).toISOString(),
+          category: noteCategory,
+          date: noteDate.toISOString(),
           file_url: filesArray[0].fileUrl,
           filename: filesArray[0].originalName || filesArray[0].filename,
           file_type: primaryFileType,
@@ -139,7 +144,8 @@ exports.uploadNote = async (req, res) => {
       const mongoNote = await Note.create({
         title,
         subjectName,
-        date: new Date(date),
+        category: noteCategory,
+        date: noteDate,
         fileUrl: filesArray[0].fileUrl,
         filename: filesArray[0].originalName || filesArray[0].filename,
         fileType: primaryFileType,
@@ -176,11 +182,15 @@ exports.uploadSingleNote = async (req, res) => {
       return res.status(400).json({ msg: 'No file uploaded' });
     }
 
-    let { title, subjectName, date } = req.body;
+    let { title, subjectName, date, category } = req.body;
 
-    if (!subjectName || !date) {
-      return res.status(400).json({ msg: 'Missing required subject name or date' });
+    if (!subjectName || !subjectName.trim()) {
+      return res.status(400).json({ msg: 'Missing required subject name' });
     }
+
+    const validCategories = ['Theory', 'Lab', 'Suggestions'];
+    const noteCategory = validCategories.includes(category) ? category : 'Theory';
+    const noteDate = date ? new Date(date) : new Date();
 
     if (!title || !title.trim()) {
       title = file.originalname.replace(/\.[^/.]+$/, '');
@@ -214,7 +224,8 @@ exports.uploadSingleNote = async (req, res) => {
         .insert({
           title,
           subject_name: subjectName,
-          date: new Date(date).toISOString(),
+          category: noteCategory,
+          date: noteDate.toISOString(),
           file_url: fileUrl,
           filename: file.originalname,
           file_type: fileType,
@@ -236,7 +247,8 @@ exports.uploadSingleNote = async (req, res) => {
       const mongoNote = await Note.create({
         title,
         subjectName,
-        date: new Date(date),
+        category: noteCategory,
+        date: noteDate,
         fileUrl: fileUrl,
         filename: file.originalname,
         fileType: fileType,
@@ -292,15 +304,21 @@ exports.listSubjects = async (req, res) => {
 exports.listNotesBySubject = async (req, res) => {
   try {
     const { subjectName } = req.params;
+    const { category } = req.query;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('notes')
       .select('*', { count: 'exact' })
-      .eq('subject_name', subjectName)
-      .order('date', { ascending: false })
+      .eq('subject_name', subjectName);
+    
+    if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+      query = query.eq('category', category);
+    }
+
+    const { data, count, error } = await query
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);
 
@@ -322,9 +340,13 @@ exports.listNotesBySubject = async (req, res) => {
 
     // Fallback to MongoDB
     if (mongoose.connection.readyState === 1) {
-      const total = await Note.countDocuments({ subjectName });
-      const notes = await Note.find({ subjectName })
-        .sort({ date: -1, createdAt: -1 })
+      const filter = { subjectName };
+      if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+        filter.category = category;
+      }
+      const total = await Note.countDocuments(filter);
+      const notes = await Note.find(filter)
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
@@ -362,13 +384,22 @@ exports.listNotesBySubject = async (req, res) => {
 exports.getAllNotes = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
+    const { category, subject } = req.query;
 
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('notes')
-      .select('*', { count: 'exact' })
-      .order('date', { ascending: false })
+      .select('*', { count: 'exact' });
+
+    if (subject && subject !== 'All') {
+      query = query.eq('subject_name', subject);
+    }
+    if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+      query = query.eq('category', category);
+    }
+
+    const { data, count, error } = await query
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);
 
@@ -390,9 +421,16 @@ exports.getAllNotes = async (req, res) => {
 
     // Fallback to MongoDB
     if (mongoose.connection.readyState === 1) {
-      const total = await Note.countDocuments();
-      const notes = await Note.find()
-        .sort({ date: -1, createdAt: -1 })
+      const filter = {};
+      if (subject && subject !== 'All') {
+        filter.subjectName = subject;
+      }
+      if (category && ['Theory', 'Lab', 'Suggestions'].includes(category)) {
+        filter.category = category;
+      }
+      const total = await Note.countDocuments(filter);
+      const notes = await Note.find(filter)
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
@@ -471,12 +509,13 @@ exports.getNoteById = async (req, res) => {
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, subjectName, date } = req.body;
+    const { title, subjectName, date, category } = req.body;
 
     const updatePayload = {};
     if (title) updatePayload.title = title;
     if (subjectName) updatePayload.subject_name = subjectName;
     if (date) updatePayload.date = new Date(date).toISOString();
+    if (category) updatePayload.category = category;
 
     const { data, error } = await supabase
       .from('notes')
@@ -499,6 +538,7 @@ exports.updateNote = async (req, res) => {
         if (title) note.title = title;
         if (subjectName) note.subjectName = subjectName;
         if (date) note.date = new Date(date);
+        if (category) note.category = category;
         await note.save();
         return res.json({
           note: formatNote(note),

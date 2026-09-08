@@ -46,7 +46,6 @@ export default function Header() {
     { path: '/notes', label: 'Notes Library', icon: BookOpen },
     { path: '/routine', label: 'Class Routine', icon: Calendar },
     { path: '/syllabus', label: 'Syllabus', icon: Layers },
-    { path: '/practice', label: 'Practice Sets', icon: HelpCircle },
   ];
 
   return (

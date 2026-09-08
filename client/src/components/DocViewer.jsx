@@ -204,53 +204,6 @@ export default function DocViewer({
             </div>
           )}
 
-          {/* Viewer Engine Switcher for PDFs & Docs */}
-          {(category === 'pdf' || category === 'office') && (
-            <div style={{
-              display: 'inline-flex',
-              background: 'rgba(0, 5, 2, 0.8)',
-              border: '1px solid rgba(251, 54, 64, 0.2)',
-              borderRadius: '4px',
-              padding: '0.15rem',
-              marginRight: '0.3rem'
-            }}>
-              {category === 'pdf' && (
-                <button
-                  onClick={() => { setViewerEngine('direct'); setLoading(true); }}
-                  style={{
-                    background: viewerEngine === 'direct' ? 'rgba(251, 54, 64, 0.25)' : 'transparent',
-                    color: viewerEngine === 'direct' ? '#ffffff' : 'var(--text-muted, #6b7280)',
-                    border: 'none',
-                    borderRadius: '3px',
-                    padding: '0.2rem 0.5rem',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                  title="Use Browser Native Viewer"
-                >
-                  Native
-                </button>
-              )}
-              <button
-                onClick={() => { setViewerEngine('google'); setLoading(true); }}
-                style={{
-                  background: viewerEngine === 'google' ? 'rgba(251, 54, 64, 0.25)' : 'transparent',
-                  color: viewerEngine === 'google' ? '#ffffff' : 'var(--text-muted, #6b7280)',
-                  border: 'none',
-                  borderRadius: '3px',
-                  padding: '0.2rem 0.5rem',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-                title="Use Google Docs Viewer Engine"
-              >
-                Google Docs
-              </button>
-            </div>
-          )}
-
           {/* Open in New Window */}
           <a
             href={fileUrl}

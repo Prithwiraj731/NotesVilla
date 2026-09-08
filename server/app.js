@@ -14,6 +14,7 @@ if (process.env.MONGO_URI) {
 
 const adminRoutes = require('./routes/admin.routes');
 const notesRoutes = require('./routes/notes.routes');
+const syllabusRoutes = require('./routes/syllabus.routes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api/syllabus', syllabusRoutes);
 
 // Health check endpoint
 app.get('/test', (req, res) => {
@@ -64,3 +66,5 @@ app.listen(PORT, () => {
   console.log(`🗄️ Database: Supabase Cloud PostgreSQL`);
   checkSupabaseConnection();
 });
+
+module.exports = app;

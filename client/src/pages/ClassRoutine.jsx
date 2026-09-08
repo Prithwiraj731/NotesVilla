@@ -68,16 +68,6 @@ export default function ClassRoutine() {
         }}>
           CLASS ROUTINE
         </h1>
-        <p style={{
-          color: 'var(--text-secondary)',
-          fontFamily: 'var(--font-body)',
-          fontSize: '0.95rem',
-          maxWidth: '650px',
-          margin: '0 auto',
-          lineHeight: '1.55'
-        }}>
-          Access the verified class schedule, lecture timings, lab allocations, and faculty slots.
-        </p>
       </div>
 
       {/* Routine Interactive Viewer Panel */}
