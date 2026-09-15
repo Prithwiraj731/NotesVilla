@@ -19,6 +19,12 @@ function getCloudinaryResourceType(filename) {
   return 'auto';
 }
 
+function getBaseUrl() {
+  return process.env.BACKEND_URL
+    || process.env.RENDER_EXTERNAL_URL
+    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla.onrender.com' : 'http://localhost:5000');
+}
+
 function formatSyllabus(doc) {
   if (!doc) return null;
   const id = doc._id ? doc._id.toString() : (doc.id ? doc.id.toString() : '');
@@ -81,9 +87,7 @@ exports.uploadSyllabus = async (req, res) => {
     }
 
     const fileType = detectFileType(file.originalname);
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://notesvilla.onrender.com'
-      : 'http://localhost:5000';
+    const baseUrl = getBaseUrl();
     let fileUrl = `${baseUrl}/uploads/${file.filename}`;
 
     // Cloudinary upload if configured

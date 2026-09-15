@@ -24,6 +24,12 @@ function getCloudinaryResourceType(filename) {
   return 'auto';
 }
 
+function getBaseUrl() {
+  return process.env.BACKEND_URL
+    || process.env.RENDER_EXTERNAL_URL
+    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla.onrender.com' : 'http://localhost:5000');
+}
+
 /** Format Supabase row or MongoDB document to match frontend expectation */
 function formatNote(row) {
   if (!row) return null;
@@ -89,9 +95,7 @@ exports.uploadNote = async (req, res) => {
 
     const primaryFileType = detectFileType(files[0].originalname);
 
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://notesvilla.onrender.com'
-      : 'http://localhost:5000';
+    const baseUrl = getBaseUrl();
 
     let filesArray = files.map(file => ({
       fileUrl: `${baseUrl}/uploads/${file.filename}`,
@@ -211,9 +215,7 @@ exports.uploadSingleNote = async (req, res) => {
 
     const fileType = detectFileType(file.originalname);
 
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://notesvilla.onrender.com'
-      : 'http://localhost:5000';
+    const baseUrl = getBaseUrl();
     let fileUrl = `${baseUrl}/uploads/${file.filename}`;
 
     try {

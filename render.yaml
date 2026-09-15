@@ -18,3 +18,15 @@ services:
         value: 24h
       - key: MONGO_URI
         value: mongodb+srv://prithwi1016:Prithwi_1100@notes.dnmn9vm.mongodb.net/notesvilla?retryWrites=true&w=majority&appName=notes
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dweivgxnm
+      - key: CLOUDINARY_API_KEY
+        value: 118734319535891
+      - key: CLOUDINARY_API_SECRET
+        value: 52iB7IP7K-fsdJ0d5mNaobfNlZM
+      - key: SUPABASE_URL
+        value: https://lwkmbptvbpqxcnwarwii.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3a21icHR2YnBxeGNud2Fyd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4MjAsImV4cCI6MjA5OTA5NjgyMH0.lqyMsKJj1-aJbja5fuprNcauJ0-BTL3BhygZGSpK8g8
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3a21icHR2YnBxeGNud2Fyd2lpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzUyMDgyMCwiZXhwIjoyMDk5MDk2ODIwfQ.T2Ewnr1Nk_-9IQNNbxYz-65022PBTlSaxKfVTN-sW8Y

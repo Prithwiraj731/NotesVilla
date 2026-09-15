@@ -313,7 +313,7 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
     // Determine the base URL
     const baseUrl = window.location.hostname === 'localhost'
       ? 'http://localhost:5000'
-      : 'https://notesvilla.onrender.com';
+      : (import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '') : 'https://notesvilla.onrender.com');
 
     // Create the download endpoint URL
     const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
@@ -339,7 +339,9 @@ const normalizeFileUrl = (url) => {
 
     if (!isBrowserLocal && isLocalhost) {
       // We are on production frontend but URL points to localhost backend; rewrite
-      const prodBase = 'https://notesvilla.onrender.com';
+      const prodBase = import.meta.env.VITE_API_BASE 
+        ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '') 
+        : 'https://notesvilla.onrender.com';
       return prodBase + u.pathname + u.search + u.hash;
     }
     return u.toString();
