@@ -11,7 +11,7 @@ import {
 export default function ClassRoutine() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const routineImagePath = '/ClassRoutine.jpeg';
+  const routineImagePath = '/ClassRoutine.jpg';
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.5));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.75));
@@ -20,7 +20,7 @@ export default function ClassRoutine() {
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = routineImagePath;
-    link.download = 'NotesVilla-ClassRoutine.jpeg';
+    link.download = 'NotesVilla-ClassRoutine.jpg';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
