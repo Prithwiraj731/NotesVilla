@@ -7,6 +7,7 @@ import {
   BookOpen, 
   Calendar, 
   Layers, 
+  Terminal,
   HelpCircle, 
   Search
 } from 'lucide-react';
@@ -46,6 +47,7 @@ export default function Header() {
     { path: '/notes', label: 'Notes Library', icon: BookOpen },
     { path: '/routine', label: 'Class Routine', icon: Calendar },
     { path: '/syllabus', label: 'Syllabus', icon: Layers },
+    { path: '/lab-setup', label: 'Lab Setup', icon: Terminal },
   ];
 
   return (

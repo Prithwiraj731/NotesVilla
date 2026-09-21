@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import UbuntuLabSetup from "../components/UbuntuLabSetup";
 import { 
   BookOpen, 
   Layers, 
@@ -10,7 +11,8 @@ import {
   Sparkles,
   FileText,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Terminal
 } from "lucide-react";
 
 export default function Home() {
@@ -110,6 +112,22 @@ export default function Home() {
                 >
                   <Calendar size={16} />
                   <span>CLASS ROUTINE</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('lab-setup');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      nav('/lab-setup');
+                    }
+                  }}
+                  className="hero-secondary-btn"
+                  title="Configure Linux Lab environment with setup.sh"
+                >
+                  <Terminal size={16} style={{ color: 'var(--accent-orange)' }} />
+                  <span>LAB SETUP</span>
                 </button>
               </div>
             </div>
@@ -229,6 +247,11 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* =========================================================================
+          LINUX LAB ENVIRONMENT & UBUNTU SETUP SECTION
+          ========================================================================= */}
+      <UbuntuLabSetup />
 
       {/* Scoped CSS styling for Minimalist Hero Section */}
       <style jsx>{`

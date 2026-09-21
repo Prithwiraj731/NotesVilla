@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Calendar, Layers, HelpCircle, Heart } from 'lucide-react';
+import { BookOpen, Calendar, Layers, Terminal, HelpCircle, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -44,6 +44,14 @@ export default function Footer() {
           >
             <Layers size={15} />
             <span>Syllabus</span>
+          </Link>
+
+          <Link
+            to="/lab-setup"
+            className="footer-nav-link"
+          >
+            <Terminal size={15} />
+            <span>Lab Setup</span>
           </Link>
         </div>
       </div>

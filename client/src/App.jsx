@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import Home from './pages/Home';
@@ -8,6 +8,7 @@ import NoteDetails from './pages/NoteDetails';
 import AdminUpload from './pages/AdminUpload';
 import ClassRoutine from './pages/ClassRoutine';
 import Syllabus from './pages/Syllabus';
+import UbuntuLabSetup from './components/UbuntuLabSetup';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -30,6 +31,8 @@ export default function App() {
           <Route path="/note/:id" element={<NoteDetails />} />
           <Route path="/routine" element={<ClassRoutine />} />
           <Route path="/syllabus" element={<Syllabus />} />
+          <Route path="/lab-setup" element={<UbuntuLabSetup standalone={true} />} />
+          <Route path="/ubuntu-setup" element={<UbuntuLabSetup standalone={true} />} />
           <Route path="/practice" element={<Navigate to="/notes" replace />} />
 
           {/* Admin routes (hidden from public UI, directly accessed via URL) */}
