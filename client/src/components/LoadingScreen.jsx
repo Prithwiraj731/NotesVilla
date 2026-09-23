@@ -47,12 +47,12 @@ const StyledWrapper = styled.div`
   .loading-text {
     h2 {
       font-size: 2.2rem;
-      font-weight: 900;
+      font-weight: 800;
       color: #ffffff;
       margin: 0 0 0.5rem 0;
-      font-family: 'Orbitron', sans-serif;
+      font-family: var(--font-cyber);
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.04em;
       background: linear-gradient(135deg, #ffffff 30%, #FB3640 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -60,13 +60,12 @@ const StyledWrapper = styled.div`
     }
     
     p {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 1.1rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.6);
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+      color: rgba(255, 255, 255, 0.7);
       margin: 0;
-      font-weight: 600;
+      font-weight: 500;
     }
   }
   
