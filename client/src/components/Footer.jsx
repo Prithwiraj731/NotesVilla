@@ -62,7 +62,14 @@ export default function Footer() {
           © {new Date().getFullYear()} Knowledge Dock. All rights reserved.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-          Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students by <a href="https://www.linkedin.com/in/prithwiraj-mazumdar-963086291/">Prithwiraj Mazumdar</a>
+          Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students by <a
+  href="https://www.linkedin.com/in/prithwiraj-mazumdar-963086291/"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="footer-credit-link"
+>
+  Prithwiraj Mazumdar
+</a>
         </div>
       </div>
 
@@ -167,6 +174,16 @@ export default function Footer() {
             margin-top: 1.4rem;
             padding-top: 1rem;
           }
+            .footer-credit-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-credit-link:hover {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
         }
       `}</style>
     </footer>
