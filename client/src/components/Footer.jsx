@@ -62,7 +62,7 @@ export default function Footer() {
           © {new Date().getFullYear()} Knowledge Dock. All rights reserved.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-          Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students
+          Crafted with <Heart size={13} style={{ color: "var(--accent-orange)", fill: "var(--accent-orange)" }} /> for Students by <a href="https://www.linkedin.com/in/prithwiraj-mazumdar-963086291/">Prithwiraj Mazumdar</a>
         </div>
       </div>
 
