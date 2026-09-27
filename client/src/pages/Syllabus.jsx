@@ -203,13 +203,13 @@ export default function Syllabus() {
                   <div className="syllabus-icon-box">
                     <Layers size={20} />
                   </div>
-                  <span className="syllabus-subject-badge">
-                    {item.subjectName}
+                  <span className="syllabus-subject-badge" title={item.title}>
+                    {item.title}
                   </span>
                 </div>
 
                 <h3 className="syllabus-card-title">
-                  {item.title}
+                  {item.subjectName || item.title}
                 </h3>
 
                 {item.description && (
@@ -440,6 +440,10 @@ export default function Syllabus() {
           font-family: var(--font-tech);
           font-size: 0.75rem;
           font-weight: 700;
+          max-width: 75%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .syllabus-card-title {
