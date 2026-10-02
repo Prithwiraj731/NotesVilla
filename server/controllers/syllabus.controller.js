@@ -22,21 +22,25 @@ function getCloudinaryResourceType(filename) {
 function getBaseUrl() {
   return process.env.BACKEND_URL
     || process.env.RENDER_EXTERNAL_URL
-    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla.onrender.com' : 'http://localhost:5000');
+    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla-sige.onrender.com' : 'http://localhost:5000');
 }
 
 function formatSyllabus(doc) {
   if (!doc) return null;
   const id = doc._id ? doc._id.toString() : (doc.id ? doc.id.toString() : '');
+  let fileUrl = doc.fileUrl || '';
+  if (fileUrl.includes('notesvilla.onrender.com')) {
+    fileUrl = fileUrl.replace(/https?:\/\/notesvilla\.onrender\.com/g, getBaseUrl());
+  }
   return {
     _id: id,
     id: id,
     title: doc.title,
     subjectName: doc.subjectName,
     description: doc.description || '',
-    fileUrl: doc.fileUrl,
+    fileUrl,
     filename: doc.filename,
-    fileType: doc.fileType || detectFileType(doc.filename || doc.fileUrl || ''),
+    fileType: doc.fileType || detectFileType(doc.filename || fileUrl || ''),
     uploadedBy: doc.uploadedBy || 'admin',
     createdAt: doc.createdAt
   };

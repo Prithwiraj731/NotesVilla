@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: BACKEND_URL
+        value: https://notesvilla-sige.onrender.com
       - key: ADMIN_USERNAME
         value: prithwi1016
       - key: ADMIN_PASSWORD

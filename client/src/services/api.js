@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const rawBaseURL = import.meta.env.VITE_API_BASE 
+  || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://notesvilla-sige.onrender.com/api');
+
+const resolvedBaseURL = rawBaseURL.replace(/https?:\/\/notesvilla\.onrender\.com/g, 'https://notesvilla-sige.onrender.com');
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:5000/api',
+  baseURL: resolvedBaseURL,
   timeout: 60000, // 60 second timeout for all requests
   headers: {
     'Content-Type': 'application/json'

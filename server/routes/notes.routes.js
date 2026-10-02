@@ -126,52 +126,196 @@ router.get('/download-test', (req, res) => {
   });
 });
 
-router.get('/download/:filename', (req, res) => {
+router.get('/download/:filename', async (req, res) => {
   try {
     const storedFilename = req.params.filename;
     const originalName = req.query.name || storedFilename;
     const filePath = path.join(uploadsDir, storedFilename);
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ msg: 'File not found', requestedFile: storedFilename });
+    // 1. Try local file first (works in development)
+    if (fs.existsSync(filePath)) {
+      return fs.readFile(filePath, (err, data) => {
+        if (err) {
+          return res.status(500).json({ msg: 'Error reading file' });
+        }
+
+        const ext = path.extname(originalName).toLowerCase();
+        const contentType = getContentType(ext);
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+        res.setHeader('Content-Length', data.length);
+        res.send(data);
+      });
     }
 
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        return res.status(500).json({ msg: 'Error reading file' });
+    // 2. Local file not found — look up the external URL from the database
+    //    This handles Render's ephemeral filesystem where uploaded files are lost on restart
+    console.log(`📂 Local file not found: ${storedFilename}, looking up external URL from database...`);
+
+    let externalUrl = null;
+
+    // Try Supabase first
+    try {
+      const supabase = require('../utils/supabase');
+      // Search by file_url containing the stored filename, or by filename column
+      // The filename column might store the original name, and file_url contains the multer name
+      const { data: notes, error } = await supabase
+        .from('notes')
+        .select('file_url, files, filename')
+        .or(`filename.eq.${storedFilename},file_url.ilike.%${storedFilename}%`);
+
+      // Also try a broader search if the first query returned nothing
+      let allNotes = notes;
+      if ((!allNotes || allNotes.length === 0) && !error) {
+        // Search within files JSONB - fetch recent notes and filter
+        const { data: recentNotes } = await supabase
+          .from('notes')
+          .select('file_url, files, filename')
+          .order('created_at', { ascending: false })
+          .limit(100);
+        if (recentNotes) {
+          allNotes = recentNotes.filter(n =>
+            (n.file_url && n.file_url.includes(storedFilename)) ||
+            (Array.isArray(n.files) && n.files.some(f =>
+              f.filename === storedFilename || (f.fileUrl && f.fileUrl.includes(storedFilename))
+            ))
+          );
+        }
       }
 
-      const ext = path.extname(originalName).toLowerCase();
-      const contentTypes = {
-        '.pdf': 'application/pdf',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.bmp': 'image/bmp',
-        '.heic': 'image/heic',
-        '.svg': 'image/svg+xml',
-        '.doc': 'application/msword',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.ppt': 'application/vnd.ms-powerpoint',
-        '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        '.txt': 'text/plain',
-        '.zip': 'application/zip',
-        '.rar': 'application/x-rar-compressed'
-      };
+      if (allNotes && allNotes.length > 0) {
+        for (const note of allNotes) {
+          // Check files array first
+          if (Array.isArray(note.files)) {
+            const match = note.files.find(f => 
+              f.filename === storedFilename || 
+              (f.fileUrl && f.fileUrl.includes(storedFilename))
+            );
+            if (match && match.fileUrl) {
+              externalUrl = match.fileUrl;
+              break;
+            }
+          }
+          // Fallback to file_url
+          if (note.file_url && (note.file_url.includes('cloudinary') || note.file_url.includes('supabase'))) {
+            externalUrl = note.file_url;
+            break;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.log('⚠️ Supabase lookup failed:', dbErr.message);
+    }
 
-      const contentType = contentTypes[ext] || 'application/octet-stream';
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
-      res.setHeader('Content-Length', data.length);
-      res.send(data);
-    });
+    // Try MongoDB if Supabase didn't find it
+    if (!externalUrl) {
+      try {
+        const mongoose = require('mongoose');
+        if (mongoose.connection.readyState === 1) {
+          const Note = require('../models/Note');
+          const note = await Note.findOne({
+            $or: [
+              { filename: storedFilename },
+              { fileUrl: { $regex: storedFilename } },
+              { 'files.filename': storedFilename }
+            ]
+          });
+          if (note) {
+            if (Array.isArray(note.files)) {
+              const match = note.files.find(f => f.filename === storedFilename);
+              if (match && match.fileUrl) externalUrl = match.fileUrl;
+            }
+            if (!externalUrl && note.fileUrl && (note.fileUrl.includes('cloudinary') || note.fileUrl.includes('supabase'))) {
+              externalUrl = note.fileUrl;
+            }
+          }
+        }
+      } catch (mongoErr) {
+        console.log('⚠️ MongoDB lookup failed:', mongoErr.message);
+      }
+    }
+
+    // 3. Proxy the file from the external URL
+    if (externalUrl) {
+      console.log(`🔄 Proxying download from: ${externalUrl}`);
+      try {
+        const https = require('https');
+        const http = require('http');
+        const fetchModule = externalUrl.startsWith('https') ? https : http;
+
+        return new Promise((resolve, reject) => {
+          fetchModule.get(externalUrl, (proxyRes) => {
+            if (proxyRes.statusCode === 301 || proxyRes.statusCode === 302) {
+              // Follow redirect
+              const redirectUrl = proxyRes.headers.location;
+              fetchModule.get(redirectUrl, (redirectRes) => {
+                const ext = path.extname(originalName).toLowerCase();
+                const contentType = getContentType(ext);
+                res.setHeader('Content-Type', redirectRes.headers['content-type'] || contentType);
+                res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+                if (redirectRes.headers['content-length']) {
+                  res.setHeader('Content-Length', redirectRes.headers['content-length']);
+                }
+                redirectRes.pipe(res);
+              }).on('error', (err) => {
+                res.status(500).json({ msg: 'Error proxying file (redirect)', error: err.message });
+              });
+              return;
+            }
+
+            if (proxyRes.statusCode !== 200) {
+              res.status(proxyRes.statusCode).json({ msg: 'External file not accessible', status: proxyRes.statusCode });
+              return;
+            }
+
+            const ext = path.extname(originalName).toLowerCase();
+            const contentType = getContentType(ext);
+            res.setHeader('Content-Type', proxyRes.headers['content-type'] || contentType);
+            res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+            if (proxyRes.headers['content-length']) {
+              res.setHeader('Content-Length', proxyRes.headers['content-length']);
+            }
+            proxyRes.pipe(res);
+          }).on('error', (err) => {
+            res.status(500).json({ msg: 'Error proxying file', error: err.message });
+          });
+        });
+      } catch (proxyErr) {
+        console.error('❌ Proxy download error:', proxyErr);
+        return res.status(500).json({ msg: 'Error proxying file', error: proxyErr.message });
+      }
+    }
+
+    return res.status(404).json({ msg: 'File not found locally or in cloud storage', requestedFile: storedFilename });
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ msg: 'Server error' });
   }
 });
+
+// Helper for content types
+function getContentType(ext) {
+  const contentTypes = {
+    '.pdf': 'application/pdf',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.bmp': 'image/bmp',
+    '.heic': 'image/heic',
+    '.svg': 'image/svg+xml',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.txt': 'text/plain',
+    '.zip': 'application/zip',
+    '.rar': 'application/x-rar-compressed'
+  };
+  return contentTypes[ext] || 'application/octet-stream';
+}
+
 
 // ──────────────────────────────────────────────────────────
 // Upload routes (admin only)

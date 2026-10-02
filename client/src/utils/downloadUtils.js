@@ -34,11 +34,10 @@ export const downloadFile = async (fileUrl, filename, options = {}) => {
   }
 
   // Convert static file URL to download endpoint URL if needed
-  // If Cloudinary URL, don't convert to API endpoint; use as-is
-  const isCloudinary = /res\.cloudinary\.com|\.cloudinary\.com/.test(fileUrl);
-  const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost -> production in prod
-  // For Cloudinary, use original URL directly - no transformation needed
-  const downloadUrl = (!isCloudinary && useDownloadEndpoint)
+  // If direct cloud storage (Cloudinary, Supabase, Google Storage), don't convert to API endpoint; use as-is
+  const isDirectCloud = /res\.cloudinary\.com|\.cloudinary\.com|\.supabase\.co|storage\.googleapis\.com/.test(fileUrl);
+  const originalUrl = normalizeFileUrl(fileUrl); // normalize localhost / old render -> current production render URL
+  const downloadUrl = (!isDirectCloud && useDownloadEndpoint)
     ? convertToDownloadUrl(originalUrl, filename)
     : originalUrl;
 
@@ -307,45 +306,53 @@ export const isValidFileUrl = (url) => {
  */
 export const convertToDownloadUrl = (fileUrl, originalName) => {
   try {
-    // Extract the filename from the URL
-    const filename = extractFilenameFromUrl(fileUrl);
+    if (!fileUrl) return '';
 
-    // Determine the base URL
-    const baseUrl = window.location.hostname === 'localhost'
+    // Direct cloud URLs should not be converted to API endpoint
+    if (/res\.cloudinary\.com|\.cloudinary\.com|\.supabase\.co|storage\.googleapis\.com/.test(fileUrl)) {
+      return fileUrl;
+    }
+
+    const normalized = normalizeFileUrl(fileUrl);
+    const filename = extractFilenameFromUrl(normalized);
+
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:5000'
-      : (import.meta.env.VITE_API_BASE ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '') : 'https://notesvilla.onrender.com');
+      : (import.meta.env.VITE_API_BASE
+          ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '').replace(/https?:\/\/notesvilla\.onrender\.com/g, 'https://notesvilla-sige.onrender.com')
+          : 'https://notesvilla-sige.onrender.com');
 
-    // Create the download endpoint URL
-    const downloadUrl = `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
-
-    return downloadUrl;
+    return `${baseUrl}/api/notes/download/${filename}?name=${encodeURIComponent(originalName)}`;
   } catch (error) {
     console.warn('Failed to convert to download URL, using original:', error.message);
     return fileUrl;
   }
 };
 
-
 /**
- * Normalize file URLs saved with localhost into production backend host
- * - If we're running in production (not localhost) and the URL points to localhost,
- *   rewrite it to the production backend base.
+ * Normalize file URLs:
+ * 1. Rewrite any old render domain (notesvilla.onrender.com) to current render domain (notesvilla-sige.onrender.com).
+ * 2. If running in production (not localhost) and URL points to localhost, rewrite to production backend base.
  */
-const normalizeFileUrl = (url) => {
+export const normalizeFileUrl = (url) => {
+  if (!url) return '';
   try {
-    const u = new URL(url, window.location.origin);
+    const prodBase = (import.meta.env.VITE_API_BASE 
+      ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '') 
+      : 'https://notesvilla-sige.onrender.com').replace(/https?:\/\/notesvilla\.onrender\.com/g, 'https://notesvilla-sige.onrender.com');
+
+    // Always replace old render domain with current render domain
+    let normalized = url.replace(/https?:\/\/notesvilla\.onrender\.com/g, prodBase);
+
+    const u = new URL(normalized, window.location.origin);
     const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
     const isBrowserLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (!isBrowserLocal && isLocalhost) {
-      // We are on production frontend but URL points to localhost backend; rewrite
-      const prodBase = import.meta.env.VITE_API_BASE 
-        ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '') 
-        : 'https://notesvilla.onrender.com';
       return prodBase + u.pathname + u.search + u.hash;
     }
-    return u.toString();
+    return normalized;
   } catch (e) {
-    return url;
+    return url.replace(/https?:\/\/notesvilla\.onrender\.com/g, 'https://notesvilla-sige.onrender.com');
   }
 };

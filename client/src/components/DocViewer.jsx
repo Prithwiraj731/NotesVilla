@@ -16,7 +16,7 @@ import {
   Sparkles,
   X
 } from 'lucide-react';
-import { downloadFile } from '../utils/downloadUtils';
+import { downloadFile, normalizeFileUrl } from '../utils/downloadUtils';
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
 const PDF_EXTS = ['pdf'];
@@ -53,7 +53,8 @@ export default function DocViewer({
   const [iframeError, setIframeError] = useState(false);
 
   const activeFile = normalizedFiles[activeIdx] || normalizedFiles[0];
-  const fileUrl = activeFile.fileUrl || activeFile.url || '';
+  const rawFileUrl = activeFile.fileUrl || activeFile.url || '';
+  const fileUrl = normalizeFileUrl(rawFileUrl);
   const fileName = activeFile.originalName || activeFile.filename || activeFile.name || 'document';
   const category = getFileCategory(fileName, fileUrl);
 
@@ -84,8 +85,26 @@ export default function DocViewer({
     if (viewerEngine === 'office') {
       return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
     }
+
+    // For PDFs: if the URL points to the backend /uploads/ path, use the download
+    // endpoint instead which has cloud proxy fallback for Render's ephemeral filesystem
+    if (category === 'pdf' && fileUrl.includes('/uploads/')) {
+      try {
+        const urlObj = new URL(fileUrl, window.location.origin);
+        const storedFilename = urlObj.pathname.split('/').pop();
+        const backendBase = (import.meta.env.VITE_API_BASE
+          ? import.meta.env.VITE_API_BASE.replace(/\/api\/?$/, '')
+          : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://notesvilla-sige.onrender.com')).replace(/https?:\/\/notesvilla\.onrender\.com/g, 'https://notesvilla-sige.onrender.com');
+        return `${backendBase}/api/notes/download/${storedFilename}?name=${encodeURIComponent(fileName)}`;
+      } catch (e) {
+        // Fall through to default
+      }
+    }
+
     return fileUrl;
   };
+
+  const tabUrl = (category === 'pdf' && fileUrl.includes('/uploads/')) ? getViewerUrl() : fileUrl;
 
   return (
     <div style={{
@@ -206,7 +225,7 @@ export default function DocViewer({
 
           {/* Open in New Window */}
           <a
-            href={fileUrl}
+            href={tabUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="cyber-btn-wire"
@@ -397,7 +416,7 @@ export default function DocViewer({
             </p>
             <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center' }}>
               <a
-                href={fileUrl}
+                href={tabUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="cyber-btn-wire"

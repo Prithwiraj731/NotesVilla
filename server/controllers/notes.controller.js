@@ -27,7 +27,7 @@ function getCloudinaryResourceType(filename) {
 function getBaseUrl() {
   return process.env.BACKEND_URL
     || process.env.RENDER_EXTERNAL_URL
-    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla.onrender.com' : 'http://localhost:5000');
+    || (process.env.NODE_ENV === 'production' ? 'https://notesvilla-sige.onrender.com' : 'http://localhost:5000');
 }
 
 /** Format Supabase row or MongoDB document to match frontend expectation */
@@ -47,6 +47,20 @@ function formatNote(row) {
     }
   }
 
+  let fileUrl = row.fileUrl || row.file_url || '';
+  if (fileUrl.includes('notesvilla.onrender.com')) {
+    fileUrl = fileUrl.replace(/https?:\/\/notesvilla\.onrender\.com/g, getBaseUrl());
+  }
+
+  const rawFiles = Array.isArray(row.files) ? row.files : [];
+  const files = rawFiles.map(f => {
+    let fUrl = f.fileUrl || '';
+    if (fUrl.includes('notesvilla.onrender.com')) {
+      fUrl = fUrl.replace(/https?:\/\/notesvilla\.onrender\.com/g, getBaseUrl());
+    }
+    return { ...f, fileUrl: fUrl };
+  });
+
   return {
     _id: id,
     id: id,
@@ -54,10 +68,10 @@ function formatNote(row) {
     subjectName: row.subjectName || row.subject_name,
     category: category,
     date: row.date || row.createdAt || row.created_at,
-    fileUrl: row.fileUrl || row.file_url,
+    fileUrl: fileUrl,
     filename: row.filename,
-    fileType: row.fileType || row.file_type || detectFileType(row.filename || row.fileUrl || row.file_url || ''),
-    files: Array.isArray(row.files) ? row.files : [],
+    fileType: row.fileType || row.file_type || detectFileType(row.filename || fileUrl || ''),
+    files: files,
     uploadedBy: row.uploadedBy || row.uploaded_by || 'admin',
     createdAt: row.createdAt || row.created_at
   };
