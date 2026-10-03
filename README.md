@@ -21,12 +21,18 @@ Eliminating exam-night chaos, expired links, and WhatsApp group scrambling forev
 
 ---
 
-## 🎥 Walkthrough Video
+## 🎥 Platform Walkthrough
 
 <div align="center">
-  <video src="client/src/assets/notesvillaVideo.mp4" width="100%" controls autoplay loop muted>
-    Your browser does not support the video tag. You can view the video file directly at <a href="client/src/assets/notesvillaVideo.mp4">client/src/assets/notesvillaVideo.mp4</a>.
-  </video>
+  <a href="https://github.com/Prithwiraj731/NotesVilla/raw/main/client/src/assets/notesvillaVideo.mp4" title="Click to view or download full 1080p HD video">
+    <img src="client/src/assets/demo.gif" alt="NotesVilla Live Demo Walkthrough" width="100%" />
+  </a>
+
+  <br/><br/>
+
+  <a href="https://github.com/Prithwiraj731/NotesVilla/raw/main/client/src/assets/notesvillaVideo.mp4">
+    <img src="https://img.shields.io/badge/▶%20Watch%20Full%201080p%20HD%20Video-Download%20%2F%20Play%20MP4-E50914?style=for-the-badge&logo=youtube&logoColor=white" alt="Play 1080p Video" />
+  </a>
 </div>
 
 ---
