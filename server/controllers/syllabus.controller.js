@@ -46,9 +46,7 @@ function formatSyllabus(doc) {
   };
 }
 
-// ──────────────────────────────────────────────────────────
-// List all syllabus documents
-// ──────────────────────────────────────────────────────────
+// get all syllabus
 exports.getAllSyllabus = async (req, res) => {
   try {
     const { subject } = req.query;
@@ -70,9 +68,7 @@ exports.getAllSyllabus = async (req, res) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Upload Syllabus (Admin only)
-// ──────────────────────────────────────────────────────────
+// upload syllabus
 exports.uploadSyllabus = async (req, res) => {
   try {
     const file = req.file || (req.files && req.files[0]);
@@ -127,9 +123,7 @@ exports.uploadSyllabus = async (req, res) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Delete Syllabus (Admin only)
-// ──────────────────────────────────────────────────────────
+// delete syllabus
 exports.deleteSyllabus = async (req, res) => {
   try {
     const { id } = req.params;

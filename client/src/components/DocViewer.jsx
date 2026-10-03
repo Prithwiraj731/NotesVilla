@@ -86,8 +86,7 @@ export default function DocViewer({
       return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
     }
 
-    // For PDFs: if the URL points to the backend /uploads/ path, use the download
-    // endpoint instead which has cloud proxy fallback for Render's ephemeral filesystem
+    // use download endpoint fallback for pdf files
     if (category === 'pdf' && fileUrl.includes('/uploads/')) {
       try {
         const urlObj = new URL(fileUrl, window.location.origin);
@@ -119,7 +118,7 @@ export default function DocViewer({
       borderRadius: isFullscreen ? '0' : '10px',
       border: isFullscreen ? 'none' : '1px solid rgba(251, 54, 64, 0.3)'
     }}>
-      {/* ─── TOP TOOLBAR ─────────────────────────────────────── */}
+      {/* top toolbar */}
       <div className="docviewer-toolbar">
         {/* Left: Title & File Badge */}
         <div className="docviewer-title-group">
@@ -266,7 +265,7 @@ export default function DocViewer({
         </div>
       </div>
 
-      {/* ─── MAIN PREVIEW BODY ───────────────────────────────── */}
+      {/* preview body */}
       <div style={{
         flex: 1,
         position: 'relative',

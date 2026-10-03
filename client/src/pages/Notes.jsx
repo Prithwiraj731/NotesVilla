@@ -117,8 +117,7 @@ export default function Notes() {
     }
   };
 
-  // Dynamically compute subjects from both subjects endpoint and notes in DB
-  // This guarantees ANY note uploaded with a new subject automatically creates that subject here!
+  // get unique list of subjects from notes and api
   const allSubjects = useMemo(() => {
     const set = new Set();
     rawSubjects.forEach(s => s && set.add(s.trim()));
@@ -288,7 +287,7 @@ export default function Notes() {
     <div className="notes-page-container">
       <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
 
-        {/* ─── BREADCRUMB / HEADER ─────────────────────────────── */}
+        {/* header */}
         <div className="notes-header-block">
           <div style={{
             display: 'inline-flex',
@@ -318,9 +317,7 @@ export default function Notes() {
           </h1>
         </div>
 
-        {/* ──────────────────────────────────────────────────────────
-            VIEW 1: ALL SUBJECTS DIRECTORY (When no subject is chosen)
-            ────────────────────────────────────────────────────────── */}
+        {/* all subjects directory */}
         {!selectedSubject ? (
           <div className="subjects-directory-view">
             {/* Search Bar for Subjects */}
@@ -406,9 +403,7 @@ export default function Notes() {
             )}
           </div>
         ) : (
-          /* ──────────────────────────────────────────────────────────
-             VIEW 2: SUBJECT DRILLDOWN VIEW (Theory / Lab / Suggestions)
-             ────────────────────────────────────────────────────────── */
+          /* subject notes view */
           <div className="subject-drilldown-view">
             
             {/* Back to Subjects Navigation */}
@@ -579,9 +574,7 @@ export default function Notes() {
           </div>
         )}
 
-        {/* ──────────────────────────────────────────────────────────
-            PREVIEW MODAL (Single Direct High-Performance Viewer)
-            ────────────────────────────────────────────────────────── */}
+        {/* preview modal */}
         {previewNote && (
           <div className={`docviewer-modal-backdrop ${modalFullscreen ? 'fullscreen-backdrop' : ''}`}>
             <div className={`docviewer-modal-dialog ${modalFullscreen ? 'fullscreen-dialog' : ''}`}>

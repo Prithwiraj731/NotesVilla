@@ -1,16 +1,4 @@
-/**
- * Enhanced Download Utility
- * Provides robust file download functionality with multiple fallback strategies
- * and comprehensive error handling for cross-browser compatibility
- */
-
-/**
- * Download a single file with multiple fallback strategies
- * @param {string} fileUrl - The URL of the file to download
- * @param {string} filename - The desired filename for the download
- * @param {Object} options - Configuration options
- * @returns {Promise<boolean>} - Success status of the download
- */
+// file download helper with multiple fallbacks
 export const downloadFile = async (fileUrl, filename, options = {}) => {
   const {
     enableLogging = true,
@@ -202,10 +190,7 @@ const downloadViaAnchor = (fileUrl, filename, enableLogging) => {
   });
 };
 
-/**
- * Strategy 2: Download using fetch API and blob creation
- * Good for cross-origin files and when we need more control
- */
+// download using fetch blob
 const downloadViaFetch = async (fileUrl, filename, enableLogging, timeout) => {
   try {
     // Create abort controller for timeout
@@ -253,10 +238,7 @@ const downloadViaFetch = async (fileUrl, filename, enableLogging, timeout) => {
   }
 };
 
-/**
- * Strategy 3: Fallback to opening in new tab
- * Last resort when other methods fail - DISABLED to prevent redirects
- */
+// fallback to open in new tab
 const downloadViaNewTab = (fileUrl, enableLogging) => {
   return new Promise((resolve) => {
     if (enableLogging) {
@@ -267,11 +249,7 @@ const downloadViaNewTab = (fileUrl, enableLogging) => {
   });
 };
 
-/**
- * Utility function to extract filename from URL
- * @param {string} url - The file URL
- * @returns {string} - Extracted filename or default
- */
+// extract filename from url
 export const extractFilenameFromUrl = (url) => {
   try {
     const urlObj = new URL(url);
@@ -283,11 +261,7 @@ export const extractFilenameFromUrl = (url) => {
   }
 };
 
-/**
- * Utility function to validate file URL
- * @param {string} url - The URL to validate
- * @returns {boolean} - Whether the URL is valid
- */
+// check if url is valid
 export const isValidFileUrl = (url) => {
   try {
     new URL(url);
@@ -297,13 +271,7 @@ export const isValidFileUrl = (url) => {
   }
 };
 
-/**
- * Convert static file URL to download endpoint URL
- * Converts /uploads/filename to /api/notes/download/filename?name=originalname
- * @param {string} fileUrl - The static file URL
- * @param {string} originalName - The original filename for the download
- * @returns {string} - The download endpoint URL
- */
+// convert local upload url to download endpoint
 export const convertToDownloadUrl = (fileUrl, originalName) => {
   try {
     if (!fileUrl) return '';
@@ -329,11 +297,7 @@ export const convertToDownloadUrl = (fileUrl, originalName) => {
   }
 };
 
-/**
- * Normalize file URLs:
- * 1. Rewrite any old render domain (notesvilla.onrender.com) to current render domain (notesvilla-sige.onrender.com).
- * 2. If running in production (not localhost) and URL points to localhost, rewrite to production backend base.
- */
+// normalize backend file urls
 export const normalizeFileUrl = (url) => {
   if (!url) return '';
   try {

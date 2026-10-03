@@ -4,10 +4,7 @@ const Note = require('../models/Note');
 const path = require('path');
 const fs = require('fs');
 
-// ──────────────────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────────────────
-
+// helpers
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'svg'];
 const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'];
 
@@ -30,7 +27,7 @@ function getBaseUrl() {
     || (process.env.NODE_ENV === 'production' ? 'https://notesvilla-sige.onrender.com' : 'http://localhost:5000');
 }
 
-/** Format Supabase row or MongoDB document to match frontend expectation */
+// format note for frontend
 function formatNote(row) {
   if (!row) return null;
   const id = row._id ? row._id.toString() : (row.id ? row.id.toString() : '');
@@ -77,10 +74,7 @@ function formatNote(row) {
   };
 }
 
-// ──────────────────────────────────────────────────────────
-// Upload (multi-file)
-// ──────────────────────────────────────────────────────────
-
+// upload multi-file notes
 exports.uploadNote = async (req, res) => {
   try {
     const files = req.files && req.files.length > 0 ? req.files : (req.file ? [req.file] : []);
@@ -202,10 +196,7 @@ exports.uploadNote = async (req, res) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Upload (single file)
-// ──────────────────────────────────────────────────────────
-
+// upload single file
 exports.uploadSingleNote = async (req, res) => {
   try {
     const file = req.file || (req.files && req.files[0]);
@@ -302,10 +293,7 @@ exports.uploadSingleNote = async (req, res) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Read endpoints
-// ──────────────────────────────────────────────────────────
-
+// fetch all subjects
 exports.listSubjects = async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -531,10 +519,7 @@ exports.getNoteById = async (req, res) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Update / Delete
-// ──────────────────────────────────────────────────────────
-
+// update note
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;

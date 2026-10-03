@@ -520,9 +520,7 @@ export default function AdminUpload() {
         </div>
       )}
 
-      {/* ──────────────────────────────────────────────────────────
-          TAB 1: NOTES UPLOAD & ARCHIVE
-          ────────────────────────────────────────────────────────── */}
+      {/* notes tab */}
       {activeTab === 'notes' && (
         <>
           <div className="cyber-panel admin-upload-card">
@@ -834,9 +832,7 @@ export default function AdminUpload() {
         </>
       )}
 
-      {/* ──────────────────────────────────────────────────────────
-          TAB 2: SYLLABUS UPLOAD & ARCHIVE
-          ────────────────────────────────────────────────────────── */}
+      {/* syllabus tab */}
       {activeTab === 'syllabus' && (
         <>
           <div className="cyber-panel admin-upload-card">

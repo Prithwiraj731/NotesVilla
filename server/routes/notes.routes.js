@@ -42,11 +42,7 @@ const upload = multer({
   }
 });
 
-// ──────────────────────────────────────────────────────────
-// Multer middleware wrappers
-// Properly invoke multer handler with callback so files are parsed
-// before moving to the next handler.
-// ──────────────────────────────────────────────────────────
+// multer upload wrappers
 function multerSingle(fieldName = 'file') {
   const handler = upload.any();
   return (req, res, next) => {
@@ -114,10 +110,7 @@ function multerArray(fieldName = 'files', maxCount = 100) {
   };
 }
 
-// ──────────────────────────────────────────────────────────
-// Download routes (public, no auth)
-// ──────────────────────────────────────────────────────────
-
+// download routes
 router.get('/download-test', (req, res) => {
   res.json({
     message: 'Download route is accessible',
@@ -317,11 +310,7 @@ function getContentType(ext) {
 }
 
 
-// ──────────────────────────────────────────────────────────
-// Upload routes (admin only)
-// Auth runs first (reads headers only), then multer parses body+files
-// ──────────────────────────────────────────────────────────
-
+// admin upload routes
 router.post('/upload',
   adminMiddleware,
   multerArray('files', 100),
@@ -334,10 +323,7 @@ router.post('/upload-single',
   notesCtrl.uploadSingleNote
 );
 
-// ──────────────────────────────────────────────────────────
-// Public read endpoints
-// ──────────────────────────────────────────────────────────
-
+// public read routes
 router.get('/subjects', notesCtrl.listSubjects);
 
 router.get('/note/:id', notesCtrl.getNoteById);
