@@ -327,12 +327,14 @@ export default function Header() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 6px;
-          border: 1px solid rgba(251, 54, 64, 0.25);
-          background: rgba(251, 54, 64, 0.05);
-          color: var(--text-primary);
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(18, 24, 32, 0.55);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          color: #ffffff;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -344,9 +346,9 @@ export default function Header() {
         }
 
         .mobile-toggle-btn:hover {
-          border-color: var(--accent-orange);
-          background: rgba(251, 54, 64, 0.15);
-          color: var(--accent-orange);
+          border-color: rgba(255, 255, 255, 0.3);
+          background: rgba(26, 34, 46, 0.8);
+          color: #ffffff;
         }
 
         /* Mobile Backdrop Overlay */

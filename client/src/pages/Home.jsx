@@ -54,29 +54,130 @@ export default function Home() {
           ========================================================================= */}
       <section className="cinematic-hero">
         
-        {/* Subtle, soft ambient atmospheric glows */}
+        {/* Cosmic Background: Planet Arc, Orbits, Telemetry & Ambient Glows */}
+        <div className="cosmic-orbit-system" aria-hidden="true">
+          <svg className="cosmic-full-svg" viewBox="0 0 390 844" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="planet-rim-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ff1b2e" stopOpacity="0.05" />
+                <stop offset="35%" stopColor="#ff283d" stopOpacity="0.85" />
+                <stop offset="68%" stopColor="#ff5768" stopOpacity="1" />
+                <stop offset="100%" stopColor="#ff1b2e" stopOpacity="0.8" />
+              </linearGradient>
+              <radialGradient id="planet-body-grad" cx="80%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="#1e0407" stopOpacity="0.85" />
+                <stop offset="45%" stopColor="#0d0407" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#07090e" stopOpacity="0" />
+              </radialGradient>
+              <linearGradient id="orbit-grad-a" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ff2338" stopOpacity="0.75" />
+                <stop offset="45%" stopColor="#ff3b4f" stopOpacity="0.32" />
+                <stop offset="100%" stopColor="#ff182d" stopOpacity="0.05" />
+              </linearGradient>
+              <linearGradient id="orbit-grad-b" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ff3b4f" stopOpacity="0.65" />
+                <stop offset="50%" stopColor="#e51829" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="#ff2338" stopOpacity="0.02" />
+              </linearGradient>
+              <filter id="corona-bloom" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="7" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="node-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Dark Celestial Planet Disc Under Horizon Rim */}
+            <path
+              d="M 195 110 C 248 65, 332 50, 395 115 L 395 240 L 195 240 Z"
+              fill="url(#planet-body-grad)"
+              opacity="0.92"
+            />
+
+            {/* Top-Right Glowing Cosmic Planet Horizon Arc (Starts to the right of GROW) */}
+            <path
+              d="M 195 110 C 248 65, 332 50, 395 115"
+              stroke="#ff2639"
+              strokeWidth="15"
+              opacity="0.25"
+              filter="url(#corona-bloom)"
+              fill="none"
+            />
+            <path
+              d="M 195 110 C 248 65, 332 50, 395 115"
+              stroke="url(#planet-rim-grad)"
+              strokeWidth="3"
+              filter="url(#corona-bloom)"
+              fill="none"
+            />
+            <path
+              d="M 212 98 C 255 62, 332 50, 395 115"
+              stroke="#ffffff"
+              strokeWidth="1"
+              opacity="0.9"
+              fill="none"
+            />
+
+            {/* Orbit 1: Sweeps from right edge behind helmet, under buttons to lower-left */}
+            <path
+              d="M 390 270 C 280 300, 160 340, 85 410 C 35 460, 20 540, 30 600 C 35 660, 70 730, 130 760"
+              stroke="url(#orbit-grad-a)"
+              strokeWidth="1.2"
+              fill="none"
+            />
+
+            {/* Orbit 2: Elliptical path curving around character's neck and torso */}
+            <path
+              d="M 15 650 C 70 510, 165 470, 270 500 C 340 520, 375 600, 350 690 C 325 760, 240 790, 140 770"
+              stroke="url(#orbit-grad-b)"
+              strokeWidth="1"
+              fill="none"
+            />
+
+            {/* Orbit 3: Outer perimeter trajectory near top planet */}
+            <path
+              d="M 380 180 C 345 250, 330 340, 345 430 C 365 520, 390 600, 390 710"
+              stroke="#ff263a"
+              strokeWidth="0.8"
+              opacity="0.32"
+              fill="none"
+            />
+
+            {/* Glowing Telemetry Constellation Nodes on Right */}
+            <circle cx="365" cy="230" r="3.5" fill="#ff2338" filter="url(#node-glow)" />
+            <circle cx="365" cy="230" r="1.5" fill="#ffffff" />
+            <circle cx="345" cy="260" r="3" fill="#ff2338" filter="url(#node-glow)" />
+            <circle cx="315" cy="250" r="2.5" fill="#ff2338" filter="url(#node-glow)" />
+            <line x1="365" y1="230" x2="345" y2="260" stroke="#ff2338" strokeWidth="0.75" opacity="0.65" />
+            <line x1="345" y1="260" x2="315" y2="250" stroke="#ff2338" strokeWidth="0.75" opacity="0.65" />
+            <line x1="365" y1="180" x2="365" y2="225" stroke="#ff2338" strokeWidth="0.75" strokeDasharray="3,3" opacity="0.4" />
+
+            {/* Lower-left orbital satellite nodes */}
+            <circle cx="48" cy="480" r="3" fill="#ff2338" filter="url(#node-glow)" />
+            <circle cx="32" cy="600" r="3" fill="#ff2338" filter="url(#node-glow)" />
+            <circle cx="32" cy="600" r="7.5" stroke="#ff2338" strokeWidth="0.75" fill="none" opacity="0.45" />
+            <circle cx="115" cy="750" r="2.5" fill="#ff2338" opacity="0.7" />
+          </svg>
+        </div>
+
+        {/* Ambient atmospheric glows */}
         <div style={{
           position: "absolute",
           top: "5%",
           left: "0%",
-          width: "50vw",
-          height: "50vw",
+          width: "45vw",
+          height: "45vw",
           background: "radial-gradient(circle, rgba(251, 54, 64, 0.04) 0%, transparent 70%)",
           borderRadius: "50%",
           filter: "blur(120px)",
-          pointerEvents: "none",
-          zIndex: 1
-        }} />
-
-        <div style={{
-          position: "absolute",
-          top: "10%",
-          right: "5%",
-          width: "40vw",
-          height: "40vw",
-          background: "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)",
-          borderRadius: "50%",
-          filter: "blur(100px)",
           pointerEvents: "none",
           zIndex: 1
         }} />
@@ -87,9 +188,15 @@ export default function Home() {
           {/* Main 2-Column Hero Stage */}
           <div className="hero-main-stage">
             
-            {/* Left Column: Title Graphic & Action Buttons */}
+            {/* Left Column: Eyebrow, Title Graphic, Tagline & Action Buttons */}
             <div className="hero-left-col">
               
+              {/* Eyebrow: Red bar + LEARN • PRACTICE • GROW */}
+              <div className="hero-eyebrow">
+                <span className="hero-eyebrow-bar" />
+                <span className="hero-eyebrow-text">LEARN &nbsp;•&nbsp; PRACTICE &nbsp;•&nbsp; GROW</span>
+              </div>
+
               {/* KNOWLEDGE DOCK Title Graphic Image */}
               <div className="hero-title-container">
                 <img 
@@ -99,54 +206,64 @@ export default function Home() {
                 />
               </div>
 
+              {/* Tagline: Smarter learning. */}
+              <div className="hero-tagline">
+                <span className="hero-tagline-smarter">Smarter </span>
+                <span className="hero-tagline-learning">learning.</span>
+              </div>
+
               {/* Action Buttons */}
               <div className="hero-actions">
+                {/* Primary CTA: EXPLORE NOTES */}
                 <button
                   onClick={() => nav("/notes")}
                   className="hero-play-btn"
                   id="hero-explore-btn"
                   aria-label="Explore Course Notes"
                 >
-                  <div className="play-icon-circle">
-                    <Play size={11} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "1.5px" }} />
+                  <div className="play-icon-box">
+                    <Play size={12} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "1.5px" }} />
                   </div>
-                  <span>EXPLORE NOTES</span>
-                  <ArrowRight size={14} className="hero-btn-arrow" />
+                  <span className="hero-play-text">EXPLORE NOTES</span>
+                  <ArrowRight size={16} className="hero-btn-arrow" />
                 </button>
 
-                <button
-                  onClick={() => nav("/routine")}
-                  className="hero-secondary-btn"
-                  id="hero-routine-btn"
-                  aria-label="View Class Routine"
-                >
-                  <Calendar size={15} className="hero-secondary-icon" />
-                  <span>CLASS ROUTINE</span>
-                </button>
+                {/* Secondary Button Row: CLASS ROUTINE & LAB SETUP */}
+                <div className="hero-secondary-group">
+                  <button
+                    onClick={() => nav("/routine")}
+                    className="hero-secondary-btn"
+                    id="hero-routine-btn"
+                    aria-label="View Class Routine"
+                  >
+                    <Calendar size={14} className="hero-secondary-icon" />
+                    <span>CLASS ROUTINE</span>
+                  </button>
 
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('lab-setup');
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                      nav('/lab-setup');
-                    }
-                  }}
-                  className="hero-secondary-btn"
-                  id="hero-lab-btn"
-                  title="Configure Linux Lab environment with setup.sh"
-                  aria-label="Open Ubuntu Lab Setup"
-                >
-                  <Terminal size={15} className="hero-secondary-icon terminal-accent" />
-                  <span>LAB SETUP</span>
-                </button>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('lab-setup');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        nav('/lab-setup');
+                      }
+                    }}
+                    className="hero-secondary-btn"
+                    id="hero-lab-btn"
+                    title="Configure Linux Lab environment with setup.sh"
+                    aria-label="Open Ubuntu Lab Setup"
+                  >
+                    <Terminal size={14} className="hero-secondary-icon terminal-accent" />
+                    <span>LAB SETUP</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Right Column: Character Graphic Showcase */}
             <div className="hero-character-col">
-              {/* Subtle Ambient Light Under Character */}
+              {/* Red Atmospheric Backlight Under/Behind Character */}
               <div className="char-glow-underlay" />
               
               {/* White Sci-Fi Student Character */}
@@ -278,10 +395,61 @@ export default function Home() {
           }
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .cinematic-hero {
-            padding: 4.8rem 1rem 1.8rem;
+            min-height: 820px;
+            padding: 4.8rem 1.25rem 2.5rem;
           }
+        }
+
+        /* Cosmic Orbit System & Top-Right Planet Horizon Arc */
+        .cosmic-orbit-system {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .planet-rim-container {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: clamp(340px, 65vw, 680px);
+          height: clamp(240px, 45vw, 460px);
+          pointer-events: none;
+          overflow: visible;
+        }
+
+        .planet-dark-disc {
+          position: absolute;
+          top: 25%;
+          right: -15%;
+          width: 120%;
+          height: 120%;
+          border-radius: 50%;
+          background: radial-gradient(circle at 60% 30%, rgba(200, 20, 35, 0.08) 0%, rgba(12, 16, 24, 0.95) 50%, #07090e 80%);
+          pointer-events: none;
+        }
+
+        .planet-rim-svg {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+
+        .cosmic-trajectories-svg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
         }
 
         .hero-content-wrapper {
@@ -301,10 +469,7 @@ export default function Home() {
 
         @media (max-width: 992px) {
           .hero-main-stage {
-            grid-template-columns: 1fr;
-            text-align: center;
-            gap: 2.2rem;
-            min-height: auto;
+            gap: 2rem;
           }
         }
 
@@ -312,18 +477,37 @@ export default function Home() {
         .hero-left-col {
           display: flex;
           flex-direction: column;
-          gap: 2rem;
+          gap: 1.6rem;
           text-align: left;
           z-index: 6;
           justify-content: center;
         }
 
-        @media (max-width: 992px) {
-          .hero-left-col {
-            text-align: center;
-            align-items: center;
-            gap: 1.5rem;
-          }
+        /* Eyebrow Tag: Red Pill + Uppercase Tracked Slogan */
+        .hero-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: -0.35rem;
+        }
+
+        .hero-eyebrow-bar {
+          width: 32px;
+          height: 3px;
+          background: linear-gradient(90deg, #ff2338 0%, #ff5263 100%);
+          border-radius: 2px;
+          box-shadow: 0 0 10px rgba(255, 35, 56, 0.7);
+          flex-shrink: 0;
+        }
+
+        .hero-eyebrow-text {
+          font-family: var(--font-body, system-ui, sans-serif);
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          color: #94a3b8;
+          text-transform: uppercase;
+          user-select: none;
         }
 
         .hero-title-container {
@@ -339,20 +523,7 @@ export default function Home() {
 
         @media (max-width: 992px) {
           .hero-title-container {
-            margin: 0 auto;
             max-width: 480px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .hero-title-container {
-            max-width: 410px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .hero-title-container {
-            max-width: 350px;
           }
         }
 
@@ -369,21 +540,29 @@ export default function Home() {
 
         @media (max-width: 992px) {
           .hero-title-img {
-            object-position: center;
             max-height: 270px;
           }
         }
 
-        @media (max-width: 640px) {
-          .hero-title-img {
-            max-height: 230px;
-          }
+        /* Tagline: Smarter learning. */
+        .hero-tagline {
+          font-family: var(--font-body, system-ui, sans-serif);
+          font-size: clamp(1.4rem, 4.5vw, 2.15rem);
+          line-height: 1.2;
+          margin-top: -0.5rem;
+          margin-bottom: 0.35rem;
+          letter-spacing: -0.01em;
         }
 
-        @media (max-width: 480px) {
-          .hero-title-img {
-            max-height: 195px;
-          }
+        .hero-tagline-smarter {
+          color: #ffffff;
+          font-weight: 400;
+        }
+
+        .hero-tagline-learning {
+          color: #ff283a;
+          font-weight: 700;
+          text-shadow: 0 0 24px rgba(255, 40, 58, 0.45);
         }
 
         .hero-actions {
@@ -393,48 +572,36 @@ export default function Home() {
           flex-wrap: wrap;
         }
 
-        @media (max-width: 992px) {
-          .hero-actions {
-            justify-content: center;
-            gap: 0.85rem;
-          }
+        .hero-secondary-group {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
         }
 
-        @media (max-width: 480px) {
-          .hero-actions {
-            width: 100%;
-            flex-direction: column;
-            gap: 0.75rem;
-            max-width: 320px;
-            margin: 0 auto;
-          }
-        }
-
-        /* Primary CTA Button: Luminous Modern Crimson */
+        /* Primary CTA Button: Luminous Modern Crimson Pill */
         .hero-play-btn {
           position: relative;
           overflow: hidden;
           display: inline-flex;
           align-items: center;
-          gap: 0.65rem;
-          height: 46px;
-          padding: 0 1.35rem 0 0.8rem;
-          background: linear-gradient(180deg, #ff3b47 0%, #e0212f 100%);
+          gap: 0.75rem;
+          height: 48px;
+          padding: 0 1.35rem 0 0.85rem;
+          background: linear-gradient(135deg, #ff2338 0%, #ee1628 100%);
           color: #ffffff;
           border: 1px solid rgba(255, 255, 255, 0.22);
-          border-radius: 10px;
+          border-radius: 12px;
           font-family: var(--font-body);
-          font-size: 0.86rem;
+          font-size: 0.88rem;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
           box-shadow: 
             inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
-            inset 0 -1px 0 0 rgba(0, 0, 0, 0.25),
-            0 1px 2px rgba(0, 0, 0, 0.4),
-            0 6px 20px -2px rgba(251, 54, 64, 0.35);
+            inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
+            0 8px 24px -2px rgba(245, 34, 52, 0.52);
         }
 
         /* Subtle sheen light sweep reflection */
@@ -457,26 +624,25 @@ export default function Home() {
 
         .hero-play-btn:hover {
           transform: translateY(-2px);
-          background: linear-gradient(180deg, #ff4c57 0%, #e82634 100%);
-          border-color: rgba(255, 255, 255, 0.32);
+          background: linear-gradient(135deg, #ff3649 0%, #f62031 100%);
+          border-color: rgba(255, 255, 255, 0.35);
           box-shadow: 
             inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
-            inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
-            0 8px 24px -2px rgba(251, 54, 64, 0.5);
+            0 12px 30px -2px rgba(245, 34, 52, 0.65);
         }
 
         .hero-play-btn:active {
           transform: translateY(0);
           box-shadow: 
             inset 0 1px 2px rgba(0, 0, 0, 0.35),
-            0 2px 8px rgba(251, 54, 64, 0.3);
+            0 4px 12px rgba(251, 54, 64, 0.4);
         }
 
-        .play-icon-circle {
+        .play-icon-box {
           width: 28px;
           height: 28px;
           border-radius: 7px;
-          background: rgba(0, 0, 0, 0.18);
+          background: rgba(0, 0, 0, 0.22);
           border: 1px solid rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(4px);
           display: flex;
@@ -486,13 +652,13 @@ export default function Home() {
           transition: transform 0.2s ease, background 0.2s ease;
         }
 
-        .hero-play-btn:hover .play-icon-circle {
-          transform: scale(1.05);
-          background: rgba(0, 0, 0, 0.24);
+        .hero-play-btn:hover .play-icon-box {
+          transform: scale(1.06);
+          background: rgba(0, 0, 0, 0.28);
         }
 
         .hero-btn-arrow {
-          color: rgba(255, 255, 255, 0.8);
+          color: rgba(255, 255, 255, 0.9);
           transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.2s ease;
           flex-shrink: 0;
         }
@@ -508,14 +674,14 @@ export default function Home() {
           display: inline-flex;
           align-items: center;
           gap: 0.6rem;
-          height: 46px;
+          height: 48px;
           padding: 0 1.25rem;
           background: rgba(18, 24, 33, 0.65);
           color: #cbd5e1;
           border: 1px solid rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border-radius: 10px;
+          border-radius: 11px;
           font-family: var(--font-body);
           font-size: 0.84rem;
           font-weight: 600;
@@ -562,45 +728,29 @@ export default function Home() {
           color: #ff6b77;
         }
 
-        @media (max-width: 480px) {
-          .hero-play-btn,
-          .hero-secondary-btn {
-            width: 100%;
-            justify-content: center;
-            height: 44px;
-            font-size: 0.82rem;
-          }
-        }
-
         /* Right Column: Character */
         .hero-character-col {
           position: relative;
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 460px;
+          min-height: 480px;
         }
 
         @media (max-width: 992px) {
           .hero-character-col {
-            min-height: 340px;
+            min-height: 380px;
           }
         }
 
-        @media (max-width: 640px) {
-          .hero-character-col {
-            min-height: 260px;
-          }
-        }
-
-        /* Ambient Subtle Light Under Character */
+        /* Ambient Subtle Light Under/Behind Character */
         .char-glow-underlay {
           position: absolute;
           width: 130%;
           height: 120%;
           max-width: 550px;
           max-height: 500px;
-          background: radial-gradient(ellipse at 52% 48%, rgba(251, 54, 64, 0.08) 0%, transparent 70%);
+          background: radial-gradient(ellipse at 52% 48%, rgba(251, 54, 64, 0.18) 0%, rgba(251, 54, 64, 0.05) 45%, transparent 70%);
           filter: blur(60px);
           top: 50%;
           left: 50%;
@@ -611,29 +761,13 @@ export default function Home() {
 
         .hero-character-img {
           width: 100%;
-          max-width: 440px;
-          max-height: 480px;
+          max-width: 450px;
+          max-height: 520px;
           height: auto;
           object-fit: contain;
           z-index: 4;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.8));
-          mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
-          -webkit-mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
-        }
-
-        @media (max-width: 992px) {
-          .hero-character-img {
-            max-width: 350px;
-            max-height: 370px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .hero-character-img {
-            max-width: 260px;
-            max-height: 280px;
-          }
+          filter: drop-shadow(0 0 25px rgba(255, 30, 45, 0.2)) drop-shadow(0 20px 40px rgba(0, 0, 0, 0.85));
         }
 
         .vertical-pagination {
@@ -645,6 +779,159 @@ export default function Home() {
           flex-direction: column;
           gap: 0.6rem;
           z-index: 5;
+        }
+
+        /* =========================================================================
+           MOBILE MATCH MEDIA (< 768px): Exact Reference Composition
+           ========================================================================= */
+        @media (max-width: 768px) {
+          .cinematic-hero {
+            min-height: 820px;
+            padding: 4.8rem 1.4rem 2rem;
+            position: relative;
+            overflow: hidden;
+            background: #06080d;
+          }
+
+          .hero-main-stage {
+            display: block;
+            position: relative;
+            min-height: 720px;
+          }
+
+          .hero-left-col {
+            position: relative;
+            z-index: 10;
+            text-align: left;
+            align-items: flex-start;
+            max-width: 280px;
+            gap: 1.1rem;
+          }
+
+          .hero-eyebrow {
+            margin-bottom: -0.25rem;
+          }
+
+          .hero-eyebrow-bar {
+            width: 28px;
+            height: 2.5px;
+          }
+
+          .hero-eyebrow-text {
+            font-size: 0.68rem;
+            letter-spacing: 0.16em;
+            color: #94a3b8;
+          }
+
+          .hero-title-container {
+            max-width: 265px;
+            margin: 0;
+          }
+
+          .hero-title-img {
+            max-height: 145px;
+            object-position: left center;
+          }
+
+          .hero-tagline {
+            font-size: 1.65rem;
+            margin-top: -0.35rem;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.01em;
+          }
+
+          .hero-actions {
+            width: 100%;
+            max-width: 265px;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.65rem;
+            margin: 0;
+          }
+
+          .hero-play-btn {
+            width: 100%;
+            height: 46px;
+            justify-content: flex-start;
+            padding: 0 1.15rem 0 0.75rem;
+            border-radius: 12px;
+            box-shadow: 
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+              0 6px 22px -2px rgba(245, 34, 52, 0.58);
+          }
+
+          .play-icon-box {
+            width: 27px;
+            height: 27px;
+            border-radius: 7px;
+          }
+
+          .hero-play-text {
+            flex: 1;
+            text-align: left;
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+          }
+
+          .hero-secondary-group {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            gap: 0.5rem;
+          }
+
+          .hero-secondary-btn {
+            flex: 1;
+            width: auto;
+            justify-content: center;
+            height: 38px;
+            padding: 0 0.45rem;
+            font-size: 0.68rem;
+            gap: 0.35rem;
+            white-space: nowrap;
+            border-radius: 9px;
+            background: rgba(18, 24, 32, 0.62);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          }
+
+          .hero-character-col {
+            position: absolute;
+            right: -10%;
+            bottom: 0;
+            width: 78%;
+            max-width: 330px;
+            min-height: auto;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+          }
+
+          .hero-character-img {
+            width: 100%;
+            height: auto;
+            max-width: 320px;
+            max-height: none;
+            object-position: right bottom;
+            filter: drop-shadow(0 0 35px rgba(255, 30, 45, 0.3)) drop-shadow(0 20px 45px rgba(0, 0, 0, 0.95));
+          }
+
+          .char-glow-underlay {
+            position: absolute;
+            width: 130%;
+            height: 130%;
+            top: 25%;
+            right: -15%;
+            background: radial-gradient(ellipse at 65% 50%, rgba(255, 35, 55, 0.28) 0%, rgba(255, 20, 35, 0.08) 40%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+            z-index: 1;
+          }
+
+          .vertical-pagination {
+            display: none;
+          }
         }
 
         @media (max-width: 992px) {
