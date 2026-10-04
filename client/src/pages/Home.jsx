@@ -275,13 +275,6 @@ export default function Home() {
           }
         }
 
-        @media (max-width: 768px) {
-          .cinematic-hero {
-            min-height: 820px;
-            padding: 4.8rem 1.25rem 2.5rem;
-          }
-        }
-
         .hero-content-wrapper {
           max-width: 1280px;
           margin: 0 auto;
@@ -591,148 +584,289 @@ export default function Home() {
         }
 
         /* =========================================================================
-           MOBILE MATCH MEDIA (< 768px): Exact Reference Composition
+           MOBILE MATCH MEDIA (< 768px): Modern Centered & Balanced Layout
            ========================================================================= */
         @media (max-width: 768px) {
           .cinematic-hero {
-            min-height: 820px;
-            padding: 4.8rem 1.4rem 2rem;
+            min-height: auto;
+            padding: 4.8rem 1.25rem 2rem;
             position: relative;
             overflow: hidden;
-            background: #06080d;
+            background: 
+              radial-gradient(ellipse at 50% 10%, rgba(251, 54, 64, 0.12) 0%, rgba(251, 54, 64, 0.02) 50%, transparent 70%),
+              #070a0f;
+          }
+
+          .hero-content-wrapper {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
           }
 
           .hero-main-stage {
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1.5rem;
+            min-height: auto;
             position: relative;
-            min-height: 720px;
+            width: 100%;
           }
 
+          /* Left Column (Content & CTAs) - Centered & Balanced */
           .hero-left-col {
             position: relative;
             z-index: 10;
-            text-align: left;
-            align-items: flex-start;
-            max-width: 280px;
-            gap: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+            gap: 1.2rem;
           }
 
+          /* Eyebrow: Centered Glowing Pill Tag */
           .hero-eyebrow {
-            margin-bottom: -0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin: 0 auto;
+            padding: 0.35rem 0.95rem;
+            background: rgba(251, 54, 64, 0.07);
+            border: 1px solid rgba(251, 54, 64, 0.22);
+            border-radius: 999px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
           }
 
           .hero-eyebrow-bar {
-            width: 28px;
+            width: 14px;
             height: 2.5px;
+            background: #ff283d;
+            border-radius: 2px;
+            box-shadow: 0 0 8px #ff283d;
           }
 
           .hero-eyebrow-text {
-            font-size: 0.68rem;
-            letter-spacing: 0.16em;
-            color: #94a3b8;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: #cbd5e1;
+            white-space: nowrap;
           }
 
+          /* Title Graphic Image: Centered & Properly Sized */
           .hero-title-container {
-            max-width: 265px;
-            margin: 0;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
           }
 
           .hero-title-img {
+            width: 100%;
             max-height: 145px;
-            object-position: left center;
+            height: auto;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.75));
           }
 
+          /* Action Buttons: Centered, Equal Width Grid, Proper Touch Ergonomics */
           .hero-actions {
             width: 100%;
-            max-width: 265px;
+            max-width: 340px;
+            margin: 0.25rem auto 0;
+            display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 0.65rem;
-            margin: 0;
+            gap: 0.75rem;
           }
 
+          /* Primary CTA: Full width, vibrant crimson glow, balanced play icon, bold text & arrow */
           .hero-play-btn {
             width: 100%;
-            height: 46px;
-            justify-content: flex-start;
-            padding: 0 1.15rem 0 0.75rem;
-            border-radius: 12px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem 0 0.85rem;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #ff2338 0%, #dc1427 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
-              0 6px 22px -2px rgba(245, 34, 52, 0.58);
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+              0 8px 25px -2px rgba(245, 34, 52, 0.58);
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+
+          .hero-play-btn:active {
+            transform: scale(0.985);
+            box-shadow: 0 4px 14px rgba(245, 34, 52, 0.45);
           }
 
           .play-icon-box {
-            width: 27px;
-            height: 27px;
-            border-radius: 7px;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
           }
 
           .hero-play-text {
             flex: 1;
-            text-align: left;
-            font-size: 0.82rem;
-            letter-spacing: 0.04em;
+            text-align: center;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #ffffff;
+            margin: 0 0.5rem;
           }
 
+          .hero-btn-arrow {
+            color: rgba(255, 255, 255, 0.95);
+            flex-shrink: 0;
+          }
+
+          /* Secondary Button Group: Exact 50/50 2-column grid, beautifully aligned */
           .hero-secondary-group {
             width: 100%;
-            display: flex;
-            flex-direction: row;
-            gap: 0.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
           }
 
           .hero-secondary-btn {
-            flex: 1;
-            width: auto;
+            width: 100%;
+            height: 44px;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            height: 38px;
-            padding: 0 0.45rem;
-            font-size: 0.68rem;
-            gap: 0.35rem;
+            gap: 0.5rem;
+            padding: 0 0.7rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
             white-space: nowrap;
-            border-radius: 9px;
-            background: rgba(18, 24, 32, 0.62);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 11px;
+            background: rgba(18, 24, 34, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+              0 4px 14px rgba(0, 0, 0, 0.35);
+            transition: all 0.2s ease;
           }
 
+          .hero-secondary-btn:active {
+            transform: scale(0.98);
+            background: rgba(26, 35, 48, 0.95);
+            border-color: rgba(255, 255, 255, 0.2);
+          }
+
+          .hero-secondary-icon {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+          }
+
+          /* Right Column (Character) - Centered & Featured */
           .hero-character-col {
-            position: absolute;
-            right: -10%;
-            bottom: 0;
-            width: 78%;
-            max-width: 330px;
+            position: relative;
+            width: 100%;
+            max-width: 290px;
+            margin: 0.5rem auto 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: auto;
             z-index: 2;
             pointer-events: none;
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-end;
+            right: auto;
+            bottom: auto;
+            left: auto;
+            transform: none;
           }
 
           .hero-character-img {
             width: 100%;
+            max-width: 270px;
             height: auto;
-            max-width: 320px;
-            max-height: none;
-            object-position: right bottom;
-            filter: drop-shadow(0 0 35px rgba(255, 30, 45, 0.3)) drop-shadow(0 20px 45px rgba(0, 0, 0, 0.95));
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            margin: 0 auto;
+            -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 98%);
+            mask-image: linear-gradient(to bottom, #000 72%, transparent 98%);
+            filter: 
+              drop-shadow(0 0 35px rgba(255, 30, 45, 0.35)) 
+              drop-shadow(0 20px 40px rgba(0, 0, 0, 0.95));
+            animation: heroFloatMobile 6s ease-in-out infinite alternate;
           }
 
           .char-glow-underlay {
             position: absolute;
             width: 130%;
             height: 130%;
-            top: 25%;
-            right: -15%;
-            background: radial-gradient(ellipse at 65% 50%, rgba(255, 35, 55, 0.28) 0%, rgba(255, 20, 35, 0.08) 40%, transparent 70%);
-            filter: blur(50px);
+            top: 50%;
+            left: 50%;
+            right: auto;
+            bottom: auto;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(255, 35, 55, 0.3) 0%, rgba(255, 20, 35, 0.08) 45%, transparent 70%);
+            filter: blur(45px);
             pointer-events: none;
             z-index: 1;
           }
 
           .vertical-pagination {
             display: none;
+          }
+
+          @keyframes heroFloatMobile {
+            0% {
+              transform: translateX(6px) translateY(0);
+            }
+            100% {
+              transform: translateX(6px) translateY(-8px);
+            }
+          }
+
+          @media (max-width: 360px) {
+            .hero-actions {
+              max-width: 100%;
+            }
+            .hero-secondary-btn {
+              font-size: 0.69rem;
+              padding: 0 0.35rem;
+              gap: 0.35rem;
+            }
+            .hero-secondary-icon {
+              width: 13px;
+              height: 13px;
+            }
+            .hero-character-col {
+              max-width: 240px;
+            }
+            .hero-character-img {
+              max-width: 230px;
+            }
           }
         }
 
