@@ -92,12 +92,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Tagline: Smarter learning. */}
-              <div className="hero-tagline">
-                <span className="hero-tagline-smarter">Smarter </span>
-                <span className="hero-tagline-learning">learning.</span>
-              </div>
-
               {/* Action Buttons */}
               <div className="hero-actions">
                 {/* Primary CTA: EXPLORE NOTES */}
@@ -380,27 +374,6 @@ export default function Home() {
           }
         }
 
-        /* Tagline: Smarter learning. */
-        .hero-tagline {
-          font-family: var(--font-body, system-ui, sans-serif);
-          font-size: clamp(1.4rem, 4.5vw, 2.15rem);
-          line-height: 1.2;
-          margin-top: -0.5rem;
-          margin-bottom: 0.35rem;
-          letter-spacing: -0.01em;
-        }
-
-        .hero-tagline-smarter {
-          color: #ffffff;
-          font-weight: 400;
-        }
-
-        .hero-tagline-learning {
-          color: #ff283a;
-          font-weight: 700;
-          text-shadow: 0 0 24px rgba(255, 40, 58, 0.45);
-        }
-
         .hero-actions {
           display: flex;
           align-items: center;
@@ -667,13 +640,6 @@ export default function Home() {
           .hero-title-img {
             max-height: 145px;
             object-position: left center;
-          }
-
-          .hero-tagline {
-            font-size: 1.65rem;
-            margin-top: -0.35rem;
-            margin-bottom: 0.25rem;
-            letter-spacing: -0.01em;
           }
 
           .hero-actions {
