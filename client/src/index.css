@@ -1,26 +1,29 @@
 /* ==========================================
-   NotesVilla Cyberpunk Design System (Imperial Red & Night)
+   NotesVilla Modern Minimalist Design System
    ========================================== */
 
 :root {
-  --bg-primary: #000F08;         /* Night - deep dark */
-  --bg-secondary: rgba(251, 54, 64, 0.04); /* Deep dark overlay based on Imperial Red */
-  --bg-tertiary: rgba(251, 54, 64, 0.08);  /* Deep dark panel highlight */
-  --accent-orange: #FB3640;      /* Imperial red */
+  --bg-primary: #090d12;         /* Deep midnight obsidian */
+  --bg-secondary: #0f141c;       /* Elevated dark surface */
+  --bg-tertiary: #151b24;        /* Component card surface */
+  --bg-panel: rgba(15, 20, 28, 0.75);
+  --accent-orange: #FB3640;      /* Signature crimson brand accent */
   --accent-orange-rgb: 251, 54, 64;
-  --accent-amber: rgba(251, 54, 64, 0.85); /* Translucent Imperial red */
-  --accent-amber-rgb: 251, 54, 64;
-  --text-primary: #f8f9fa;       /* Off-white */
-  --text-secondary: rgba(255, 255, 255, 0.7); /* Translucent white secondary */
-  --text-muted: rgba(255, 255, 255, 0.4);     /* Translucent white muted */
+  --accent-hover: #ff4d58;
+  --accent-soft: rgba(251, 54, 64, 0.1);
+  --text-primary: #f8fafc;       /* Crisp off-white */
+  --text-secondary: #94a3b8;     /* Slate muted */
+  --text-muted: #64748b;         /* Subtle slate */
   
   --font-cyber: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-tech: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  --border-glow: 1px solid rgba(251, 54, 64, 0.15);
-  --border-glow-active: 1px solid rgba(251, 54, 64, 0.4);
+  --transition-smooth: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.08);
+  --border-glow: 1px solid rgba(255, 255, 255, 0.09);
+  --border-glow-active: 1px solid rgba(251, 54, 64, 0.35);
+  --card-radius: 12px;
 }
 
 /* Base resets & typography */
@@ -37,6 +40,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -46,70 +51,71 @@ body {
   flex-direction: column;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Sleek neutral minimalist */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(251, 54, 64, 0.2);
-  border: 1px solid rgba(251, 54, 64, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-orange);
+  background: rgba(255, 255, 255, 0.24);
 }
 
-/* Cyberpunk Headings & Typography */
+/* Modern Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-cyber);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
+  font-weight: 700;
 }
 
 /* Custom Outlined Text */
 .text-outline {
   color: transparent;
-  -webkit-text-stroke: 1px rgba(248, 249, 250, 0.3);
+  -webkit-text-stroke: 1px rgba(248, 249, 250, 0.25);
   font-family: var(--font-cyber);
 }
 .text-outline:hover {
-  -webkit-text-stroke: 1px rgba(248, 249, 250, 0.7);
+  -webkit-text-stroke: 1px rgba(248, 249, 250, 0.6);
 }
 
-/* Glassmorphism Panels */
+/* Modern Minimalist Glass Cards */
 .cyber-panel {
-  background: rgba(0, 15, 8, 0.7);
+  background: rgba(15, 20, 28, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: var(--border-glow);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  border-radius: var(--card-radius);
   transition: var(--transition-smooth);
 }
 .cyber-panel:hover {
-  border: var(--border-glow-active);
-  box-shadow: 0 8px 32px 0 rgba(251, 54, 64, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
 }
 
 /* Custom Input Field */
 input, select, textarea {
-  background: rgba(0, 15, 8, 0.6) !important;
-  border: 1px solid rgba(251, 54, 64, 0.2) !important;
-  border-radius: 6px !important;
+  background: rgba(18, 24, 33, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
   color: var(--text-primary) !important;
   padding: 0.75rem 1.1rem;
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   letter-spacing: normal;
   outline: none;
   transition: var(--transition-smooth);
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent-orange) !important;
-  box-shadow: 0 0 12px rgba(251, 54, 64, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(251, 54, 64, 0.15) !important;
 }
 
 /* Specific Search Input with Icon clearance */
@@ -138,43 +144,43 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Primary Button */
+/* Primary Button - High-end modern action */
 .cyber-btn-orange {
   position: relative;
   background: var(--accent-orange) !important;
-  color: #000000 !important;
+  color: #ffffff !important;
   font-family: var(--font-tech);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   padding: 0.75rem 1.6rem;
-  font-size: 0.95rem;
-  border-radius: 6px;
-  border: none;
+  font-size: 0.92rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
   transition: var(--transition-smooth);
-  box-shadow: 0 4px 15px rgba(251, 54, 64, 0.3);
+  box-shadow: 0 2px 12px rgba(251, 54, 64, 0.28);
 }
 .cyber-btn-orange:hover {
-  background: rgba(251, 54, 64, 0.9) !important;
+  background: var(--accent-hover) !important;
   transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(251, 54, 64, 0.45);
+  box-shadow: 0 6px 20px rgba(251, 54, 64, 0.38);
 }
 
-/* Wireframe Button */
+/* Wireframe Button - Sleek neutral minimalist */
 .cyber-btn-wire {
   position: relative;
-  background: transparent !important;
-  color: var(--text-primary) !important;
-  border: 1px solid rgba(251, 54, 64, 0.3) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
   font-family: var(--font-tech);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 0.6rem 1.3rem;
-  border-radius: 6px;
-  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 0.65rem 1.3rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -182,10 +188,9 @@ input:focus, select:focus, textarea:focus {
   transition: var(--transition-smooth);
 }
 .cyber-btn-wire:hover {
-  background: rgba(251, 54, 64, 0.1) !important;
-  border-color: var(--accent-orange) !important;
-  color: var(--accent-orange) !important;
-  box-shadow: 0 0 14px rgba(251, 54, 64, 0.2);
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
 }
 
 /* Animations */

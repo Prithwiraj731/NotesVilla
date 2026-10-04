@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import API from '../services/api';
 import DocViewer from '../components/DocViewer';
 import { downloadFile } from '../utils/downloadUtils';
+import { getCachedData, setCachedData } from '../utils/cacheUtils';
 import { 
   Layers, 
   FileText, 
   Search, 
   Download, 
   Eye, 
-  Sparkles, 
   RefreshCw, 
   ExternalLink,
   BookOpen,
@@ -16,8 +16,9 @@ import {
 } from 'lucide-react';
 
 export default function Syllabus() {
-  const [syllabi, setSyllabi] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedSyllabus = getCachedData('syllabus_all') || [];
+  const [syllabi, setSyllabi] = useState(() => (Array.isArray(cachedSyllabus) ? cachedSyllabus : []));
+  const [loading, setLoading] = useState(() => (!cachedSyllabus || cachedSyllabus.length === 0));
   const [error, setError] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,12 +32,15 @@ export default function Syllabus() {
 
   const fetchSyllabi = async () => {
     try {
-      setLoading(true);
+      if (!syllabi || syllabi.length === 0) {
+        setLoading(true);
+      }
       setError('');
       try {
         const res = await API.get('/syllabus');
         const items = res.data?.syllabi || [];
         setSyllabi(items);
+        setCachedData('syllabus_all', items);
         return;
       } catch (err) {
         if (err.response?.status === 404 || err.message?.includes('404')) {
@@ -59,13 +63,16 @@ export default function Syllabus() {
             createdAt: n.createdAt
           }));
           setSyllabi(syllabusNotes);
+          setCachedData('syllabus_all', syllabusNotes);
           return;
         }
         throw err;
       }
     } catch (err) {
       console.error('Error fetching syllabus archive:', err);
-      setError('Failed to load syllabus documents.');
+      if (!syllabi || syllabi.length === 0) {
+        setError('Failed to load syllabus documents.');
+      }
     } finally {
       setLoading(false);
     }
@@ -111,29 +118,6 @@ export default function Syllabus() {
         
         {/* Header Title */}
         <div className="syllabus-header">
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'rgba(251, 54, 64, 0.08)',
-            border: '1px solid rgba(251, 54, 64, 0.3)',
-            borderRadius: '30px',
-            padding: '0.35rem 1.1rem',
-            marginBottom: '0.85rem'
-          }}>
-            <Sparkles size={14} style={{ color: 'var(--accent-orange)' }} />
-            <span style={{
-              fontFamily: 'var(--font-body)',
-              fontWeight: '700',
-              color: '#ffffff',
-              fontSize: '0.75rem',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase'
-            }}>
-              Academic Curriculum
-            </span>
-          </div>
-
           <h1 className="syllabus-title">
             COURSE SYLLABUS ARCHIVE
           </h1>
@@ -271,13 +255,13 @@ export default function Syllabus() {
       <style>{`
         .syllabus-page-container {
           min-height: 100vh;
-          background: #000804;
+          background-color: #090d12;
           background-image: 
-            radial-gradient(circle at 10% 20%, rgba(251, 54, 64, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-            linear-gradient(rgba(251, 54, 64, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(251, 54, 64, 0.03) 1px, transparent 1px);
-          background-size: 100% 100%, 100% 100%, 35px 35px, 35px 35px;
+            radial-gradient(circle at 10% 20%, rgba(251, 54, 64, 0.04) 0%, transparent 45%),
+            radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 45%),
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
           padding: 6.5rem 1.5rem 4rem;
           box-sizing: border-box;
           font-family: var(--font-body);
@@ -311,18 +295,19 @@ export default function Syllabus() {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          background: rgba(0, 15, 8, 0.9);
-          border: 1px solid rgba(251, 54, 64, 0.3);
+          background: rgba(18, 24, 32, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
           padding: 0.75rem 1.2rem;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-          transition: border-color 0.2s ease;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+          backdrop-filter: blur(10px);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
           box-sizing: border-box;
         }
 
         .syllabus-search-box:focus-within {
-          border-color: var(--accent-orange);
-          box-shadow: 0 0 15px rgba(251, 54, 64, 0.25);
+          border-color: rgba(251, 54, 64, 0.6);
+          box-shadow: 0 0 16px rgba(251, 54, 64, 0.15);
         }
 
         .syllabus-search-input {
@@ -356,8 +341,8 @@ export default function Syllabus() {
         }
 
         .syllabus-pill-btn {
-          background: rgba(0, 15, 8, 0.8);
-          border: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(18, 24, 32, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: var(--text-secondary);
           padding: 0.35rem 0.85rem;
           border-radius: 20px;
@@ -369,14 +354,14 @@ export default function Syllabus() {
         }
 
         .syllabus-pill-btn:hover {
-          border-color: var(--accent-orange);
+          border-color: rgba(255, 255, 255, 0.25);
           color: #ffffff;
         }
 
         .syllabus-pill-btn.active {
           background: var(--accent-orange);
           border-color: var(--accent-orange);
-          color: #000000;
+          color: #ffffff;
           font-weight: 700;
         }
 
@@ -404,12 +389,16 @@ export default function Syllabus() {
           flex-direction: column;
           justify-content: space-between;
           transition: all 0.25s ease;
+          background: rgba(18, 24, 32, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(8px);
         }
 
         .syllabus-card:hover {
           transform: translateY(-4px);
-          border-color: var(--accent-orange);
-          box-shadow: 0 10px 30px rgba(251, 54, 64, 0.2);
+          border-color: rgba(251, 54, 64, 0.45);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+          background: rgba(24, 32, 44, 0.75);
         }
 
         .syllabus-card-top {
@@ -423,8 +412,8 @@ export default function Syllabus() {
           width: 40px;
           height: 40px;
           border-radius: 8px;
-          background: rgba(251, 54, 64, 0.1);
-          border: 1px solid rgba(251, 54, 64, 0.3);
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -432,14 +421,14 @@ export default function Syllabus() {
         }
 
         .syllabus-subject-badge {
-          background: rgba(251, 54, 64, 0.12);
-          border: 1px solid rgba(251, 54, 64, 0.25);
-          color: var(--accent-orange);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: var(--text-secondary);
           padding: 0.2rem 0.65rem;
           border-radius: 20px;
           font-family: var(--font-tech);
           font-size: 0.75rem;
-          font-weight: 700;
+          font-weight: 600;
           max-width: 75%;
           white-space: nowrap;
           overflow: hidden;
@@ -480,7 +469,7 @@ export default function Syllabus() {
           gap: 0.6rem;
           align-items: center;
           padding-top: 0.8rem;
-          border-top: 1px solid rgba(251, 54, 64, 0.12);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         /* Modal Dialog */

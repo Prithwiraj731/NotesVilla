@@ -254,14 +254,14 @@ export default function Header() {
 
         .nav-link:hover {
           color: #ffffff;
-          background: rgba(251, 54, 64, 0.06);
+          background: rgba(255, 255, 255, 0.05);
         }
 
         .nav-link.active {
           color: #ffffff;
-          font-weight: 700;
-          background: rgba(251, 54, 64, 0.12);
-          border: 1px solid rgba(251, 54, 64, 0.25);
+          font-weight: 600;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .nav-icon {
@@ -297,15 +297,16 @@ export default function Header() {
           align-items: center;
           gap: 0.45rem;
           background: var(--accent-orange);
-          color: #000000 !important;
+          color: #ffffff !important;
           font-family: var(--font-body);
           font-size: 0.85rem;
-          font-weight: 700;
-          padding: 0.55rem 1.15rem;
+          font-weight: 600;
+          padding: 0.52rem 1.15rem;
           border-radius: 6px;
           white-space: nowrap;
+          border: 1px solid rgba(255, 255, 255, 0.15);
           transition: all 0.2s ease;
-          box-shadow: 0 2px 10px rgba(251, 54, 64, 0.3);
+          box-shadow: 0 2px 10px rgba(251, 54, 64, 0.25);
         }
 
         /* Show Search CTA in top bar on desktop viewports */
@@ -316,9 +317,9 @@ export default function Header() {
         }
 
         .header-search-btn:hover {
-          background: rgba(251, 54, 64, 0.9);
+          background: var(--accent-hover);
           transform: translateY(-1px);
-          box-shadow: 0 4px 15px rgba(251, 54, 64, 0.45);
+          box-shadow: 0 4px 15px rgba(251, 54, 64, 0.35);
         }
 
         /* Mobile Menu Button */

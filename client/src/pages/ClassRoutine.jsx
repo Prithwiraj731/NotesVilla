@@ -30,29 +30,6 @@ export default function ClassRoutine() {
     <div className="routine-page-container">
       {/* Header Section */}
       <div className="routine-header-wrapper">
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'rgba(251, 54, 64, 0.08)',
-          border: '1px solid rgba(251, 54, 64, 0.25)',
-          borderRadius: '4px',
-          padding: '0.35rem 1rem',
-          marginBottom: '0.8rem'
-        }}>
-          <Calendar size={15} style={{ color: 'var(--accent-orange)' }} />
-          <span style={{
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-tech)',
-            fontWeight: '700',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            fontSize: '0.82rem'
-          }}>
-            Academic Timetable & Schedule
-          </span>
-        </div>
-
         <h1 style={{
           fontSize: 'clamp(1.8rem, 4.5vw, 3.4rem)',
           fontWeight: '900',
@@ -210,7 +187,12 @@ export default function ClassRoutine() {
       <style>{`
         .routine-page-container {
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.09) 0%, #000F08 75%);
+          background: #090d12;
+          background-image: 
+            radial-gradient(circle at 50% 15%, rgba(251, 54, 64, 0.04) 0%, transparent 60%),
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 100% 100%, 36px 36px, 36px 36px;
           padding: 2rem 1.5rem;
           padding-top: 6.5rem;
           box-sizing: border-box;
@@ -240,8 +222,10 @@ export default function ClassRoutine() {
           margin: 0 auto 4rem;
           border-radius: 12px;
           overflow: hidden;
-          border: 1px solid rgba(251, 54, 64, 0.25);
-          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+          background: rgba(18, 24, 32, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
         }
 
         @media (max-width: 768px) {
@@ -252,9 +236,9 @@ export default function ClassRoutine() {
         }
 
         .routine-toolbar {
-          background: rgba(0, 15, 8, 0.85);
+          background: rgba(18, 24, 32, 0.85);
           padding: 1rem 1.4rem;
-          border-bottom: 1px solid rgba(251, 54, 64, 0.15);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           justify-content: space-between;
           align-items: center;

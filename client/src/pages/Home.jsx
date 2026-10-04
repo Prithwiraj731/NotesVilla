@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import UbuntuLabSetup from "../components/UbuntuLabSetup";
+import { getCachedData, setCachedData } from "../utils/cacheUtils";
 import { 
   BookOpen, 
   Layers, 
@@ -17,8 +18,11 @@ import {
 
 export default function Home() {
   const nav = useNavigate();
-  const [dynamicSubjects, setDynamicSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [dynamicSubjects, setDynamicSubjects] = useState(() => {
+    const cached = getCachedData('subjects_list');
+    return Array.isArray(cached) ? cached.map(s => s.name || s) : [];
+  });
+  const [loading, setLoading] = useState(() => !getCachedData('subjects_list'));
 
   useEffect(() => {
     loadDynamicSubjects();
@@ -26,16 +30,17 @@ export default function Home() {
 
   const loadDynamicSubjects = async () => {
     try {
-      setLoading(true);
+      if (!getCachedData('subjects_list')) {
+        setLoading(true);
+      }
       const res = await API.get('/notes/subjects');
       if (Array.isArray(res.data) && res.data.length > 0) {
-        setDynamicSubjects(res.data.map(s => s.name || s));
-      } else {
-        setDynamicSubjects([]);
+        const subjects = res.data.map(s => s.name || s);
+        setDynamicSubjects(subjects);
+        setCachedData('subjects_list', res.data);
       }
     } catch (err) {
       console.error("Error loading subjects:", err);
-      setDynamicSubjects([]);
     } finally {
       setLoading(false);
     }
@@ -45,20 +50,20 @@ export default function Home() {
     <div className="home-page-container">
       
       {/* =========================================================================
-          MINIMALIST CINEMATIC HERO SECTION (Title Graphic, Character & Action Buttons)
+          MINIMALIST CINEMATIC HERO SECTION
           ========================================================================= */}
       <section className="cinematic-hero">
         
-        {/* Background Ambient Radial Glow */}
+        {/* Subtle, soft ambient atmospheric glows */}
         <div style={{
           position: "absolute",
           top: "5%",
           left: "0%",
-          width: "55vw",
-          height: "55vw",
-          background: "radial-gradient(circle, rgba(251, 54, 64, 0.16) 0%, transparent 65%)",
+          width: "50vw",
+          height: "50vw",
+          background: "radial-gradient(circle, rgba(251, 54, 64, 0.04) 0%, transparent 70%)",
           borderRadius: "50%",
-          filter: "blur(90px)",
+          filter: "blur(120px)",
           pointerEvents: "none",
           zIndex: 1
         }} />
@@ -67,11 +72,11 @@ export default function Home() {
           position: "absolute",
           top: "10%",
           right: "5%",
-          width: "45vw",
-          height: "45vw",
-          background: "radial-gradient(circle, rgba(251, 54, 64, 0.1) 0%, transparent 65%)",
+          width: "40vw",
+          height: "40vw",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)",
           borderRadius: "50%",
-          filter: "blur(80px)",
+          filter: "blur(100px)",
           pointerEvents: "none",
           zIndex: 1
         }} />
@@ -134,10 +139,8 @@ export default function Home() {
 
             {/* Right Column: Character Graphic Showcase */}
             <div className="hero-character-col">
-              {/* Radial Light Under Character */}
+              {/* Subtle Ambient Light Under Character */}
               <div className="char-glow-underlay" />
-              {/* Concentrated Red Rim Highlight */}
-              <div className="char-rim-glow" />
               
               {/* White Sci-Fi Student Character */}
               <img 
@@ -181,24 +184,14 @@ export default function Home() {
                   key={idx}
                   onClick={() => nav(`/notes?subject=${encodeURIComponent(subjName)}`)}
                   className="cyber-panel home-subject-card"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                    e.currentTarget.style.borderColor = "var(--accent-orange)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(251, 54, 64, 0.2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.borderColor = "rgba(251, 54, 64, 0.18)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
                 >
                   <div>
                     <div style={{
                       width: "38px",
                       height: "38px",
-                      borderRadius: "6px",
-                      background: "rgba(251, 54, 64, 0.1)",
-                      border: "1px solid rgba(251, 54, 64, 0.3)",
+                      borderRadius: "8px",
+                      background: "rgba(251, 54, 64, 0.08)",
+                      border: "1px solid rgba(251, 54, 64, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -214,7 +207,7 @@ export default function Home() {
                       View date-wise lecture notes archive, preview documents, and download PDFs.
                     </p>
                   </div>
-                  <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                  <span style={{ color: "var(--accent-orange)", fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.3rem" }}>
                     Open Notes <ChevronRight size={14} />
                   </span>
                 </div>
@@ -224,11 +217,11 @@ export default function Home() {
             <div style={{
               textAlign: "center",
               padding: "2.5rem 1.25rem",
-              background: "rgba(0, 5, 2, 0.6)",
-              border: "1px dashed rgba(251, 54, 64, 0.25)",
-              borderRadius: "8px"
+              background: "rgba(15, 20, 28, 0.5)",
+              border: "1px dashed rgba(255, 255, 255, 0.12)",
+              borderRadius: "10px"
             }}>
-              <BookOpen size={36} style={{ color: "var(--accent-orange)", margin: "0 auto 0.8rem", opacity: 0.8 }} />
+              <BookOpen size={36} style={{ color: "var(--text-muted)", margin: "0 auto 0.8rem", opacity: 0.8 }} />
               <h3 style={{ fontFamily: "var(--font-cyber)", fontSize: "1.15rem", color: "#ffffff", marginBottom: "0.4rem" }}>
                 NO SUBJECT NOTES UPLOADED YET
               </h3>
@@ -258,7 +251,7 @@ export default function Home() {
         .home-page-container {
           position: relative;
           min-height: 100vh;
-          background: #000F08;
+          background: var(--bg-primary);
           overflow-x: hidden;
           width: 100%;
           box-sizing: border-box;
@@ -363,7 +356,7 @@ export default function Home() {
           object-fit: contain;
           object-position: left center;
           display: block;
-          filter: drop-shadow(0 0 35px rgba(251, 54, 64, 0.5));
+          filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.6));
           user-select: none;
         }
 
@@ -383,7 +376,6 @@ export default function Home() {
         @media (max-width: 480px) {
           .hero-title-img {
             max-height: 195px;
-            filter: drop-shadow(0 0 22px rgba(251, 54, 64, 0.4));
           }
         }
 
@@ -416,17 +408,17 @@ export default function Home() {
           align-items: center;
           gap: 0.75rem;
           background: var(--accent-orange);
-          color: #000000;
-          border: none;
-          border-radius: 30px;
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
           padding: 0.8rem 1.8rem 0.8rem 0.8rem;
           font-family: var(--font-cyber);
-          font-size: 0.95rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
+          font-size: 0.92rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
           cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-          box-shadow: 0 4px 25px rgba(251, 54, 64, 0.5), 0 0 10px rgba(251, 54, 64, 0.3);
+          transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+          box-shadow: 0 4px 14px rgba(251, 54, 64, 0.3);
         }
 
         @media (max-width: 480px) {
@@ -439,20 +431,19 @@ export default function Home() {
         }
 
         .hero-play-btn:hover {
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 8px 35px rgba(251, 54, 64, 0.7), 0 0 15px rgba(251, 54, 64, 0.5);
-          background: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 22px rgba(251, 54, 64, 0.45);
+          background: var(--accent-hover);
         }
 
         .play-icon-circle {
           width: 32px;
           height: 32px;
-          border-radius: 50%;
-          background: #000000;
+          border-radius: 6px;
+          background: rgba(0, 0, 0, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.2);
           flex-shrink: 0;
         }
 
@@ -467,19 +458,19 @@ export default function Home() {
           display: inline-flex;
           align-items: center;
           gap: 0.55rem;
-          background: rgba(251, 54, 64, 0.08);
-          color: #ffffff;
-          border: 1px solid rgba(251, 54, 64, 0.4);
+          background: rgba(255, 255, 255, 0.04);
+          color: #e2e8f0;
+          border: 1px solid rgba(255, 255, 255, 0.12);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          border-radius: 30px;
-          padding: 0.85rem 1.8rem;
+          border-radius: 8px;
+          padding: 0.8rem 1.6rem;
           font-family: var(--font-cyber);
-          font-size: 0.9rem;
-          font-weight: 700;
-          letter-spacing: 0.04em;
+          font-size: 0.88rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
           cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         @media (max-width: 480px) {
@@ -492,11 +483,10 @@ export default function Home() {
         }
 
         .hero-secondary-btn:hover {
-          background: rgba(251, 54, 64, 0.2);
-          border-color: var(--accent-orange);
-          color: var(--accent-orange);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 25px rgba(251, 54, 64, 0.25);
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+          transform: translateY(-2px);
         }
 
         /* Right Column: Character */
@@ -520,66 +510,20 @@ export default function Home() {
           }
         }
 
-        /* Ambient Wide Red Atmospheric Light - Never Cut Off */
+        /* Ambient Subtle Light Under Character */
         .char-glow-underlay {
           position: absolute;
-          width: 150%;
-          height: 140%;
-          max-width: 680px;
-          max-height: 640px;
-          background: radial-gradient(ellipse at 52% 48%, rgba(251, 54, 64, 0.45) 0%, rgba(251, 54, 64, 0.25) 35%, rgba(251, 54, 64, 0.08) 60%, transparent 80%);
-          filter: blur(55px);
+          width: 130%;
+          height: 120%;
+          max-width: 550px;
+          max-height: 500px;
+          background: radial-gradient(ellipse at 52% 48%, rgba(251, 54, 64, 0.08) 0%, transparent 70%);
+          filter: blur(60px);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
           z-index: 1;
-        }
-
-        @media (max-width: 992px) {
-          .char-glow-underlay {
-            width: 140%;
-            height: 130%;
-            max-width: 480px;
-            max-height: 450px;
-            filter: blur(45px);
-          }
-        }
-
-        @media (max-width: 640px) {
-          .char-glow-underlay {
-            width: 160%;
-            height: 150%;
-            max-width: 360px;
-            max-height: 360px;
-            filter: blur(35px);
-            opacity: 0.9;
-          }
-        }
-
-        /* Concentrated Red Rim Highlight Behind Neck and Visor */
-        .char-rim-glow {
-          position: absolute;
-          width: 60%;
-          height: 65%;
-          max-width: 270px;
-          max-height: 310px;
-          background: radial-gradient(ellipse at 65% 45%, rgba(251, 54, 64, 0.7) 0%, rgba(251, 54, 64, 0.3) 45%, transparent 75%);
-          filter: blur(28px);
-          top: 48%;
-          left: 52%;
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        @media (max-width: 640px) {
-          .char-rim-glow {
-            width: 80%;
-            height: 80%;
-            filter: blur(20px);
-            opacity: 0.95;
-          }
         }
 
         .hero-character-img {
@@ -590,8 +534,7 @@ export default function Home() {
           object-fit: contain;
           z-index: 4;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(251, 54, 64, 0.35)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8));
-          /* Seamless 360-degree feathered vignette mask eliminating all straight boundary cuts */
+          filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.8));
           mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
           -webkit-mask-image: radial-gradient(ellipse 74% 75% at 48% 50%, #000000 40%, rgba(0, 0, 0, 0.92) 56%, rgba(0, 0, 0, 0.35) 70%, transparent 82%);
         }
@@ -631,7 +574,7 @@ export default function Home() {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.2);
           transition: all 0.2s ease;
         }
 
@@ -639,7 +582,7 @@ export default function Home() {
           height: 18px;
           border-radius: 4px;
           background: var(--accent-orange);
-          box-shadow: 0 0 8px var(--accent-orange);
+          box-shadow: 0 0 8px rgba(251, 54, 64, 0.5);
         }
 
         /* Academic Repository Section Styles */
@@ -660,9 +603,9 @@ export default function Home() {
         .home-repo-panel {
           border-radius: 12px;
           padding: 2.5rem 2rem;
-          border: 1px solid rgba(251, 54, 64, 0.2);
-          background: rgba(0, 15, 8, 0.85);
-          margin-bottom: 3rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(15, 20, 28, 0.72);
+          margin-bottom: 2.5rem;
         }
 
         @media (max-width: 768px) {
@@ -686,14 +629,22 @@ export default function Home() {
         }
 
         .home-subject-card {
-          border-radius: 8px;
+          border-radius: 10px;
           padding: 1.4rem;
-          border: 1px solid rgba(251, 54, 64, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(18, 24, 33, 0.6);
           cursor: pointer;
           transition: all 0.25s ease;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+        }
+
+        .home-subject-card:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.18);
+          background: rgba(22, 29, 40, 0.75);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
         @media (max-width: 640px) {

@@ -4,6 +4,7 @@ import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
 import { resolveNoteCategory } from '../utils/categoryUtils';
+import { getCachedData, setCachedData } from '../utils/cacheUtils';
 import { 
   Search, 
   Download, 
@@ -21,7 +22,6 @@ import {
   FlaskConical,
   HelpCircle,
   FolderOpen,
-  Sparkles,
   RefreshCw,
   Maximize2,
   Minimize2
@@ -59,13 +59,23 @@ export default function Notes() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [rawSubjects, setRawSubjects] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const cachedNotes = getCachedData('notes_all') || [];
+  const cachedSubjs = getCachedData('subjects_list') || [];
+
+  const [rawSubjects, setRawSubjects] = useState(() => (Array.isArray(cachedSubjs) ? cachedSubjs.map(s => (typeof s === 'string' ? s : (s.name || s.subjectName || ''))).filter(Boolean) : []));
+  const [notes, setNotes] = useState(() => (Array.isArray(cachedNotes) ? cachedNotes : []));
+  const [loading, setLoading] = useState(() => (!cachedNotes || cachedNotes.length === 0));
   const [error, setError] = useState('');
 
-  // Selected subject: null means showing Subject Directory; otherwise subject string
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  // Selected subject: initialize directly from URL query param to prevent layout jump
+  const [selectedSubject, setSelectedSubject] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const subj = params.get('subject');
+      return subj && subj.trim() ? subj.trim() : null;
+    }
+    return null;
+  });
   const [selectedCategory, setSelectedCategory] = useState('All'); // 'All' | 'Theory' | 'Lab' | 'Suggestions'
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -94,8 +104,10 @@ export default function Notes() {
   const loadSubjects = async () => {
     try {
       const r = await API.get('/notes/subjects');
-      if (Array.isArray(r.data)) {
-        setRawSubjects(r.data.map(s => (typeof s === 'string' ? s : (s.name || s.subjectName || ''))).filter(Boolean));
+      if (Array.isArray(r.data) && r.data.length > 0) {
+        const subjs = r.data.map(s => (typeof s === 'string' ? s : (s.name || s.subjectName || ''))).filter(Boolean);
+        setRawSubjects(subjs);
+        setCachedData('subjects_list', r.data);
       }
     } catch (err) {
       console.error('Error loading subjects:', err);
@@ -104,14 +116,21 @@ export default function Notes() {
 
   const loadAllNotes = async () => {
     try {
-      setLoading(true);
+      if (!notes || notes.length === 0) {
+        setLoading(true);
+      }
       setError('');
       const r = await API.get('/notes?limit=250');
       const dataNotes = Array.isArray(r.data) ? r.data : (r.data?.notes || []);
-      setNotes(dataNotes);
+      if (Array.isArray(dataNotes)) {
+        setNotes(dataNotes);
+        setCachedData('notes_all', dataNotes);
+      }
     } catch (err) {
       console.error('Error loading notes:', err);
-      setError('Could not load notes. Please check connection.');
+      if (!notes || notes.length === 0) {
+        setError('Could not load notes. Please check connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -289,29 +308,6 @@ export default function Notes() {
 
         {/* header */}
         <div className="notes-header-block">
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'rgba(251, 54, 64, 0.08)',
-            border: '1px solid rgba(251, 54, 64, 0.3)',
-            borderRadius: '30px',
-            padding: '0.35rem 1.1rem',
-            marginBottom: '0.85rem'
-          }}>
-            <Sparkles size={14} style={{ color: 'var(--accent-orange)' }} />
-            <span style={{
-              fontFamily: 'var(--font-body)',
-              fontWeight: '700',
-              color: '#ffffff',
-              fontSize: '0.75rem',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase'
-            }}>
-              Academic Knowledge Archive
-            </span>
-          </div>
-
           <h1 className="notes-main-title">
             {selectedSubject ? selectedSubject.toUpperCase() : 'COURSE NOTES ARCHIVE'}
           </h1>
@@ -602,13 +598,13 @@ export default function Notes() {
       <style>{`
         .notes-page-container {
           min-height: 100vh;
-          background: #000804;
+          background-color: #090d12;
           background-image: 
-            radial-gradient(circle at 15% 15%, rgba(251, 54, 64, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-            linear-gradient(rgba(251, 54, 64, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(251, 54, 64, 0.03) 1px, transparent 1px);
-          background-size: 100% 100%, 100% 100%, 35px 35px, 35px 35px;
+            radial-gradient(circle at 15% 15%, rgba(251, 54, 64, 0.04) 0%, transparent 45%),
+            radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.03) 0%, transparent 45%),
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
           padding: 6.5rem 1.5rem 4rem;
           box-sizing: border-box;
           font-family: var(--font-body);
@@ -637,17 +633,18 @@ export default function Notes() {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          background: rgba(0, 15, 8, 0.9);
-          border: 1px solid rgba(251, 54, 64, 0.3);
+          background: rgba(18, 24, 32, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
           padding: 0.75rem 1.2rem;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-          transition: border-color 0.2s ease;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+          backdrop-filter: blur(10px);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .notes-search-box:focus-within {
-          border-color: var(--accent-orange);
-          box-shadow: 0 0 15px rgba(251, 54, 64, 0.25);
+          border-color: rgba(251, 54, 64, 0.6);
+          box-shadow: 0 0 16px rgba(251, 54, 64, 0.15);
         }
 
         .notes-search-input {
@@ -689,12 +686,16 @@ export default function Notes() {
           flex-direction: column;
           justify-content: space-between;
           min-height: 190px;
+          background: rgba(18, 24, 32, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(8px);
         }
 
         .subject-card-item:hover {
           transform: translateY(-4px);
-          border-color: var(--accent-orange);
-          box-shadow: 0 10px 30px rgba(251, 54, 64, 0.2);
+          border-color: rgba(251, 54, 64, 0.45);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+          background: rgba(24, 32, 44, 0.75);
         }
 
         .subject-card-top {
@@ -708,8 +709,8 @@ export default function Notes() {
           width: 44px;
           height: 44px;
           border-radius: 8px;
-          background: rgba(251, 54, 64, 0.1);
-          border: 1px solid rgba(251, 54, 64, 0.3);
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -717,14 +718,14 @@ export default function Notes() {
         }
 
         .subject-total-badge {
-          background: rgba(251, 54, 64, 0.12);
-          border: 1px solid rgba(251, 54, 64, 0.25);
-          color: var(--accent-orange);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: var(--text-secondary);
           padding: 0.2rem 0.65rem;
           border-radius: 20px;
           font-family: var(--font-tech);
           font-size: 0.75rem;
-          font-weight: 700;
+          font-weight: 600;
           text-transform: uppercase;
         }
 
@@ -774,7 +775,7 @@ export default function Notes() {
           justify-content: space-between;
           align-items: center;
           padding-top: 0.9rem;
-          border-top: 1px solid rgba(251, 54, 64, 0.12);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .subject-card-cta {
@@ -827,7 +828,7 @@ export default function Notes() {
           gap: 0.6rem;
           flex-wrap: wrap;
           margin-bottom: 2rem;
-          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           padding-bottom: 0.8rem;
         }
 
@@ -835,8 +836,8 @@ export default function Notes() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          background: rgba(0, 15, 8, 0.7);
-          border: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(18, 24, 32, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: var(--text-secondary);
           padding: 0.55rem 1.1rem;
           border-radius: 6px;
@@ -848,14 +849,14 @@ export default function Notes() {
         }
 
         .category-tab-btn:hover {
-          border-color: var(--accent-orange);
+          border-color: rgba(255, 255, 255, 0.25);
           color: #ffffff;
         }
 
         .category-tab-btn.active {
           background: var(--accent-orange);
           border-color: var(--accent-orange);
-          color: #000000;
+          color: #ffffff;
           font-weight: 700;
         }
 
@@ -868,7 +869,7 @@ export default function Notes() {
         }
 
         .category-tab-count.active-count {
-          background: #000000;
+          background: rgba(0, 0, 0, 0.3);
           color: #ffffff;
         }
 
@@ -886,12 +887,16 @@ export default function Notes() {
           flex-direction: column;
           justify-content: space-between;
           transition: all 0.2s ease;
+          background: rgba(18, 24, 32, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(8px);
         }
 
         .note-card-modern:hover {
-          border-color: rgba(251, 54, 64, 0.4);
+          border-color: rgba(255, 255, 255, 0.2);
           transform: translateY(-2px);
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+          background: rgba(24, 32, 44, 0.75);
         }
 
         .note-card-top-row {

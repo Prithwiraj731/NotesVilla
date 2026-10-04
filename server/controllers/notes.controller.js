@@ -185,6 +185,8 @@ exports.uploadNote = async (req, res) => {
       return res.status(500).json({ error: 'Failed to save note to database' });
     }
 
+    invalidateNotesCache();
+
     res.json({
       note: savedNote,
       message: `Note uploaded successfully with ${filesArray.length} file(s)!`,
@@ -283,6 +285,8 @@ exports.uploadSingleNote = async (req, res) => {
       return res.status(500).json({ error: 'Failed to save single note to database' });
     }
 
+    invalidateNotesCache();
+
     res.json({
       note: savedNote,
       message: 'Note uploaded successfully!'
@@ -293,22 +297,64 @@ exports.uploadSingleNote = async (req, res) => {
   }
 };
 
+// In-memory cache for fast response times
+const notesCache = new Map();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+function getCached(key) {
+  const item = notesCache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_TTL_MS) {
+    return item.data;
+  }
+  return null;
+}
+
+function setCache(key, data) {
+  notesCache.set(key, { data, timestamp: Date.now() });
+}
+
+function invalidateNotesCache() {
+  notesCache.clear();
+}
+exports.invalidateNotesCache = invalidateNotesCache;
+
 // fetch all subjects
 exports.listSubjects = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('notes')
-      .select('subject_name');
-
-    if (!error && data && data.length > 0) {
-      const distinct = [...new Set(data.map(r => r.subject_name).filter(Boolean))].sort();
-      return res.json(distinct.map(name => ({ name })));
+    const cacheKey = 'subjects_list';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
     }
 
-    // Fallback to MongoDB
+    // 1. Prioritize MongoDB if connected (primary source of truth)
     if (mongoose.connection.readyState === 1) {
-      const subjects = await Note.distinct('subjectName');
-      return res.json(subjects.map(name => ({ name })));
+      try {
+        const subjects = await Note.distinct('subjectName');
+        if (subjects && subjects.length > 0) {
+          const formatted = subjects.filter(Boolean).sort().map(name => ({ name }));
+          setCache(cacheKey, formatted);
+          return res.json(formatted);
+        }
+      } catch (mErr) {
+        console.warn('⚠️ MongoDB listSubjects query error:', mErr.message);
+      }
+    }
+
+    // 2. Fallback to Supabase
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('subject_name');
+
+      if (!error && data && data.length > 0) {
+        const distinct = [...new Set(data.map(r => r.subject_name).filter(Boolean))].sort();
+        const formatted = distinct.map(name => ({ name }));
+        setCache(cacheKey, formatted);
+        return res.json(formatted);
+      }
+    } catch (sErr) {
+      // Supabase table may not exist
     }
 
     res.json([]);
@@ -326,60 +372,77 @@ exports.listNotesBySubject = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    let query = supabase
-      .from('notes')
-      .select('*', { count: 'exact' })
-      .eq('subject_name', subjectName);
-    
-    if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
-      query = query.eq('category', category);
+    const cacheKey = `subject_${subjectName}_${category || 'all'}_${page}_${limit}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
     }
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range(skip, skip + limit - 1);
-
-    if (!error && data && data.length > 0) {
-      const total = count || data.length;
-      const totalPages = Math.ceil(total / limit);
-      return res.json({
-        notes: data.map(formatNote),
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalNotes: total,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-          limit
-        }
-      });
-    }
-
-    // Fallback to MongoDB
+    // 1. Prioritize MongoDB if connected
     if (mongoose.connection.readyState === 1) {
-      const filter = { subjectName };
-      if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
-        filter.category = category;
-      }
-      const total = await Note.countDocuments(filter);
-      const notes = await Note.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-      const totalPages = Math.ceil(total / limit);
-      return res.json({
-        notes: notes.map(formatNote),
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalNotes: total,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-          limit
+      try {
+        const filter = { subjectName: new RegExp(`^${subjectName.trim()}$`, 'i') };
+        if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
+          filter.category = category;
         }
-      });
+        const total = await Note.countDocuments(filter);
+        const notes = await Note.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+        const totalPages = Math.ceil(total / limit);
+        const responseData = {
+          notes: notes.map(formatNote),
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalNotes: total,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            limit
+          }
+        };
+        setCache(cacheKey, responseData);
+        return res.json(responseData);
+      } catch (mErr) {
+        console.warn('⚠️ MongoDB listNotesBySubject error:', mErr.message);
+      }
     }
+
+    // 2. Fallback to Supabase
+    try {
+      let query = supabase
+        .from('notes')
+        .select('*', { count: 'exact' })
+        .eq('subject_name', subjectName);
+      
+      if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
+        query = query.eq('category', category);
+      }
+
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(skip, skip + limit - 1);
+
+      if (!error && data && data.length > 0) {
+        const total = count || data.length;
+        const totalPages = Math.ceil(total / limit);
+        const responseData = {
+          notes: data.map(formatNote),
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalNotes: total,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            limit
+          }
+        };
+        setCache(cacheKey, responseData);
+        return res.json(responseData);
+      }
+    } catch (sErr) {}
 
     res.json({
       notes: [],
@@ -405,65 +468,82 @@ exports.getAllNotes = async (req, res) => {
     const skip = (page - 1) * limit;
     const { category, subject } = req.query;
 
-    let query = supabase
-      .from('notes')
-      .select('*', { count: 'exact' });
-
-    if (subject && subject !== 'All') {
-      query = query.eq('subject_name', subject);
-    }
-    if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
-      query = query.eq('category', category);
+    const cacheKey = `all_notes_${subject || 'all'}_${category || 'all'}_${page}_${limit}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
     }
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range(skip, skip + limit - 1);
-
-    if (!error && data && data.length > 0) {
-      const total = count || data.length;
-      const totalPages = Math.ceil(total / limit);
-      return res.json({
-        notes: data.map(formatNote),
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalNotes: total,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-          limit
-        }
-      });
-    }
-
-    // Fallback to MongoDB
+    // 1. Prioritize MongoDB if connected
     if (mongoose.connection.readyState === 1) {
-      const filter = {};
+      try {
+        const filter = {};
+        if (subject && subject !== 'All') {
+          filter.subjectName = new RegExp(`^${subject.trim()}$`, 'i');
+        }
+        if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
+          filter.category = category;
+        }
+        const total = await Note.countDocuments(filter);
+        const notes = await Note.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+        const totalPages = Math.ceil(total / limit);
+        const responseData = {
+          notes: notes.map(formatNote),
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalNotes: total,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            limit
+          }
+        };
+        setCache(cacheKey, responseData);
+        return res.json(responseData);
+      } catch (mErr) {
+        console.warn('⚠️ MongoDB getAllNotes error:', mErr.message);
+      }
+    }
+
+    // 2. Fallback to Supabase
+    try {
+      let query = supabase
+        .from('notes')
+        .select('*', { count: 'exact' });
+
       if (subject && subject !== 'All') {
-        filter.subjectName = subject;
+        query = query.eq('subject_name', subject);
       }
       if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
-        filter.category = category;
+        query = query.eq('category', category);
       }
-      const total = await Note.countDocuments(filter);
-      const notes = await Note.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-      const totalPages = Math.ceil(total / limit);
-      return res.json({
-        notes: notes.map(formatNote),
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalNotes: total,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-          limit
-        }
-      });
-    }
+
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(skip, skip + limit - 1);
+
+      if (!error && data && data.length > 0) {
+        const total = count || data.length;
+        const totalPages = Math.ceil(total / limit);
+        const responseData = {
+          notes: data.map(formatNote),
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalNotes: total,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            limit
+          }
+        };
+        setCache(cacheKey, responseData);
+        return res.json(responseData);
+      }
+    } catch (sErr) {}
 
     res.json({
       notes: [],
@@ -539,6 +619,7 @@ exports.updateNote = async (req, res) => {
       .single();
 
     if (!error && data) {
+      invalidateNotesCache();
       return res.json({
         note: formatNote(data),
         message: 'Note updated successfully'
@@ -554,6 +635,7 @@ exports.updateNote = async (req, res) => {
         if (date) note.date = new Date(date);
         if (category) note.category = category;
         await note.save();
+        invalidateNotesCache();
         return res.json({
           note: formatNote(note),
           message: 'Note updated successfully'
@@ -588,6 +670,7 @@ exports.deleteNote = async (req, res) => {
           try { fs.unlinkSync(filePath); } catch (e) {}
         }
       }
+      invalidateNotesCache();
       return res.json({ msg: 'Note deleted successfully' });
     }
 
@@ -603,6 +686,7 @@ exports.deleteNote = async (req, res) => {
             try { fs.unlinkSync(filePath); } catch (e) {}
           }
         }
+        invalidateNotesCache();
         return res.json({ msg: 'Note deleted successfully' });
       }
     }

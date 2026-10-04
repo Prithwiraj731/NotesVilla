@@ -46,22 +46,72 @@ function formatSyllabus(doc) {
   };
 }
 
+// In-memory cache for syllabus
+const syllabusCache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+
+function getCached(key) {
+  const item = syllabusCache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_TTL_MS) {
+    return item.data;
+  }
+  return null;
+}
+
+function setCache(key, data) {
+  syllabusCache.set(key, { data, timestamp: Date.now() });
+}
+
+function invalidateSyllabusCache() {
+  syllabusCache.clear();
+}
+exports.invalidateSyllabusCache = invalidateSyllabusCache;
+
 // get all syllabus
 exports.getAllSyllabus = async (req, res) => {
   try {
     const { subject } = req.query;
-    const filter = {};
-    if (subject && subject !== 'All') {
-      filter.subjectName = subject;
+    const cacheKey = `syllabus_${subject || 'all'}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
     }
 
-    const items = await Syllabus.find(filter)
-      .sort({ createdAt: -1 })
-      .lean();
+    let items = [];
+    if (mongoose.connection.readyState === 1) {
+      const filter = {};
+      if (subject && subject !== 'All') {
+        filter.subjectName = new RegExp(`^${subject.trim()}$`, 'i');
+      }
 
-    res.json({
+      items = await Syllabus.find(filter)
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // If Syllabus collection is empty, check Note collection as fallback
+      if (!items || items.length === 0) {
+        const Note = require('../models/Note');
+        const noteFilter = {
+          $or: [
+            { category: 'Syllabus' },
+            { title: { $regex: 'syllabus', $options: 'i' } }
+          ]
+        };
+        if (subject && subject !== 'All') {
+          noteFilter.subjectName = new RegExp(`^${subject.trim()}$`, 'i');
+        }
+        const noteItems = await Note.find(noteFilter).sort({ createdAt: -1 }).lean();
+        if (noteItems && noteItems.length > 0) {
+          items = noteItems;
+        }
+      }
+    }
+
+    const responseData = {
       syllabi: items.map(formatSyllabus)
-    });
+    };
+    setCache(cacheKey, responseData);
+    res.json(responseData);
   } catch (err) {
     console.error('Error fetching syllabus archive:', err);
     res.status(500).json({ error: 'Failed to load syllabus documents' });
@@ -113,6 +163,8 @@ exports.uploadSyllabus = async (req, res) => {
       uploadedBy: req.admin?.username || 'admin'
     });
 
+    invalidateSyllabusCache();
+
     res.json({
       syllabus: formatSyllabus(syllabusDoc),
       message: 'Syllabus uploaded successfully!'
@@ -147,6 +199,8 @@ exports.deleteSyllabus = async (req, res) => {
         try { fs.unlinkSync(filePath); } catch (e) {}
       }
     }
+
+    invalidateSyllabusCache();
 
     res.json({ msg: 'Syllabus deleted successfully' });
   } catch (err) {
