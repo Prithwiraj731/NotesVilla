@@ -104,18 +104,23 @@ export default function Home() {
                 <button
                   onClick={() => nav("/notes")}
                   className="hero-play-btn"
+                  id="hero-explore-btn"
+                  aria-label="Explore Course Notes"
                 >
                   <div className="play-icon-circle">
-                    <Play size={13} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "2px" }} />
+                    <Play size={11} style={{ fill: "#ffffff", color: "#ffffff", marginLeft: "1.5px" }} />
                   </div>
                   <span>EXPLORE NOTES</span>
+                  <ArrowRight size={14} className="hero-btn-arrow" />
                 </button>
 
                 <button
                   onClick={() => nav("/routine")}
                   className="hero-secondary-btn"
+                  id="hero-routine-btn"
+                  aria-label="View Class Routine"
                 >
-                  <Calendar size={16} />
+                  <Calendar size={15} className="hero-secondary-icon" />
                   <span>CLASS ROUTINE</span>
                 </button>
 
@@ -129,9 +134,11 @@ export default function Home() {
                     }
                   }}
                   className="hero-secondary-btn"
+                  id="hero-lab-btn"
                   title="Configure Linux Lab environment with setup.sh"
+                  aria-label="Open Ubuntu Lab Setup"
                 >
-                  <Terminal size={16} style={{ color: 'var(--accent-orange)' }} />
+                  <Terminal size={15} className="hero-secondary-icon terminal-accent" />
                   <span>LAB SETUP</span>
                 </button>
               </div>
@@ -382,14 +389,14 @@ export default function Home() {
         .hero-actions {
           display: flex;
           align-items: center;
-          gap: 1.25rem;
+          gap: 1rem;
           flex-wrap: wrap;
         }
 
         @media (max-width: 992px) {
           .hero-actions {
             justify-content: center;
-            gap: 1rem;
+            gap: 0.85rem;
           }
         }
 
@@ -398,95 +405,171 @@ export default function Home() {
             width: 100%;
             flex-direction: column;
             gap: 0.75rem;
-            max-width: 300px;
+            max-width: 320px;
             margin: 0 auto;
           }
         }
 
+        /* Primary CTA Button: Luminous Modern Crimson */
         .hero-play-btn {
+          position: relative;
+          overflow: hidden;
           display: inline-flex;
           align-items: center;
-          gap: 0.75rem;
-          background: var(--accent-orange);
+          gap: 0.65rem;
+          height: 46px;
+          padding: 0 1.35rem 0 0.8rem;
+          background: linear-gradient(180deg, #ff3b47 0%, #e0212f 100%);
           color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 8px;
-          padding: 0.8rem 1.8rem 0.8rem 0.8rem;
-          font-family: var(--font-cyber);
-          font-size: 0.92rem;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 10px;
+          font-family: var(--font-body);
+          font-size: 0.86rem;
           font-weight: 700;
-          letter-spacing: 0.02em;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-          box-shadow: 0 4px 14px rgba(251, 54, 64, 0.3);
+          box-shadow: 
+            inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+            inset 0 -1px 0 0 rgba(0, 0, 0, 0.25),
+            0 1px 2px rgba(0, 0, 0, 0.4),
+            0 6px 20px -2px rgba(251, 54, 64, 0.35);
         }
 
-        @media (max-width: 480px) {
-          .hero-play-btn {
-            width: 100%;
-            justify-content: center;
-            padding: 0.7rem 1.4rem 0.7rem 0.7rem;
-            font-size: 0.85rem;
-          }
+        /* Subtle sheen light sweep reflection */
+        .hero-play-btn::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -120%;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+          transform: skewX(-22deg);
+          transition: left 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+          pointer-events: none;
+        }
+
+        .hero-play-btn:hover::after {
+          left: 180%;
         }
 
         .hero-play-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 22px rgba(251, 54, 64, 0.45);
-          background: var(--accent-hover);
+          background: linear-gradient(180deg, #ff4c57 0%, #e82634 100%);
+          border-color: rgba(255, 255, 255, 0.32);
+          box-shadow: 
+            inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+            inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
+            0 8px 24px -2px rgba(251, 54, 64, 0.5);
+        }
+
+        .hero-play-btn:active {
+          transform: translateY(0);
+          box-shadow: 
+            inset 0 1px 2px rgba(0, 0, 0, 0.35),
+            0 2px 8px rgba(251, 54, 64, 0.3);
         }
 
         .play-icon-circle {
-          width: 32px;
-          height: 32px;
-          border-radius: 6px;
-          background: rgba(0, 0, 0, 0.3);
+          width: 28px;
+          height: 28px;
+          border-radius: 7px;
+          background: rgba(0, 0, 0, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          transition: transform 0.2s ease, background 0.2s ease;
         }
 
-        @media (max-width: 480px) {
-          .play-icon-circle {
-            width: 28px;
-            height: 28px;
-          }
+        .hero-play-btn:hover .play-icon-circle {
+          transform: scale(1.05);
+          background: rgba(0, 0, 0, 0.24);
         }
 
+        .hero-btn-arrow {
+          color: rgba(255, 255, 255, 0.8);
+          transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.2s ease;
+          flex-shrink: 0;
+        }
+
+        .hero-play-btn:hover .hero-btn-arrow {
+          transform: translateX(3px);
+          color: #ffffff;
+        }
+
+        /* Secondary Modern Glass Buttons */
         .hero-secondary-btn {
+          position: relative;
           display: inline-flex;
           align-items: center;
-          gap: 0.55rem;
-          background: rgba(255, 255, 255, 0.04);
-          color: #e2e8f0;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-radius: 8px;
-          padding: 0.8rem 1.6rem;
-          font-family: var(--font-cyber);
-          font-size: 0.88rem;
+          gap: 0.6rem;
+          height: 46px;
+          padding: 0 1.25rem;
+          background: rgba(18, 24, 33, 0.65);
+          color: #cbd5e1;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 10px;
+          font-family: var(--font-body);
+          font-size: 0.84rem;
           font-weight: 600;
-          letter-spacing: 0.02em;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        @media (max-width: 480px) {
-          .hero-secondary-btn {
-            width: 100%;
-            justify-content: center;
-            padding: 0.75rem 1.4rem;
-            font-size: 0.85rem;
-          }
+          box-shadow: 
+            inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+            0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .hero-secondary-btn:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.25);
+          background: rgba(26, 34, 46, 0.85);
+          border-color: rgba(255, 255, 255, 0.2);
           color: #ffffff;
           transform: translateY(-2px);
+          box-shadow: 
+            inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+            0 6px 18px rgba(0, 0, 0, 0.45);
+        }
+
+        .hero-secondary-btn:active {
+          transform: translateY(0);
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-secondary-icon {
+          color: #94a3b8;
+          transition: color 0.2s ease, transform 0.2s ease;
+          flex-shrink: 0;
+        }
+
+        .hero-secondary-icon.terminal-accent {
+          color: #ff5765;
+        }
+
+        .hero-secondary-btn:hover .hero-secondary-icon {
+          color: #ffffff;
+          transform: scale(1.08);
+        }
+
+        .hero-secondary-btn:hover .hero-secondary-icon.terminal-accent {
+          color: #ff6b77;
+        }
+
+        @media (max-width: 480px) {
+          .hero-play-btn,
+          .hero-secondary-btn {
+            width: 100%;
+            justify-content: center;
+            height: 44px;
+            font-size: 0.82rem;
+          }
         }
 
         /* Right Column: Character */
