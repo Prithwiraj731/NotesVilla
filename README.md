@@ -15,7 +15,7 @@ Eliminating exam-night chaos, expired links, and WhatsApp group scrambling forev
 
 <br/>
 
-[🚀 Live Preview](https://notes-villa.vercel.app) • [📖 Features](#-key-features) • [📱 Responsive UI](#-application-showcase) • [☁️ Architecture](#️-cloud-architecture) • [🛠️ Local Setup](#️-getting-started)
+[🚀 Live Preview](https://notes-villa.vercel.app) • [📖 Features](#-key-features) • [📱 Responsive UI](#-application-showcase) • [☁️ Architecture](#️-cloud-architecture) • [🏛️ System Design Spec](ARCHITECTURE_AND_SYSTEM_DESIGN.md) • [🛠️ Local Setup](#️-getting-started)
 
 </div>
 
@@ -103,6 +103,8 @@ NotesVilla utilizes a decoupled, fault-tolerant cloud architecture designed for 
 2. **Compute Tier (Render):** Stateless containerized Node.js REST API handling upload queues, authentication, and reverse-proxy stream forwarding.
 3. **Data Tier (Supabase + Mongo):** Primary ACID-compliant PostgreSQL database with JSONB multi-file array structures, coupled with an active failover to MongoDB Atlas.
 4. **Storage Tier (Cloudinary):** Multi-CDN storage network providing instant asset optimization and edge delivery for large PDF manuals and lecture slides.
+
+> 📖 **Deep Dive Available:** For the complete, publication-grade engineering specification, sequence diagrams, and cloud failover mechanisms, read our comprehensive [**ARCHITECTURE_AND_SYSTEM_DESIGN.md**](ARCHITECTURE_AND_SYSTEM_DESIGN.md).
 
 ---
 
