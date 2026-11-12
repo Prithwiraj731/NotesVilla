@@ -84,10 +84,15 @@ export default function Notes() {
   const [modalFullscreen, setModalFullscreen] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
-  // Initial load
+  // Initial load — SWR pattern: show cache instantly, refresh in background
+  const hasFetchedRef = React.useRef(false);
   useEffect(() => {
-    loadSubjects();
-    loadAllNotes();
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      // Fire both in parallel
+      loadSubjects();
+      loadAllNotes();
+    }
   }, []);
 
   // Sync selectedSubject with URL query param ?subject=...
@@ -114,25 +119,37 @@ export default function Notes() {
     }
   };
 
-  const loadAllNotes = async () => {
+  const loadAllNotes = async (retryCount = 0) => {
+    const hasCachedNotes = notes && notes.length > 0;
+    let shouldRetry = false;
     try {
-      if (!notes || notes.length === 0) {
+      // Only show loading spinner if we have NO cached data to display
+      if (!hasCachedNotes) {
         setLoading(true);
       }
       setError('');
       const r = await API.get('/notes?limit=250');
       const dataNotes = Array.isArray(r.data) ? r.data : (r.data?.notes || []);
-      if (Array.isArray(dataNotes)) {
+      if (Array.isArray(dataNotes) && dataNotes.length > 0) {
         setNotes(dataNotes);
         setCachedData('notes_all', dataNotes);
       }
     } catch (err) {
       console.error('Error loading notes:', err);
-      if (!notes || notes.length === 0) {
-        setError('Could not load notes. Please check connection.');
+      if (!hasCachedNotes) {
+        // Retry up to 2 times with exponential backoff before showing error
+        if (retryCount < 2) {
+          shouldRetry = true;
+          const delay = (retryCount + 1) * 1500;
+          setTimeout(() => loadAllNotes(retryCount + 1), delay);
+        } else {
+          setError('Could not load notes. Please check connection.');
+        }
       }
     } finally {
-      setLoading(false);
+      if (!shouldRetry) {
+        setLoading(false);
+      }
     }
   };
 

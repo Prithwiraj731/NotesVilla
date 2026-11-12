@@ -9,7 +9,7 @@ const resolvedBaseURL = rawBaseURL.replace(/https?:\/\/notesvilla\.onrender\.com
 
 const API = axios.create({
   baseURL: resolvedBaseURL,
-  timeout: 60000, // 60 second timeout for all requests
+  timeout: 30000, // 30 second timeout (reduced from 60s for faster failure detection)
   headers: {
     'Content-Type': 'application/json'
   }
@@ -20,31 +20,15 @@ export const setAuthToken = (token) => {
   else delete API.defaults.headers.common['Authorization'];
 };
 
-// Add response interceptor for debugging
+// Add response interceptor for error handling
 API.interceptors.response.use(
   response => {
-    console.log('API Response:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data
-    });
-
-    // Add additional validation for non-200 responses
-    if (response.status >= 400) {
-      console.warn(`⚠️ API request failed with status ${response.status}:`, {
-        url: response.config.url,
-        status: response.status,
-        data: response.data
-      });
-    }
-
     return response;
   },
   error => {
     console.error('API Error:', {
       url: error.config?.url,
       status: error.response?.status,
-      data: error.response?.data,
       message: error.message
     });
 

@@ -299,7 +299,7 @@ exports.uploadSingleNote = async (req, res) => {
 
 // In-memory cache for fast response times
 const notesCache = new Map();
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — notes don't change often, this dramatically reduces DB hits
 
 function getCached(key) {
   const item = notesCache.get(key);
@@ -327,34 +327,37 @@ exports.listSubjects = async (req, res) => {
       return res.json(cached);
     }
 
-    // 1. Prioritize MongoDB if connected (primary source of truth)
+    // Race MongoDB and Supabase in parallel for fastest response
+    const dbPromises = [];
+
+    // MongoDB promise
     if (mongoose.connection.readyState === 1) {
-      try {
+      const mongoPromise = (async () => {
         const subjects = await Note.distinct('subjectName');
-        if (subjects && subjects.length > 0) {
-          const formatted = subjects.filter(Boolean).sort().map(name => ({ name }));
-          setCache(cacheKey, formatted);
-          return res.json(formatted);
-        }
-      } catch (mErr) {
-        console.warn('⚠️ MongoDB listSubjects query error:', mErr.message);
-      }
+        if (!subjects || subjects.length === 0) throw new Error('No MongoDB subjects');
+        return subjects.filter(Boolean).sort().map(name => ({ name }));
+      })().catch(() => null);
+      dbPromises.push(mongoPromise);
     }
 
-    // 2. Fallback to Supabase
-    try {
+    // Supabase promise
+    const supabasePromise = (async () => {
       const { data, error } = await supabase
         .from('notes')
         .select('subject_name');
 
-      if (!error && data && data.length > 0) {
-        const distinct = [...new Set(data.map(r => r.subject_name).filter(Boolean))].sort();
-        const formatted = distinct.map(name => ({ name }));
-        setCache(cacheKey, formatted);
-        return res.json(formatted);
-      }
-    } catch (sErr) {
-      // Supabase table may not exist
+      if (error || !data || data.length === 0) throw new Error('No Supabase subjects');
+      const distinct = [...new Set(data.map(r => r.subject_name).filter(Boolean))].sort();
+      return distinct.map(name => ({ name }));
+    })().catch(() => null);
+    dbPromises.push(supabasePromise);
+
+    const results = await Promise.all(dbPromises);
+    const formatted = results.find(r => r !== null && r.length > 0);
+
+    if (formatted) {
+      setCache(cacheKey, formatted);
+      return res.json(formatted);
     }
 
     res.json([]);
@@ -378,21 +381,27 @@ exports.listNotesBySubject = async (req, res) => {
       return res.json(cached);
     }
 
-    // 1. Prioritize MongoDB if connected
+    // Race MongoDB and Supabase in parallel
+    const dbPromises = [];
+
+    // MongoDB promise
     if (mongoose.connection.readyState === 1) {
-      try {
+      const mongoPromise = (async () => {
         const filter = { subjectName: new RegExp(`^${subjectName.trim()}$`, 'i') };
         if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
           filter.category = category;
         }
-        const total = await Note.countDocuments(filter);
-        const notes = await Note.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean();
+        const [total, notes] = await Promise.all([
+          Note.countDocuments(filter),
+          Note.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+        ]);
+        if (!notes || notes.length === 0) throw new Error('No MongoDB results');
         const totalPages = Math.ceil(total / limit);
-        const responseData = {
+        return {
           notes: notes.map(formatNote),
           pagination: {
             currentPage: page,
@@ -403,15 +412,12 @@ exports.listNotesBySubject = async (req, res) => {
             limit
           }
         };
-        setCache(cacheKey, responseData);
-        return res.json(responseData);
-      } catch (mErr) {
-        console.warn('⚠️ MongoDB listNotesBySubject error:', mErr.message);
-      }
+      })().catch(() => null);
+      dbPromises.push(mongoPromise);
     }
 
-    // 2. Fallback to Supabase
-    try {
+    // Supabase promise
+    const supabasePromise = (async () => {
       let query = supabase
         .from('notes')
         .select('*', { count: 'exact' })
@@ -425,24 +431,30 @@ exports.listNotesBySubject = async (req, res) => {
         .order('created_at', { ascending: false })
         .range(skip, skip + limit - 1);
 
-      if (!error && data && data.length > 0) {
-        const total = count || data.length;
-        const totalPages = Math.ceil(total / limit);
-        const responseData = {
-          notes: data.map(formatNote),
-          pagination: {
-            currentPage: page,
-            totalPages,
-            totalNotes: total,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
-            limit
-          }
-        };
-        setCache(cacheKey, responseData);
-        return res.json(responseData);
-      }
-    } catch (sErr) {}
+      if (error || !data || data.length === 0) throw new Error('No Supabase results');
+      const total = count || data.length;
+      const totalPages = Math.ceil(total / limit);
+      return {
+        notes: data.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
+      };
+    })().catch(() => null);
+    dbPromises.push(supabasePromise);
+
+    const results = await Promise.all(dbPromises);
+    const responseData = results.find(r => r !== null);
+
+    if (responseData) {
+      setCache(cacheKey, responseData);
+      return res.json(responseData);
+    }
 
     res.json({
       notes: [],
@@ -474,9 +486,12 @@ exports.getAllNotes = async (req, res) => {
       return res.json(cached);
     }
 
-    // 1. Prioritize MongoDB if connected
+    // Race MongoDB and Supabase in parallel — use whichever responds first
+    const dbPromises = [];
+
+    // MongoDB promise
     if (mongoose.connection.readyState === 1) {
-      try {
+      const mongoPromise = (async () => {
         const filter = {};
         if (subject && subject !== 'All') {
           filter.subjectName = new RegExp(`^${subject.trim()}$`, 'i');
@@ -484,14 +499,17 @@ exports.getAllNotes = async (req, res) => {
         if (category && ['Theory', 'Lab', 'Suggestions', 'Syllabus'].includes(category)) {
           filter.category = category;
         }
-        const total = await Note.countDocuments(filter);
-        const notes = await Note.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean();
+        const [total, notes] = await Promise.all([
+          Note.countDocuments(filter),
+          Note.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+        ]);
+        if (!notes || notes.length === 0) throw new Error('No MongoDB results');
         const totalPages = Math.ceil(total / limit);
-        const responseData = {
+        return {
           notes: notes.map(formatNote),
           pagination: {
             currentPage: page,
@@ -502,15 +520,12 @@ exports.getAllNotes = async (req, res) => {
             limit
           }
         };
-        setCache(cacheKey, responseData);
-        return res.json(responseData);
-      } catch (mErr) {
-        console.warn('⚠️ MongoDB getAllNotes error:', mErr.message);
-      }
+      })().catch(() => null);
+      dbPromises.push(mongoPromise);
     }
 
-    // 2. Fallback to Supabase
-    try {
+    // Supabase promise
+    const supabasePromise = (async () => {
       let query = supabase
         .from('notes')
         .select('*', { count: 'exact' });
@@ -526,24 +541,31 @@ exports.getAllNotes = async (req, res) => {
         .order('created_at', { ascending: false })
         .range(skip, skip + limit - 1);
 
-      if (!error && data && data.length > 0) {
-        const total = count || data.length;
-        const totalPages = Math.ceil(total / limit);
-        const responseData = {
-          notes: data.map(formatNote),
-          pagination: {
-            currentPage: page,
-            totalPages,
-            totalNotes: total,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
-            limit
-          }
-        };
-        setCache(cacheKey, responseData);
-        return res.json(responseData);
-      }
-    } catch (sErr) {}
+      if (error || !data || data.length === 0) throw new Error('No Supabase results');
+      const total = count || data.length;
+      const totalPages = Math.ceil(total / limit);
+      return {
+        notes: data.map(formatNote),
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalNotes: total,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit
+        }
+      };
+    })().catch(() => null);
+    dbPromises.push(supabasePromise);
+
+    // Wait for all to settle, use the first non-null result
+    const results = await Promise.all(dbPromises);
+    const responseData = results.find(r => r !== null);
+
+    if (responseData) {
+      setCache(cacheKey, responseData);
+      return res.json(responseData);
+    }
 
     res.json({
       notes: [],
