@@ -346,9 +346,14 @@ router.get('/subject/:subjectName', notesCtrl.listNotesBySubject);
 router.get('/debug', (req, res) => {
   res.json({
     message: 'Notes API is working',
+    version: '2.1.0-folders',
     availableEndpoints: [
       'GET /api/notes/ (all notes)',
       'GET /api/notes/subjects',
+      'GET /api/notes/folders',
+      'POST /api/notes/folders (admin)',
+      'PUT /api/notes/folders/:id (admin)',
+      'DELETE /api/notes/folders/:id (admin)',
       'GET /api/notes/download/:filename',
       'POST /api/notes/upload (admin, multi-file)',
       'POST /api/notes/upload-single (admin, single file)',

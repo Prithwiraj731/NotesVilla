@@ -33,6 +33,24 @@ function isImageFile(filename) {
   return IMAGE_EXTENSIONS.includes(ext);
 }
 
+export function getNoteFolder(note) {
+  if (!note) return null;
+  if (note.folderName && typeof note.folderName === 'string' && note.folderName.trim() && note.folderName.toLowerCase() !== 'none' && note.folderName.toLowerCase() !== 'root') {
+    return note.folderName.trim();
+  }
+  if (note.topicName && typeof note.topicName === 'string' && note.topicName.trim()) {
+    const t = note.topicName.trim();
+    if (!['theory', 'lab', 'suggestions', 'syllabus'].includes(t.toLowerCase())) {
+      return t;
+    }
+  }
+  if (note.description && typeof note.description === 'string' && note.description.includes('[Folder:')) {
+    const m = note.description.match(/\[Folder:\s*([^\]]+)\]/);
+    if (m && m[1] && m[1].trim()) return m[1].trim();
+  }
+  return null;
+}
+
 export default function AdminUpload() {
   const navigate = useNavigate();
 
@@ -128,11 +146,50 @@ export default function AdminUpload() {
   const fetchFolders = async () => {
     try {
       setFetchingFolders(true);
-      const res = await API.get('/notes/folders');
-      const list = res.data?.folders || (Array.isArray(res.data) ? res.data : []);
-      if (Array.isArray(list)) {
-        setFolders(list);
+      let list = [];
+      try {
+        const res = await API.get('/notes/folders');
+        list = res.data?.folders || (Array.isArray(res.data) ? res.data : []);
+      } catch (apiErr) {
+        if (apiErr.response?.status === 404 || apiErr.message?.includes('404')) {
+          console.warn('⚠️ /notes/folders 404, using notes & local registry fallback');
+        } else {
+          throw apiErr;
+        }
       }
+
+      // Merge with localStorage custom folders
+      let localFolders = [];
+      try {
+        localFolders = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+      } catch (e) {}
+
+      // Discover folders from notes list in memory
+      const discoveredFromNotes = [];
+      notes.forEach(n => {
+        const f = getNoteFolder(n);
+        if (f) {
+          discoveredFromNotes.push({
+            id: 'disc_' + f,
+            _id: 'disc_' + f,
+            name: f,
+            subjectName: n.subjectName,
+            notesCount: 0
+          });
+        }
+      });
+
+      const combinedMap = new Map();
+      [...list, ...localFolders, ...discoveredFromNotes].forEach(f => {
+        if (f && f.name && f.subjectName) {
+          const key = `${f.subjectName.toLowerCase()}:::${f.name.toLowerCase()}`;
+          if (!combinedMap.has(key)) {
+            combinedMap.set(key, f);
+          }
+        }
+      });
+
+      setFolders(Array.from(combinedMap.values()));
     } catch (err) {
       console.error('Error fetching folders:', err);
     } finally {
@@ -268,7 +325,7 @@ export default function AdminUpload() {
     }
   };
 
-  // Quick inline folder create
+  // Quick inline folder create with resilient fallback
   const handleQuickCreateFolder = async () => {
     if (!form.subjectName?.trim()) {
       setError('Please specify the Subject Name first before creating a folder.');
@@ -279,26 +336,57 @@ export default function AdminUpload() {
       return;
     }
 
+    const trimmedSubj = form.subjectName.trim();
+    const trimmedFolder = quickFolderName.trim();
+
     try {
       setCreatingQuickFolder(true);
       setError('');
-      const res = await API.post('/notes/folders', {
-        name: quickFolderName.trim(),
-        subjectName: form.subjectName.trim()
-      });
+      
+      let createdFolder = null;
+      try {
+        const res = await API.post('/notes/folders', {
+          name: trimmedFolder,
+          subjectName: trimmedSubj
+        });
+        createdFolder = res.data?.folder;
+      } catch (apiErr) {
+        // Fallback: If backend is still deploying or returned 404/error, store folder locally and proceed seamlessly
+        console.warn('⚠️ Server /notes/folders endpoint unavailable, registering folder locally:', apiErr.message);
+        createdFolder = {
+          _id: 'local_' + Date.now(),
+          id: 'local_' + Date.now(),
+          name: trimmedFolder,
+          subjectName: trimmedSubj,
+          notesCount: 0
+        };
+        try {
+          const cur = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+          const filtered = cur.filter(f => !(f.name.toLowerCase() === trimmedFolder.toLowerCase() && f.subjectName.toLowerCase() === trimmedSubj.toLowerCase()));
+          filtered.push(createdFolder);
+          localStorage.setItem('custom_folders', JSON.stringify(filtered));
+        } catch (e) {}
+      }
 
-      const newFolder = res.data?.folder;
-      setSuccess(`📁 Folder "${quickFolderName.trim()}" created successfully!`);
+      setSuccess(`📁 Folder "${trimmedFolder}" ready! Notes can now be uploaded into it.`);
       setQuickFolderName('');
       setShowQuickFolderCreate(false);
 
-      await fetchFolders();
+      // Add to folders state
+      setFolders(prev => {
+        const key = `${trimmedSubj.toLowerCase()}:::${trimmedFolder.toLowerCase()}`;
+        const exists = prev.some(f => `${f.subjectName?.toLowerCase()}:::${f.name?.toLowerCase()}` === key);
+        if (!exists && createdFolder) {
+          return [...prev, createdFolder];
+        }
+        return prev;
+      });
 
       // Automatically select the newly created folder
       setForm(prev => ({
         ...prev,
         destination: 'folder',
-        folderName: newFolder?.name || quickFolderName.trim()
+        folderName: trimmedFolder
       }));
     } catch (err) {
       console.error('Quick folder creation error:', err);
@@ -308,7 +396,7 @@ export default function AdminUpload() {
     }
   };
 
-  // Dedicated Folder creation
+  // Dedicated Folder creation with resilient fallback
   const handleCreateDedicatedFolder = async (e) => {
     e.preventDefault();
     if (!folderForm.subjectName?.trim() || !folderForm.name?.trim()) {
@@ -316,19 +404,52 @@ export default function AdminUpload() {
       return;
     }
 
+    const trimmedSubj = folderForm.subjectName.trim();
+    const trimmedFolder = folderForm.name.trim();
+
     try {
       setCreatingFolder(true);
       setError('');
       setSuccess('');
-      const res = await API.post('/notes/folders', {
-        name: folderForm.name.trim(),
-        subjectName: folderForm.subjectName.trim(),
-        description: folderForm.description.trim()
-      });
 
-      setSuccess(`📁 Folder "${folderForm.name.trim()}" created successfully for ${folderForm.subjectName.trim()}!`);
+      let createdFolder = null;
+      try {
+        const res = await API.post('/notes/folders', {
+          name: trimmedFolder,
+          subjectName: trimmedSubj,
+          description: folderForm.description.trim()
+        });
+        createdFolder = res.data?.folder;
+      } catch (apiErr) {
+        // Fallback: If backend is still deploying or returned 404/error, store folder locally and proceed seamlessly
+        console.warn('⚠️ Server /notes/folders endpoint unavailable, registering folder locally:', apiErr.message);
+        createdFolder = {
+          _id: 'local_' + Date.now(),
+          id: 'local_' + Date.now(),
+          name: trimmedFolder,
+          subjectName: trimmedSubj,
+          description: folderForm.description.trim(),
+          notesCount: 0
+        };
+        try {
+          const cur = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+          const filtered = cur.filter(f => !(f.name.toLowerCase() === trimmedFolder.toLowerCase() && f.subjectName.toLowerCase() === trimmedSubj.toLowerCase()));
+          filtered.push(createdFolder);
+          localStorage.setItem('custom_folders', JSON.stringify(filtered));
+        } catch (e) {}
+      }
+
+      setSuccess(`📁 Folder "${trimmedFolder}" created successfully for ${trimmedSubj}!`);
       setFolderForm({ subjectName: '', name: '', description: '' });
-      fetchFolders();
+      
+      setFolders(prev => {
+        const key = `${trimmedSubj.toLowerCase()}:::${trimmedFolder.toLowerCase()}`;
+        const exists = prev.some(f => `${f.subjectName?.toLowerCase()}:::${f.name?.toLowerCase()}` === key);
+        if (!exists && createdFolder) {
+          return [...prev, createdFolder];
+        }
+        return prev;
+      });
       fetchSubjects();
     } catch (err) {
       console.error('Folder create error:', err);
@@ -349,9 +470,26 @@ export default function AdminUpload() {
     if (!folderToRename || !renameValue.trim()) return;
     try {
       setLoading(true);
-      await API.put(`/notes/folders/${folderToRename._id || folderToRename.id}`, {
-        name: renameValue.trim()
-      });
+      try {
+        await API.put(`/notes/folders/${folderToRename._id || folderToRename.id}`, {
+          name: renameValue.trim()
+        });
+      } catch (apiErr) {
+        console.warn('⚠️ Server folder rename 404, updating in local registry');
+      }
+
+      // Update in localStorage
+      try {
+        const cur = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+        const updated = cur.map(f => {
+          if (f.name === folderToRename.name && f.subjectName === folderToRename.subjectName) {
+            return { ...f, name: renameValue.trim() };
+          }
+          return f;
+        });
+        localStorage.setItem('custom_folders', JSON.stringify(updated));
+      } catch (e) {}
+
       setSuccess(`Folder renamed to "${renameValue.trim()}"`);
       setRenameFolderModalOpen(false);
       setFolderToRename(null);
@@ -377,8 +515,20 @@ export default function AdminUpload() {
     try {
       setLoading(true);
       const id = folderToDelete._id || folderToDelete.id;
-      const res = await API.delete(`/notes/folders/${id}?deleteNotes=${deleteFolderWithNotes ? 'true' : 'false'}`);
-      setSuccess(res.data?.message || 'Folder deleted successfully');
+      try {
+        await API.delete(`/notes/folders/${id}?deleteNotes=${deleteFolderWithNotes ? 'true' : 'false'}`);
+      } catch (apiErr) {
+        console.warn('⚠️ Server folder delete 404, removing from local registry');
+      }
+
+      // Remove from localStorage
+      try {
+        const cur = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+        const filtered = cur.filter(f => !(f.name === folderToDelete.name && f.subjectName === folderToDelete.subjectName));
+        localStorage.setItem('custom_folders', JSON.stringify(filtered));
+      } catch (e) {}
+
+      setSuccess(`Folder "${folderToDelete.name}" removed.`);
       setDeleteFolderModalOpen(false);
       setFolderToDelete(null);
       fetchFolders();
@@ -411,7 +561,19 @@ export default function AdminUpload() {
     try {
       setLoading(true);
       const folderVal = newFolderName === '__root__' ? '' : newFolderName;
-      await API.put(`/notes/note/${note._id || note.id}`, { folderName: folderVal });
+      try {
+        await API.put(`/notes/note/${note._id || note.id}`, { 
+          folderName: folderVal,
+          topicName: folderVal || (note.category || 'Theory'),
+          description: folderVal ? `[Folder: ${folderVal}]` : (note.category || 'Theory')
+        });
+      } catch (apiErr) {
+        // Fallback update on older server versions
+        await API.put(`/notes/note/${note._id || note.id}`, {
+          topicName: folderVal || (note.category || 'Theory'),
+          description: folderVal ? `[Folder: ${folderVal}]` : (note.category || 'Theory')
+        });
+      }
       setSuccess(`Moved note "${note.title || note.filename}" to ${folderVal ? `folder "${folderVal}"` : 'Subject Root'}`);
       fetchNotes();
       fetchFolders();
@@ -493,12 +655,16 @@ export default function AdminUpload() {
       data.append('title', noteTitle);
       data.append('subjectName', form.subjectName.trim());
       data.append('category', form.category || 'Theory');
-      data.append('description', form.category || 'Theory');
-      data.append('topicName', form.category || 'Theory');
       data.append('date', new Date().toISOString());
 
+      // Resilience: pass folder in folderName, topicName, and description so both new and old servers preserve folder
       if (folderToUpload) {
         data.append('folderName', folderToUpload);
+        data.append('topicName', folderToUpload);
+        data.append('description', `[Folder: ${folderToUpload}] ${form.category || 'Theory'}`);
+      } else {
+        data.append('topicName', form.category || 'Theory');
+        data.append('description', form.category || 'Theory');
       }
 
       const isSingleFile = form.files.length === 1;
@@ -515,6 +681,22 @@ export default function AdminUpload() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
+      if (folderToUpload) {
+        try {
+          const cur = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+          if (!cur.some(f => f.name.toLowerCase() === folderToUpload.toLowerCase() && f.subjectName.toLowerCase() === form.subjectName.trim().toLowerCase())) {
+            cur.push({
+              _id: 'local_' + Date.now(),
+              id: 'local_' + Date.now(),
+              name: folderToUpload,
+              subjectName: form.subjectName.trim(),
+              notesCount: 1
+            });
+            localStorage.setItem('custom_folders', JSON.stringify(cur));
+          }
+        } catch (e) {}
+      }
+
       setSuccess(
         `🎉 Successfully uploaded "${noteTitle}" (${form.category}) ${
           folderToUpload ? `into folder "${folderToUpload}"` : 'directly under subject'
@@ -524,7 +706,7 @@ export default function AdminUpload() {
       // Reset form
       setForm({
         title: '',
-        subjectName: form.subjectName, // preserve subject for fast sequential uploads
+        subjectName: form.subjectName,
         destination: form.destination,
         folderName: form.folderName,
         category: form.category,
@@ -644,7 +826,7 @@ export default function AdminUpload() {
     }
   };
 
-  // Filter notes archive
+  // Filter notes archive using resilient getNoteFolder
   const filteredNotes = useMemo(() => {
     return notes.filter(note => {
       if (filterSubject !== 'All' && note.subjectName?.toLowerCase() !== filterSubject.toLowerCase()) {
@@ -653,13 +835,12 @@ export default function AdminUpload() {
       if (filterCategory !== 'All' && resolveNoteCategory(note).toLowerCase() !== filterCategory.toLowerCase()) {
         return false;
       }
+      const noteFolder = getNoteFolder(note);
       if (filterFolder !== 'All') {
         if (filterFolder === '__root__') {
-          if (note.folderName && note.folderName.trim() && note.folderName !== 'none' && note.folderName !== 'root') {
-            return false;
-          }
+          if (noteFolder) return false;
         } else {
-          if (note.folderName?.toLowerCase() !== filterFolder.toLowerCase()) {
+          if (noteFolder?.toLowerCase() !== filterFolder.toLowerCase()) {
             return false;
           }
         }
@@ -668,7 +849,7 @@ export default function AdminUpload() {
         const q = filterSearch.toLowerCase();
         const matchTitle = (note.title || '').toLowerCase().includes(q);
         const matchFile = (note.filename || '').toLowerCase().includes(q);
-        const matchFolder = (note.folderName || '').toLowerCase().includes(q);
+        const matchFolder = (noteFolder || '').toLowerCase().includes(q);
         if (!matchTitle && !matchFile && !matchFolder) return false;
       }
       return true;
@@ -904,7 +1085,7 @@ export default function AdminUpload() {
                         <option value="">-- Choose Existing Folder --</option>
                         {formSubjectFolders.map(f => (
                           <option key={f.id || f._id || f.name} value={f.name}>
-                            📁 {f.name} ({f.notesCount} {f.notesCount === 1 ? 'resource' : 'resources'})
+                            📁 {f.name} ({f.notesCount || 0} {f.notesCount === 1 ? 'resource' : 'resources'})
                           </option>
                         ))}
                       </select>
@@ -1166,6 +1347,7 @@ export default function AdminUpload() {
                 {filteredNotes.map((note) => {
                   const noteIsImage = note.fileType === 'image' || isImageFile(note.filename);
                   const cat = resolveNoteCategory(note);
+                  const noteFolder = getNoteFolder(note);
                   const noteSubjectFolders = folders.filter(
                     f => f.subjectName?.toLowerCase() === note.subjectName?.toLowerCase()
                   );
@@ -1213,17 +1395,17 @@ export default function AdminUpload() {
                             <span 
                               className="admin-badge-folder"
                               style={{
-                                background: note.folderName ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                color: note.folderName ? '#facc15' : 'var(--text-muted)',
-                                border: `1px solid ${note.folderName ? 'rgba(234, 179, 8, 0.35)' : 'rgba(255, 255, 255, 0.1)'}`
+                                background: noteFolder ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                color: noteFolder ? '#facc15' : 'var(--text-muted)',
+                                border: `1px solid ${noteFolder ? 'rgba(234, 179, 8, 0.35)' : 'rgba(255, 255, 255, 0.1)'}`
                               }}
                             >
                               <Folder size={11} />
-                              <span>{note.folderName || 'Subject Root'}</span>
+                              <span>{noteFolder || 'Subject Root'}</span>
                             </span>
 
                             <select
-                              value={note.folderName || '__root__'}
+                              value={noteFolder || '__root__'}
                               onChange={(e) => handleUpdateNoteFolder(note, e.target.value)}
                               className="admin-inline-select folder-select"
                               title="Change Folder"

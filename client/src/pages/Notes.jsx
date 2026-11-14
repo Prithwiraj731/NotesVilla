@@ -56,6 +56,24 @@ function getNoteFileType(note) {
   return 'document';
 }
 
+export function getNoteFolder(note) {
+  if (!note) return null;
+  if (note.folderName && typeof note.folderName === 'string' && note.folderName.trim() && note.folderName.toLowerCase() !== 'none' && note.folderName.toLowerCase() !== 'root') {
+    return note.folderName.trim();
+  }
+  if (note.topicName && typeof note.topicName === 'string' && note.topicName.trim()) {
+    const t = note.topicName.trim();
+    if (!['theory', 'lab', 'suggestions', 'syllabus'].includes(t.toLowerCase())) {
+      return t;
+    }
+  }
+  if (note.description && typeof note.description === 'string' && note.description.includes('[Folder:')) {
+    const m = note.description.match(/\[Folder:\s*([^\]]+)\]/);
+    if (m && m[1] && m[1].trim()) return m[1].trim();
+  }
+  return null;
+}
+
 export default function Notes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -139,31 +157,64 @@ export default function Notes() {
 
   const loadAllFolders = async () => {
     try {
-      const r = await API.get('/notes/folders');
-      const list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
-      if (Array.isArray(list)) {
-        setFolders(list);
+      let list = [];
+      try {
+        const r = await API.get('/notes/folders');
+        list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
+      } catch (e) {
+        // Silently handle 404 when server route is deploying
       }
+
+      let localFolders = [];
+      try {
+        localFolders = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+      } catch (e) {}
+
+      const map = new Map();
+      [...list, ...localFolders].forEach(f => {
+        if (f && f.name && f.subjectName) {
+          map.set(`${f.subjectName.toLowerCase()}:::${f.name.toLowerCase()}`, f);
+        }
+      });
+      setFolders(Array.from(map.values()));
     } catch (err) {
-      console.error('Error loading all folders:', err);
+      console.warn('Error loading all folders:', err);
     }
   };
 
   const loadFoldersForSubject = async (subj) => {
     if (!subj) return;
     try {
-      const r = await API.get(`/notes/folders?subjectName=${encodeURIComponent(subj)}`);
-      const list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
-      if (Array.isArray(list)) {
-        setFolders(prev => {
-          const map = new Map();
-          prev.forEach(f => map.set((f._id || f.id || `${f.subjectName}-${f.name}`).toLowerCase(), f));
-          list.forEach(f => map.set((f._id || f.id || `${f.subjectName}-${f.name}`).toLowerCase(), f));
-          return Array.from(map.values());
-        });
+      let list = [];
+      try {
+        const r = await API.get(`/notes/folders?subjectName=${encodeURIComponent(subj)}`);
+        list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
+      } catch (e) {
+        // Silently handle 404
       }
+
+      let localFolders = [];
+      try {
+        localFolders = JSON.parse(localStorage.getItem('custom_folders') || '[]');
+      } catch (e) {}
+
+      setFolders(prev => {
+        const map = new Map();
+        prev.forEach(f => map.set(`${f.subjectName?.toLowerCase()}:::${f.name?.toLowerCase()}`, f));
+        localFolders.forEach(f => {
+          if (f && f.name && f.subjectName) {
+            map.set(`${f.subjectName.toLowerCase()}:::${f.name.toLowerCase()}`, f);
+          }
+        });
+        list.forEach(f => {
+          if (f && f.name && f.subjectName) {
+            map.set(`${f.subjectName.toLowerCase()}:::${f.name.toLowerCase()}`, f);
+          }
+        });
+        return Array.from(map.values());
+      });
     } catch (err) {
-      console.error('Error loading folders for subject:', err);
+      console.warn('Error loading folders for subject:', err);
     }
   };
 
@@ -271,8 +322,8 @@ export default function Notes() {
     notes.forEach(n => {
       if (n.subjectName?.toLowerCase() !== sLower) return;
       if (n.category === 'Syllabus') return;
-      const fName = n.folderName?.trim();
-      if (fName && fName.toLowerCase() !== 'none' && fName.toLowerCase() !== 'root') {
+      const fName = getNoteFolder(n);
+      if (fName) {
         const key = fName.toLowerCase();
         if (!folderMap.has(key)) {
           folderMap.set(key, {
@@ -319,7 +370,10 @@ export default function Notes() {
   const currentFolderStats = useMemo(() => {
     if (!selectedFolder) return null;
     const fLower = selectedFolder.toLowerCase();
-    const inFolder = currentSubjectAllNotes.filter(n => n.folderName?.toLowerCase() === fLower);
+    const inFolder = currentSubjectAllNotes.filter(n => {
+      const fName = getNoteFolder(n);
+      return fName && fName.toLowerCase() === fLower;
+    });
     
     let theory = 0;
     let lab = 0;
@@ -348,11 +402,14 @@ export default function Notes() {
 
     if (selectedFolder) {
       // Inside specific folder
-      list = list.filter(n => n.folderName?.toLowerCase() === selectedFolder.toLowerCase());
+      list = list.filter(n => {
+        const fName = getNoteFolder(n);
+        return fName && fName.toLowerCase() === selectedFolder.toLowerCase();
+      });
     } else {
       // At subject level: if folders exist and not searching, show root/direct notes
       if (currentSubjectFolders.length > 0 && !searchTerm.trim()) {
-        list = list.filter(n => !n.folderName || n.folderName.toLowerCase() === 'none' || n.folderName.toLowerCase() === 'root');
+        list = list.filter(n => !getNoteFolder(n));
       }
     }
 
@@ -362,11 +419,14 @@ export default function Notes() {
 
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
-      list = list.filter(n => 
-        n.title?.toLowerCase().includes(q) ||
-        n.filename?.toLowerCase().includes(q) ||
-        n.folderName?.toLowerCase().includes(q)
-      );
+      list = list.filter(n => {
+        const fName = getNoteFolder(n);
+        return (
+          (n.title && n.title.toLowerCase().includes(q)) ||
+          (n.filename && n.filename.toLowerCase().includes(q)) ||
+          (fName && fName.toLowerCase().includes(q))
+        );
+      });
     }
 
     return list;
@@ -889,17 +949,17 @@ export default function Notes() {
                           </div>
 
                           {/* Folder badge if note belongs to a folder and viewing all notes */}
-                          {note.folderName && !selectedFolder && (
+                          {getNoteFolder(note) && !selectedFolder && (
                             <div 
                               className="note-folder-tag"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSelectFolder(note.folderName);
+                                handleSelectFolder(getNoteFolder(note));
                               }}
-                              title={`Filed in folder: ${note.folderName}. Click to open folder.`}
+                              title={`Filed in folder: ${getNoteFolder(note)}. Click to open folder.`}
                             >
                               <Folder size={11} />
-                              <span>{note.folderName}</span>
+                              <span>{getNoteFolder(note)}</span>
                             </div>
                           )}
 
