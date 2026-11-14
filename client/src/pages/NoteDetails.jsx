@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Share2, Layers, BookOpen, FileText, Image as Image
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
+import ShareNoteModal from '../components/ShareNoteModal';
 import { resolveNoteCategory } from '../utils/categoryUtils';
 
 export default function NoteDetails() {
@@ -14,6 +15,7 @@ export default function NoteDetails() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [shareToast, setShareToast] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     loadNote();
@@ -77,42 +79,9 @@ export default function NoteDetails() {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!note) return;
-    const cleanTitle = note.title?.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || 'Note';
-    const category = resolveNoteCategory(note);
-    const folder = note.folderName;
-    const noteUrl = window.location.href;
-
-    const folderTag = folder ? ` • 📁 ${folder}` : '';
-    const shareText = `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})\n🔗 ${noteUrl}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${cleanTitle} — ${note.subjectName}`,
-          text: `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})`,
-          url: noteUrl
-        });
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-        return;
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      setShareToast('Copied note details & link!');
-      setTimeout(() => {
-        setCopied(false);
-        setShareToast('');
-      }, 2500);
-    } catch (err) {
-      console.error('Failed to copy link');
-    }
+    setShowShareModal(true);
   };
 
   if (loading) {
@@ -329,6 +298,15 @@ export default function NoteDetails() {
           />
         </div>
       </div>
+
+      {/* Visual Share Card Modal */}
+      {showShareModal && (
+        <ShareNoteModal
+          note={note}
+          folderName={note?.folderName}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
 
       {shareToast && (
         <div style={{
