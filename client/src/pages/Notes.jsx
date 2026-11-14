@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
-import ShareNoteModal from '../components/ShareNoteModal';
 import { resolveNoteCategory } from '../utils/categoryUtils';
 import { getCachedData, setCachedData } from '../utils/cacheUtils';
 import { 
@@ -159,7 +158,6 @@ export default function Notes() {
   const [copiedId, setCopiedId] = useState(null);
   const [copiedView, setCopiedView] = useState(false);
   const [shareToast, setShareToast] = useState('');
-  const [shareModalData, setShareModalData] = useState(null); // { note, folderName }
 
   // Update browser tab title dynamically for seamless link sharing & tab context
   useEffect(() => {
@@ -576,52 +574,87 @@ export default function Notes() {
     }
   };
 
-  // Beautiful visual photo note share helper
-  const handleShare = (note, e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
+  // Beautiful minimal note share helper
+  const handleShare = async (note, e) => {
+    e.stopPropagation();
+    const cleanTitle = getDisplayNoteTitle(note);
+    const category = resolveNoteCategory(note);
     const folder = getNoteFolder(note, currentSubjectFolders);
-    setShareModalData({
-      note,
-      folderName: folder
-    });
+    const noteUrl = `${window.location.origin}/note/${note._id || note.id}`;
+
+    const folderTag = folder ? ` • 📁 ${folder}` : '';
+    const shareText = `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})\n🔗 ${noteUrl}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${cleanTitle} — ${note.subjectName}`,
+          text: `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})`,
+          url: noteUrl
+        });
+        setCopiedId(note._id || note.id);
+        setTimeout(() => setCopiedId(null), 2500);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopiedId(note._id || note.id);
+      setShareToast('Copied note details & link!');
+      setTimeout(() => {
+        setCopiedId(null);
+        setShareToast('');
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
   };
 
-  // Share current folder or subject view with visual card
-  const handleShareCurrentView = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
+  // Share current folder or subject view
+  const handleShareCurrentView = async () => {
     const curUrl = window.location.href;
+    let shareText = '';
+    let shareTitle = '';
 
     if (selectedFolder) {
-      setShareModalData({
-        note: {
-          title: `${selectedFolder} Notes & Lab Materials`,
-          subjectName: selectedSubject,
-          folderName: selectedFolder,
-          category: 'Lab',
-          customUrl: curUrl
-        },
-        folderName: selectedFolder
-      });
+      shareTitle = `${selectedFolder} — ${selectedSubject} Notes`;
+      shareText = `📁 ${selectedFolder} • ${selectedSubject}\nAccess all ${selectedFolder} notes, manuals & materials:\n🔗 ${curUrl}`;
     } else if (selectedSubject) {
-      setShareModalData({
-        note: {
-          title: `${selectedSubject} Academic Archive`,
-          subjectName: selectedSubject,
-          category: 'Theory',
-          customUrl: curUrl
-        },
-        folderName: null
-      });
+      shareTitle = `${selectedSubject} Notes | NotesVilla`;
+      shareText = `📚 ${selectedSubject} Notes\nTheory, Lab Manuals & PYQ suggestions on NotesVilla:\n🔗 ${curUrl}`;
     } else {
-      setShareModalData({
-        note: {
-          title: 'NotesVilla Academic Knowledge Dock',
-          subjectName: 'All Subjects',
-          category: 'Theory',
-          customUrl: curUrl
-        },
-        folderName: null
-      });
+      shareTitle = 'Notes Library | NotesVilla';
+      shareText = `📚 NotesVilla Knowledge Dock\nCurated university notes, lab manuals & exam resources:\n🔗 ${curUrl}`;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText.split('\n🔗')[0],
+          url: curUrl
+        });
+        setCopiedView(true);
+        setTimeout(() => setCopiedView(false), 2500);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopiedView(true);
+      setShareToast(selectedFolder ? `Copied ${selectedFolder} folder link!` : `Copied ${selectedSubject} link!`);
+      setTimeout(() => {
+        setCopiedView(false);
+        setShareToast('');
+      }, 2500);
+    } catch (e) {
+      console.error('Failed to copy view link');
     }
   };
 
@@ -1143,15 +1176,6 @@ export default function Notes() {
               />
             </div>
           </div>
-        )}
-
-        {/* Visual Share Card Modal */}
-        {shareModalData && (
-          <ShareNoteModal
-            note={shareModalData.note}
-            folderName={shareModalData.folderName}
-            onClose={() => setShareModalData(null)}
-          />
         )}
 
         {/* Floating Share Toast */}
