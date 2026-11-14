@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const noteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   subjectName: { type: String, required: true }, // Store subject name directly
+  folderName: { type: String, default: null, trim: true }, // Folder under subject, or null/empty for root
+  folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null },
   date: { type: Date, default: Date.now },
   category: { type: String, enum: ['Theory', 'Lab', 'Suggestions', 'Syllabus'], default: 'Theory' },
   files: [{
@@ -20,6 +22,7 @@ const noteSchema = new mongoose.Schema({
 
 noteSchema.index({ createdAt: -1 });
 noteSchema.index({ subjectName: 1 });
+noteSchema.index({ subjectName: 1, folderName: 1 });
 noteSchema.index({ subjectName: 1, category: 1, createdAt: -1 });
 noteSchema.index({ title: 'text' });
 

@@ -326,6 +326,12 @@ router.post('/upload-single',
 // public read routes
 router.get('/subjects', notesCtrl.listSubjects);
 
+// Folder routes
+router.get('/folders', notesCtrl.listFolders);
+router.post('/folders', adminMiddleware, notesCtrl.createFolder);
+router.put('/folders/:id', adminMiddleware, notesCtrl.updateFolder);
+router.delete('/folders/:id', adminMiddleware, notesCtrl.deleteFolder);
+
 router.get('/note/:id', notesCtrl.getNoteById);
 
 router.put('/note/:id', adminMiddleware, notesCtrl.updateNote);

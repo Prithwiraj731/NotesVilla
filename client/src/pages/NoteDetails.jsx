@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Layers, BookOpen, FileText, Image as ImageIcon, Check } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Layers, BookOpen, FileText, Image as ImageIcon, Check, FolderOpen } from 'lucide-react';
 import API from '../services/api';
 import { downloadFile, downloadMultipleFiles } from '../utils/downloadUtils';
 import DocViewer, { getFileCategory } from '../components/DocViewer';
@@ -162,11 +162,19 @@ export default function NoteDetails() {
       {/* Top Navigation & Action Row */}
       <div className="note-details-top-bar">
         <button
-          onClick={() => navigate('/notes')}
+          onClick={() => {
+            if (note?.folderName) {
+              navigate(`/notes?subject=${encodeURIComponent(note.subjectName)}&folder=${encodeURIComponent(note.folderName)}`);
+            } else if (note?.subjectName) {
+              navigate(`/notes?subject=${encodeURIComponent(note.subjectName)}`);
+            } else {
+              navigate('/notes');
+            }
+          }}
           className="cyber-btn-wire"
         >
           <ArrowLeft size={16} />
-          <span>Return to Notes</span>
+          <span>{note?.folderName ? `Return to ${note.folderName}` : (note?.subjectName ? `Return to ${note.subjectName}` : 'Return to Notes')}</span>
         </button>
 
         <div className="note-details-actions">
@@ -211,6 +219,30 @@ export default function NoteDetails() {
               <BookOpen size={13} />
               {note.subjectName}
             </div>
+
+            {note.folderName && (
+              <div 
+                onClick={() => navigate(`/notes?subject=${encodeURIComponent(note.subjectName)}&folder=${encodeURIComponent(note.folderName)}`)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  background: 'rgba(234, 179, 8, 0.12)',
+                  border: '1px solid rgba(234, 179, 8, 0.35)',
+                  borderRadius: '4px',
+                  padding: '0.25rem 0.7rem',
+                  color: '#facc15',
+                  fontFamily: 'var(--font-tech)',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+                title={`Folder: ${note.folderName}. Click to open this folder.`}
+              >
+                <FolderOpen size={13} />
+                <span>Folder: {note.folderName}</span>
+              </div>
+            )}
 
             {(() => {
               const resolvedCat = resolveNoteCategory(note);

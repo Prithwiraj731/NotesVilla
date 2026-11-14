@@ -21,10 +21,11 @@ import {
   ArrowRight,
   FlaskConical,
   HelpCircle,
+  Folder,
   FolderOpen,
   RefreshCw,
-  Maximize2,
-  Minimize2
+  FolderCheck,
+  Sparkles
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -64,10 +65,11 @@ export default function Notes() {
 
   const [rawSubjects, setRawSubjects] = useState(() => (Array.isArray(cachedSubjs) ? cachedSubjs.map(s => (typeof s === 'string' ? s : (s.name || s.subjectName || ''))).filter(Boolean) : []));
   const [notes, setNotes] = useState(() => (Array.isArray(cachedNotes) ? cachedNotes : []));
+  const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(() => (!cachedNotes || cachedNotes.length === 0));
   const [error, setError] = useState('');
 
-  // Selected subject: initialize directly from URL query param to prevent layout jump
+  // Selected subject & folder: initialized directly from URL query param
   const [selectedSubject, setSelectedSubject] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -76,6 +78,16 @@ export default function Notes() {
     }
     return null;
   });
+
+  const [selectedFolder, setSelectedFolder] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const fld = params.get('folder');
+      return fld && fld.trim() ? fld.trim() : null;
+    }
+    return null;
+  });
+
   const [selectedCategory, setSelectedCategory] = useState('All'); // 'All' | 'Theory' | 'Lab' | 'Suggestions'
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -84,25 +96,31 @@ export default function Notes() {
   const [modalFullscreen, setModalFullscreen] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
-  // Initial load — SWR pattern: show cache instantly, refresh in background
+  // Initial load
   const hasFetchedRef = React.useRef(false);
   useEffect(() => {
     if (!hasFetchedRef.current) {
       hasFetchedRef.current = true;
-      // Fire both in parallel
       loadSubjects();
       loadAllNotes();
+      loadAllFolders();
     }
   }, []);
 
-  // Sync selectedSubject with URL query param ?subject=...
+  // Sync selectedSubject and selectedFolder with URL query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const subjectParam = params.get('subject');
-    if (subjectParam && subjectParam.trim()) {
-      setSelectedSubject(subjectParam.trim());
-    } else {
-      setSelectedSubject(null);
+    const folderParam = params.get('folder');
+
+    const cleanSubj = subjectParam && subjectParam.trim() ? subjectParam.trim() : null;
+    const cleanFld = folderParam && folderParam.trim() ? folderParam.trim() : null;
+
+    setSelectedSubject(cleanSubj);
+    setSelectedFolder(cleanFld);
+
+    if (cleanSubj) {
+      loadFoldersForSubject(cleanSubj);
     }
   }, [location.search]);
 
@@ -119,16 +137,45 @@ export default function Notes() {
     }
   };
 
+  const loadAllFolders = async () => {
+    try {
+      const r = await API.get('/notes/folders');
+      const list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
+      if (Array.isArray(list)) {
+        setFolders(list);
+      }
+    } catch (err) {
+      console.error('Error loading all folders:', err);
+    }
+  };
+
+  const loadFoldersForSubject = async (subj) => {
+    if (!subj) return;
+    try {
+      const r = await API.get(`/notes/folders?subjectName=${encodeURIComponent(subj)}`);
+      const list = r.data?.folders || (Array.isArray(r.data) ? r.data : []);
+      if (Array.isArray(list)) {
+        setFolders(prev => {
+          const map = new Map();
+          prev.forEach(f => map.set((f._id || f.id || `${f.subjectName}-${f.name}`).toLowerCase(), f));
+          list.forEach(f => map.set((f._id || f.id || `${f.subjectName}-${f.name}`).toLowerCase(), f));
+          return Array.from(map.values());
+        });
+      }
+    } catch (err) {
+      console.error('Error loading folders for subject:', err);
+    }
+  };
+
   const loadAllNotes = async (retryCount = 0) => {
     const hasCachedNotes = notes && notes.length > 0;
     let shouldRetry = false;
     try {
-      // Only show loading spinner if we have NO cached data to display
       if (!hasCachedNotes) {
         setLoading(true);
       }
       setError('');
-      const r = await API.get('/notes?limit=250');
+      const r = await API.get('/notes?limit=300');
       const dataNotes = Array.isArray(r.data) ? r.data : (r.data?.notes || []);
       if (Array.isArray(dataNotes) && dataNotes.length > 0) {
         setNotes(dataNotes);
@@ -137,7 +184,6 @@ export default function Notes() {
     } catch (err) {
       console.error('Error loading notes:', err);
       if (!hasCachedNotes) {
-        // Retry up to 2 times with exponential backoff before showing error
         if (retryCount < 2) {
           shouldRetry = true;
           const delay = (retryCount + 1) * 1500;
@@ -153,7 +199,7 @@ export default function Notes() {
     }
   };
 
-  // get unique list of subjects from notes and api
+  // Unique list of subjects
   const allSubjects = useMemo(() => {
     const set = new Set();
     rawSubjects.forEach(s => s && set.add(s.trim()));
@@ -165,19 +211,28 @@ export default function Notes() {
     return Array.from(set).sort();
   }, [rawSubjects, notes]);
 
-  // Aggregate stats per subject (total notes, theory, lab, suggestions)
+  // Aggregate stats per subject (total notes, theory, lab, suggestions, folders count)
   const subjectStats = useMemo(() => {
     const map = {};
     allSubjects.forEach(s => {
-      map[s] = { total: 0, theory: 0, lab: 0, suggestions: 0 };
+      map[s] = { total: 0, theory: 0, lab: 0, suggestions: 0, foldersCount: 0 };
     });
 
+    // Count folders
+    folders.forEach(f => {
+      const sName = f.subjectName?.trim();
+      if (sName && map[sName]) {
+        map[sName].foldersCount += 1;
+      }
+    });
+
+    // Count notes
     notes.forEach(note => {
       if (note.category === 'Syllabus') return;
       const sName = note.subjectName?.trim();
       if (sName) {
         if (!map[sName]) {
-          map[sName] = { total: 0, theory: 0, lab: 0, suggestions: 0 };
+          map[sName] = { total: 0, theory: 0, lab: 0, suggestions: 0, foldersCount: 0 };
         }
         map[sName].total += 1;
         const cat = resolveNoteCategory(note);
@@ -187,13 +242,119 @@ export default function Notes() {
       }
     });
     return map;
-  }, [allSubjects, notes]);
+  }, [allSubjects, notes, folders]);
 
-  // Notes filtered by selected subject, category, and search query
-  const currentSubjectNotes = useMemo(() => {
+  // Folders belonging to the currently selected subject
+  const currentSubjectFolders = useMemo(() => {
     if (!selectedSubject) return [];
-    let list = notes.filter(n => n.subjectName?.toLowerCase() === selectedSubject.toLowerCase());
-    list = list.filter(n => n.category !== 'Syllabus');
+    const sLower = selectedSubject.toLowerCase();
+
+    const folderMap = new Map();
+
+    // 1. Folders from DB API
+    folders
+      .filter(f => f.subjectName?.toLowerCase() === sLower)
+      .forEach(f => {
+        folderMap.set(f.name.toLowerCase(), {
+          id: f.id || f._id,
+          name: f.name,
+          subjectName: f.subjectName,
+          description: f.description || '',
+          notesCount: f.notesCount || 0,
+          theoryCount: 0,
+          labCount: 0,
+          suggestionsCount: 0
+        });
+      });
+
+    // 2. Discover from notes in memory & aggregate category counts
+    notes.forEach(n => {
+      if (n.subjectName?.toLowerCase() !== sLower) return;
+      if (n.category === 'Syllabus') return;
+      const fName = n.folderName?.trim();
+      if (fName && fName.toLowerCase() !== 'none' && fName.toLowerCase() !== 'root') {
+        const key = fName.toLowerCase();
+        if (!folderMap.has(key)) {
+          folderMap.set(key, {
+            id: n.folderId || key,
+            name: fName,
+            subjectName: selectedSubject,
+            description: '',
+            notesCount: 0,
+            theoryCount: 0,
+            labCount: 0,
+            suggestionsCount: 0
+          });
+        }
+        const item = folderMap.get(key);
+        const cat = resolveNoteCategory(n);
+        if (cat === 'Lab') item.labCount += 1;
+        else if (cat === 'Suggestions') item.suggestionsCount += 1;
+        else item.theoryCount += 1;
+      }
+    });
+
+    // Ensure notesCount reflects computed note count
+    folderMap.forEach(item => {
+      const computedTotal = item.theoryCount + item.labCount + item.suggestionsCount;
+      if (computedTotal > item.notesCount) {
+        item.notesCount = computedTotal;
+      }
+    });
+
+    const list = Array.from(folderMap.values());
+    return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [folders, notes, selectedSubject]);
+
+  // All notes for the current subject (non-syllabus)
+  const currentSubjectAllNotes = useMemo(() => {
+    if (!selectedSubject) return [];
+    return notes
+      .filter(n => n.subjectName?.toLowerCase() === selectedSubject.toLowerCase())
+      .filter(n => n.category !== 'Syllabus')
+      .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+  }, [notes, selectedSubject]);
+
+  // Folder stats when inside a specific folder
+  const currentFolderStats = useMemo(() => {
+    if (!selectedFolder) return null;
+    const fLower = selectedFolder.toLowerCase();
+    const inFolder = currentSubjectAllNotes.filter(n => n.folderName?.toLowerCase() === fLower);
+    
+    let theory = 0;
+    let lab = 0;
+    let suggestions = 0;
+
+    inFolder.forEach(n => {
+      const cat = resolveNoteCategory(n);
+      if (cat === 'Lab') lab += 1;
+      else if (cat === 'Suggestions') suggestions += 1;
+      else theory += 1;
+    });
+
+    return {
+      total: inFolder.length,
+      theory,
+      lab,
+      suggestions
+    };
+  }, [selectedFolder, currentSubjectAllNotes]);
+
+  // Notes filtered according to view: Folder drilldown vs Subject overview
+  const displayedNotes = useMemo(() => {
+    if (!selectedSubject) return [];
+
+    let list = currentSubjectAllNotes;
+
+    if (selectedFolder) {
+      // Inside specific folder
+      list = list.filter(n => n.folderName?.toLowerCase() === selectedFolder.toLowerCase());
+    } else {
+      // At subject level: if folders exist and not searching, show root/direct notes
+      if (currentSubjectFolders.length > 0 && !searchTerm.trim()) {
+        list = list.filter(n => !n.folderName || n.folderName.toLowerCase() === 'none' || n.folderName.toLowerCase() === 'root');
+      }
+    }
 
     if (selectedCategory && selectedCategory !== 'All') {
       list = list.filter(n => resolveNoteCategory(n).toLowerCase() === selectedCategory.toLowerCase());
@@ -203,13 +364,23 @@ export default function Notes() {
       const q = searchTerm.toLowerCase();
       list = list.filter(n => 
         n.title?.toLowerCase().includes(q) ||
-        n.filename?.toLowerCase().includes(q)
+        n.filename?.toLowerCase().includes(q) ||
+        n.folderName?.toLowerCase().includes(q)
       );
     }
 
-    // Sort by createdAt descending
-    return list.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-  }, [notes, selectedSubject, selectedCategory, searchTerm]);
+    return list;
+  }, [currentSubjectAllNotes, selectedFolder, currentSubjectFolders, selectedCategory, searchTerm, selectedSubject]);
+
+  // Filtered folders by search query (for folder cards grid)
+  const filteredFolders = useMemo(() => {
+    if (!searchTerm.trim()) return currentSubjectFolders;
+    const q = searchTerm.toLowerCase();
+    return currentSubjectFolders.filter(f => 
+      f.name.toLowerCase().includes(q) || 
+      f.description?.toLowerCase().includes(q)
+    );
+  }, [currentSubjectFolders, searchTerm]);
 
   // Filtered subjects for Subject Directory view
   const filteredSubjects = useMemo(() => {
@@ -218,18 +389,36 @@ export default function Notes() {
     return allSubjects.filter(s => s.toLowerCase().includes(q));
   }, [allSubjects, searchTerm]);
 
+  // Navigation handlers
   const handleSelectSubject = (subj) => {
     setSelectedSubject(subj);
+    setSelectedFolder(null);
     setSelectedCategory('All');
     setSearchTerm('');
-    navigate(`/notes?subject=${encodeURIComponent(subj)}`, { replace: false });
+    navigate(`/notes?subject=${encodeURIComponent(subj)}`);
+    loadFoldersForSubject(subj);
+  };
+
+  const handleSelectFolder = (folderName) => {
+    setSelectedFolder(folderName);
+    setSelectedCategory('All');
+    setSearchTerm('');
+    navigate(`/notes?subject=${encodeURIComponent(selectedSubject)}&folder=${encodeURIComponent(folderName)}`);
+  };
+
+  const handleBackToSubjectRoot = () => {
+    setSelectedFolder(null);
+    setSelectedCategory('All');
+    setSearchTerm('');
+    navigate(`/notes?subject=${encodeURIComponent(selectedSubject)}`);
   };
 
   const handleBackToSubjects = () => {
     setSelectedSubject(null);
+    setSelectedFolder(null);
     setSelectedCategory('All');
     setSearchTerm('');
-    navigate('/notes', { replace: false });
+    navigate('/notes');
   };
 
   // Download single note files
@@ -319,18 +508,47 @@ export default function Notes() {
     };
   };
 
+  // Active counts for Category Tab Bar
+  const activeTabCounts = useMemo(() => {
+    if (selectedFolder && currentFolderStats) {
+      return {
+        all: currentFolderStats.total,
+        theory: currentFolderStats.theory,
+        lab: currentFolderStats.lab,
+        suggestions: currentFolderStats.suggestions
+      };
+    }
+    const stats = selectedSubject ? subjectStats[selectedSubject] : null;
+    return {
+      all: stats?.total || 0,
+      theory: stats?.theory || 0,
+      lab: stats?.lab || 0,
+      suggestions: stats?.suggestions || 0
+    };
+  }, [selectedFolder, currentFolderStats, selectedSubject, subjectStats]);
+
   return (
     <div className="notes-page-container">
       <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
 
-        {/* header */}
+        {/* Header Block */}
         <div className="notes-header-block">
           <h1 className="notes-main-title">
-            {selectedSubject ? selectedSubject.toUpperCase() : 'COURSE NOTES ARCHIVE'}
+            {selectedFolder
+              ? selectedFolder.toUpperCase()
+              : selectedSubject
+              ? selectedSubject.toUpperCase()
+              : 'COURSE NOTES ARCHIVE'}
           </h1>
+          {selectedFolder && (
+            <p className="notes-header-subtag">
+              <FolderOpen size={14} style={{ color: 'var(--accent-orange)' }} />
+              <span>Folder under <strong>{selectedSubject}</strong></span>
+            </p>
+          )}
         </div>
 
-        {/* all subjects directory */}
+        {/* 1. ALL SUBJECTS DIRECTORY VIEW */}
         {!selectedSubject ? (
           <div className="subjects-directory-view">
             {/* Search Bar for Subjects */}
@@ -370,7 +588,7 @@ export default function Notes() {
             ) : (
               <div className="subjects-cards-grid">
                 {filteredSubjects.map((subj, idx) => {
-                  const stats = subjectStats[subj] || { total: 0, theory: 0, lab: 0, suggestions: 0 };
+                  const stats = subjectStats[subj] || { total: 0, theory: 0, lab: 0, suggestions: 0, foldersCount: 0 };
                   return (
                     <div
                       key={idx}
@@ -381,9 +599,17 @@ export default function Notes() {
                         <div className="subject-icon-box">
                           <Layers size={22} />
                         </div>
-                        <span className="subject-total-badge">
-                          {stats.total} {stats.total === 1 ? 'Resource' : 'Resources'}
-                        </span>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          {stats.foldersCount > 0 && (
+                            <span className="subject-folder-count-badge">
+                              <Folder size={12} />
+                              {stats.foldersCount} {stats.foldersCount === 1 ? 'Folder' : 'Folders'}
+                            </span>
+                          )}
+                          <span className="subject-total-badge">
+                            {stats.total} {stats.total === 1 ? 'Resource' : 'Resources'}
+                          </span>
+                        </div>
                       </div>
 
                       <h3 className="subject-card-title">
@@ -416,33 +642,71 @@ export default function Notes() {
             )}
           </div>
         ) : (
-          /* subject notes view */
+          /* 2. SUBJECT DRILLDOWN VIEW (Root or Inside Folder) */
           <div className="subject-drilldown-view">
             
-            {/* Back to Subjects Navigation */}
+            {/* Navigation / Breadcrumb Bar */}
             <div className="subject-drilldown-nav">
-              <button
-                onClick={handleBackToSubjects}
-                className="cyber-btn-wire drilldown-back-btn"
-              >
-                <ArrowLeft size={16} />
-                <span>All Subjects</span>
-              </button>
+              {selectedFolder ? (
+                <button
+                  onClick={handleBackToSubjectRoot}
+                  className="cyber-btn-wire drilldown-back-btn"
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back to {selectedSubject}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleBackToSubjects}
+                  className="cyber-btn-wire drilldown-back-btn"
+                >
+                  <ArrowLeft size={16} />
+                  <span>All Subjects</span>
+                </button>
+              )}
 
               <div className="subject-breadcrumb">
-                <span style={{ color: 'var(--text-muted)' }}>Library</span>
+                <span 
+                  onClick={handleBackToSubjects}
+                  style={{ color: 'var(--text-muted)', cursor: 'pointer', transition: 'color 0.2s' }}
+                  onMouseEnter={(e) => e.target.style.color = '#ffffff'}
+                  onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
+                >
+                  Library
+                </span>
                 <span style={{ color: 'var(--text-muted)' }}>/</span>
-                <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>{selectedSubject}</span>
+                
+                {selectedFolder ? (
+                  <>
+                    <span 
+                      onClick={handleBackToSubjectRoot}
+                      style={{ color: 'var(--text-muted)', cursor: 'pointer', transition: 'color 0.2s' }}
+                      onMouseEnter={(e) => e.target.style.color = 'var(--accent-orange)'}
+                      onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
+                    >
+                      {selectedSubject}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)' }}>/</span>
+                    <span style={{ color: 'var(--accent-orange)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <FolderOpen size={13} />
+                      {selectedFolder}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: 'var(--accent-orange)', fontWeight: '600' }}>
+                    {selectedSubject}
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Category Bifurcation Tabs */}
             <div className="category-tabs-bar">
               {[
-                { key: 'All', label: 'All Materials', icon: Layers, count: subjectStats[selectedSubject]?.total || 0 },
-                { key: 'Theory', label: 'Theory Notes', icon: BookOpen, count: subjectStats[selectedSubject]?.theory || 0 },
-                { key: 'Lab', label: 'Lab Notes', icon: FlaskConical, count: subjectStats[selectedSubject]?.lab || 0 },
-                { key: 'Suggestions', label: 'Suggestions / PYQ', icon: HelpCircle, count: subjectStats[selectedSubject]?.suggestions || 0 }
+                { key: 'All', label: 'All Materials', icon: Layers, count: activeTabCounts.all },
+                { key: 'Theory', label: 'Theory Notes', icon: BookOpen, count: activeTabCounts.theory },
+                { key: 'Lab', label: 'Lab Notes', icon: FlaskConical, count: activeTabCounts.lab },
+                { key: 'Suggestions', label: 'Suggestions / PYQ', icon: HelpCircle, count: activeTabCounts.suggestions }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isActive = selectedCategory === tab.key;
@@ -462,13 +726,17 @@ export default function Notes() {
               })}
             </div>
 
-            {/* In-Subject Search Bar */}
+            {/* In-Subject / In-Folder Search Bar */}
             <div className="notes-search-wrapper" style={{ marginBottom: '2rem' }}>
               <div className="notes-search-box">
                 <Search size={18} style={{ color: 'var(--accent-orange)', opacity: 0.8 }} />
                 <input
                   type="text"
-                  placeholder={`Search ${selectedSubject} notes...`}
+                  placeholder={
+                    selectedFolder 
+                      ? `Search in ${selectedFolder} folder...` 
+                      : `Search ${selectedSubject} folders & notes...`
+                  }
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="notes-search-input"
@@ -481,24 +749,94 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Notes List for Subject & Category */}
+            {/* A. FOLDERS SECTION (Shown on Subject Root view when folders exist) */}
+            {!selectedFolder && filteredFolders.length > 0 && selectedCategory === 'All' && (
+              <div className="folders-section-block">
+                <div className="section-divider-header">
+                  <div className="section-title-wrap">
+                    <FolderOpen size={18} style={{ color: 'var(--accent-orange)' }} />
+                    <h3 className="section-title-text">
+                      SUBJECT FOLDERS ({filteredFolders.length})
+                    </h3>
+                  </div>
+                  <span className="section-hint-text">
+                    Specific lab modules, assignments & organized study folders
+                  </span>
+                </div>
+
+                <div className="subject-folders-grid">
+                  {filteredFolders.map((f) => (
+                    <div
+                      key={f.id || f._id || f.name}
+                      className="cyber-panel folder-card-item"
+                      onClick={() => handleSelectFolder(f.name)}
+                    >
+                      <div className="folder-card-top">
+                        <div className="folder-icon-glow-box">
+                          <Folder size={22} />
+                        </div>
+                        <span className="folder-notes-badge">
+                          {f.notesCount} {f.notesCount === 1 ? 'Resource' : 'Resources'}
+                        </span>
+                      </div>
+
+                      <div className="folder-card-body">
+                        <h4 className="folder-card-name">{f.name}</h4>
+                        {f.description && (
+                          <p className="folder-card-desc">{f.description}</p>
+                        )}
+
+                        <div className="folder-breakdown-row">
+                          {f.labCount > 0 && (
+                            <span className="folder-micro-pill lab">
+                              Lab: {f.labCount}
+                            </span>
+                          )}
+                          {f.theoryCount > 0 && (
+                            <span className="folder-micro-pill theory">
+                              Theory: {f.theoryCount}
+                            </span>
+                          )}
+                          {f.suggestionsCount > 0 && (
+                            <span className="folder-micro-pill suggestions">
+                              Suggestions: {f.suggestionsCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="folder-card-footer">
+                        <span className="folder-card-cta">Browse Folder</span>
+                        <ArrowRight size={14} className="folder-arrow-icon" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* B. NOTES LIST SECTION */}
             {loading ? (
               <div className="notes-loading-state">
                 <RefreshCw size={28} className="spin-animate" style={{ margin: '0 auto 1rem', color: 'var(--accent-orange)' }} />
                 <div>Loading notes...</div>
               </div>
-            ) : currentSubjectNotes.length === 0 ? (
+            ) : displayedNotes.length === 0 ? (
               <div className="cyber-panel notes-empty-panel">
                 <FileText size={46} style={{ color: 'var(--accent-orange)', margin: '0 auto 1rem', opacity: 0.6 }} />
                 <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-                  NO NOTES IN THIS CATEGORY
+                  {selectedFolder
+                    ? `NO NOTES IN FOLDER "${selectedFolder.toUpperCase()}"`
+                    : currentSubjectFolders.length > 0
+                    ? 'ALL NOTES ARE ORGANIZED IN FOLDERS'
+                    : 'NO NOTES IN THIS CATEGORY'}
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.5rem', lineHeight: '1.6' }}>
-                  {selectedCategory === 'Suggestions'
-                    ? `No suggestions or PYQs uploaded for ${selectedSubject} yet. Important questions will be added soon!`
-                    : selectedCategory === 'Lab'
-                    ? `No lab notes or experiment materials found for ${selectedSubject}.`
-                    : `No ${selectedCategory !== 'All' ? selectedCategory.toLowerCase() : ''} notes available for ${selectedSubject}.`}
+                  {selectedFolder
+                    ? `No notes match your filter inside ${selectedFolder}. Upload notes to this folder via admin panel.`
+                    : currentSubjectFolders.length > 0 && selectedCategory === 'All'
+                    ? 'The notes for this subject are filed under the folders above. Click any folder to inspect its contents.'
+                    : `No ${selectedCategory !== 'All' ? selectedCategory.toLowerCase() : ''} materials available for ${selectedSubject}.`}
                 </p>
                 {selectedCategory !== 'All' && (
                   <button
@@ -506,88 +844,119 @@ export default function Notes() {
                     className="cyber-btn-wire"
                     style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
                   >
-                    View All {selectedSubject} Notes
+                    View All {selectedFolder ? `in ${selectedFolder}` : selectedSubject} Notes
                   </button>
                 )}
               </div>
             ) : (
-              <div className="subject-notes-grid">
-                {currentSubjectNotes.map(note => {
-                  const isImage = getNoteFileType(note) === 'image';
-                  const filesCount = note.files?.length || (note.fileUrl ? 1 : 0);
-                  const resolvedCategory = resolveNoteCategory(note);
-                  const catStyle = getCategoryStyle(resolvedCategory);
-                  const CatIcon = catStyle.icon;
-
-                  return (
-                    <div key={note._id || note.id} className="cyber-panel note-card-modern">
-                      <div className="note-card-top-row">
-                        {/* Category badge */}
-                        <div 
-                          className="note-category-badge"
-                          style={{
-                            background: catStyle.bg,
-                            border: `1px solid ${catStyle.border}`,
-                            color: catStyle.color
-                          }}
-                        >
-                          <CatIcon size={12} />
-                          <span>{resolvedCategory}</span>
-                        </div>
-
-                        {/* File type badge */}
-                        <div className="note-file-type-badge">
-                          {isImage ? <ImageIcon size={12} /> : <FileText size={12} />}
-                          <span>{isImage ? 'Image' : 'Document'} {filesCount > 1 ? `(${filesCount})` : ''}</span>
-                        </div>
-                      </div>
-
-                      {/* Note Title */}
-                      <h4 className="note-card-title">
-                        {note.title || note.filename || 'Untitled Note'}
-                      </h4>
-
-                      {/* Card Action Buttons */}
-                      <div className="note-card-actions">
-                        <button
-                          onClick={() => setPreviewNote(note)}
-                          className="cyber-btn-orange note-btn-preview"
-                          title="Preview Note"
-                        >
-                          <Eye size={14} />
-                          <span>Preview</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDownload(note)}
-                          className="cyber-btn-wire note-btn-download"
-                          title="Download Note"
-                        >
-                          <Download size={14} />
-                          <span>Download</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => handleShare(note, e)}
-                          className="cyber-btn-wire note-btn-share"
-                          title="Share Link"
-                        >
-                          {copiedId === (note._id || note.id) ? (
-                            <Check size={14} style={{ color: '#10B981' }} />
-                          ) : (
-                            <Share2 size={14} />
-                          )}
-                        </button>
-                      </div>
+              <div>
+                {!selectedFolder && currentSubjectFolders.length > 0 && selectedCategory === 'All' && !searchTerm.trim() && (
+                  <div className="section-divider-header" style={{ marginTop: '2.5rem' }}>
+                    <div className="section-title-wrap">
+                      <FileText size={18} style={{ color: 'var(--accent-orange)' }} />
+                      <h3 className="section-title-text">
+                        GENERAL & DIRECT NOTES ({displayedNotes.length})
+                      </h3>
                     </div>
-                  );
-                })}
+                    <span className="section-hint-text">
+                      Notes stored directly under {selectedSubject}
+                    </span>
+                  </div>
+                )}
+
+                <div className="subject-notes-grid">
+                  {displayedNotes.map(note => {
+                    const isImage = getNoteFileType(note) === 'image';
+                    const filesCount = note.files?.length || (note.fileUrl ? 1 : 0);
+                    const resolvedCategory = resolveNoteCategory(note);
+                    const catStyle = getCategoryStyle(resolvedCategory);
+                    const CatIcon = catStyle.icon;
+
+                    return (
+                      <div key={note._id || note.id} className="cyber-panel note-card-modern">
+                        <div className="note-card-top-row">
+                          {/* Category badge */}
+                          <div 
+                            className="note-category-badge"
+                            style={{
+                              background: catStyle.bg,
+                              border: `1px solid ${catStyle.border}`,
+                              color: catStyle.color
+                            }}
+                          >
+                            <CatIcon size={12} />
+                            <span>{resolvedCategory}</span>
+                          </div>
+
+                          {/* Folder badge if note belongs to a folder and viewing all notes */}
+                          {note.folderName && !selectedFolder && (
+                            <div 
+                              className="note-folder-tag"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectFolder(note.folderName);
+                              }}
+                              title={`Filed in folder: ${note.folderName}. Click to open folder.`}
+                            >
+                              <Folder size={11} />
+                              <span>{note.folderName}</span>
+                            </div>
+                          )}
+
+                          {/* File type badge */}
+                          <div className="note-file-type-badge">
+                            {isImage ? <ImageIcon size={12} /> : <FileText size={12} />}
+                            <span>{isImage ? 'Image' : 'Document'} {filesCount > 1 ? `(${filesCount})` : ''}</span>
+                          </div>
+                        </div>
+
+                        {/* Note Title */}
+                        <h4 className="note-card-title">
+                          {note.title || note.filename || 'Untitled Note'}
+                        </h4>
+
+                        {/* Card Action Buttons */}
+                        <div className="note-card-actions">
+                          <button
+                            onClick={() => setPreviewNote(note)}
+                            className="cyber-btn-orange note-btn-preview"
+                            title="Preview Note"
+                          >
+                            <Eye size={14} />
+                            <span>Preview</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDownload(note)}
+                            className="cyber-btn-wire note-btn-download"
+                            title="Download Note"
+                          >
+                            <Download size={14} />
+                            <span>Download</span>
+                          </button>
+
+                          <button
+                            onClick={(e) => handleShare(note, e)}
+                            className="cyber-btn-wire note-btn-share"
+                            title="Share Link"
+                          >
+                            {copiedId === (note._id || note.id) ? (
+                              <Check size={14} style={{ color: '#10B981' }} />
+                            ) : (
+                              <Share2 size={14} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* preview modal */}
+        {/* Preview Modal */}
         {previewNote && (
           <div className={`docviewer-modal-backdrop ${modalFullscreen ? 'fullscreen-backdrop' : ''}`}>
             <div className={`docviewer-modal-dialog ${modalFullscreen ? 'fullscreen-dialog' : ''}`}>
@@ -629,7 +998,7 @@ export default function Notes() {
 
         .notes-header-block {
           text-align: center;
-          margin-bottom: 2.5rem;
+          margin-bottom: 2.2rem;
         }
 
         .notes-main-title {
@@ -639,6 +1008,20 @@ export default function Notes() {
           letter-spacing: 0.04em;
           margin: 0;
           text-transform: uppercase;
+        }
+
+        .notes-header-subtag {
+          margin: 0.6rem 0 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-family: var(--font-tech);
+          font-size: 0.88rem;
+          color: var(--text-muted);
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 0.25rem 0.8rem;
+          border-radius: 20px;
         }
 
         .notes-search-wrapper {
@@ -732,6 +1115,20 @@ export default function Notes() {
           align-items: center;
           justify-content: center;
           color: var(--accent-orange);
+        }
+
+        .subject-folder-count-badge {
+          background: rgba(234, 179, 8, 0.12);
+          border: 1px solid rgba(234, 179, 8, 0.3);
+          color: #facc15;
+          padding: 0.2rem 0.55rem;
+          border-radius: 20px;
+          font-family: var(--font-tech);
+          font-size: 0.72rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
         }
 
         .subject-total-badge {
@@ -890,6 +1287,175 @@ export default function Notes() {
           color: #ffffff;
         }
 
+        /* Section Dividers */
+        .section-divider-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.2rem;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+        }
+
+        .section-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .section-title-text {
+          font-family: var(--font-cyber);
+          font-size: 1.05rem;
+          color: #ffffff;
+          letter-spacing: 0.05em;
+          margin: 0;
+          text-transform: uppercase;
+        }
+
+        .section-hint-text {
+          font-size: 0.82rem;
+          color: var(--text-muted);
+          font-family: var(--font-tech);
+        }
+
+        /* Folders Grid */
+        .folders-section-block {
+          margin-bottom: 2.5rem;
+        }
+
+        .subject-folders-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 1.2rem;
+        }
+
+        .folder-card-item {
+          padding: 1.3rem;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.22s ease;
+          background: rgba(18, 24, 32, 0.75);
+          border: 1px solid rgba(234, 179, 8, 0.25);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 160px;
+        }
+
+        .folder-card-item:hover {
+          transform: translateY(-3px);
+          border-color: rgba(234, 179, 8, 0.65);
+          box-shadow: 0 10px 28px rgba(234, 179, 8, 0.12);
+          background: rgba(26, 34, 46, 0.85);
+        }
+
+        .folder-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.8rem;
+        }
+
+        .folder-icon-glow-box {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          background: rgba(234, 179, 8, 0.1);
+          border: 1px solid rgba(234, 179, 8, 0.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #facc15;
+          box-shadow: 0 0 12px rgba(234, 179, 8, 0.15);
+        }
+
+        .folder-notes-badge {
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: #facc15;
+          padding: 0.2rem 0.6rem;
+          border-radius: 14px;
+          font-family: var(--font-tech);
+          font-size: 0.75rem;
+          font-weight: 700;
+        }
+
+        .folder-card-name {
+          font-family: var(--font-cyber);
+          font-size: 1.15rem;
+          color: #ffffff;
+          margin: 0 0 0.4rem;
+          line-height: 1.3;
+          word-break: break-word;
+        }
+
+        .folder-card-desc {
+          color: var(--text-muted);
+          font-size: 0.8rem;
+          line-height: 1.4;
+          margin: 0 0 0.8rem;
+        }
+
+        .folder-breakdown-row {
+          display: flex;
+          gap: 0.4rem;
+          flex-wrap: wrap;
+          margin-top: 0.6rem;
+        }
+
+        .folder-micro-pill {
+          font-size: 0.7rem;
+          padding: 0.15rem 0.45rem;
+          border-radius: 4px;
+          font-family: var(--font-tech);
+        }
+
+        .folder-micro-pill.lab {
+          background: rgba(59, 130, 246, 0.12);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          color: #60a5fa;
+        }
+
+        .folder-micro-pill.theory {
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: #10B981;
+        }
+
+        .folder-micro-pill.suggestions {
+          background: rgba(168, 85, 247, 0.12);
+          border: 1px solid rgba(168, 85, 247, 0.3);
+          color: #c084fc;
+        }
+
+        .folder-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          margin-top: 0.8rem;
+        }
+
+        .folder-card-cta {
+          color: #facc15;
+          font-family: var(--font-tech);
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .folder-arrow-icon {
+          color: #facc15;
+          transition: transform 0.2s ease;
+        }
+
+        .folder-card-item:hover .folder-arrow-icon {
+          transform: translateX(4px);
+        }
+
         /* Notes Grid */
         .subject-notes-grid {
           display: grid;
@@ -922,6 +1488,7 @@ export default function Notes() {
           align-items: center;
           gap: 0.5rem;
           margin-bottom: 0.9rem;
+          flex-wrap: wrap;
         }
 
         .note-category-badge {
@@ -934,6 +1501,26 @@ export default function Notes() {
           font-size: 0.72rem;
           font-weight: 700;
           text-transform: uppercase;
+        }
+
+        .note-folder-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          padding: 0.18rem 0.5rem;
+          border-radius: 4px;
+          background: rgba(234, 179, 8, 0.12);
+          border: 1px solid rgba(234, 179, 8, 0.3);
+          color: #facc15;
+          font-family: var(--font-tech);
+          font-size: 0.72rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .note-folder-tag:hover {
+          background: rgba(234, 179, 8, 0.22);
         }
 
         .note-file-type-badge {
@@ -1040,6 +1627,10 @@ export default function Notes() {
           }
 
           .subjects-cards-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .subject-folders-grid {
             grid-template-columns: 1fr;
           }
 

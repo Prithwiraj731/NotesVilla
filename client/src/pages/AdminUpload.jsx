@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API, { setAuthToken } from '../services/api';
 import { resolveNoteCategory } from '../utils/categoryUtils';
@@ -17,7 +17,12 @@ import {
   Layers,
   FlaskConical,
   HelpCircle,
-  FolderPlus
+  FolderPlus,
+  Folder,
+  FolderOpen,
+  Edit3,
+  Filter,
+  X
 } from 'lucide-react';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'svg'];
@@ -31,16 +36,31 @@ function isImageFile(filename) {
 export default function AdminUpload() {
   const navigate = useNavigate();
 
-  // Active section tab: 'notes' | 'syllabus'
+  // Active section tab: 'notes' | 'folders' | 'syllabus'
   const [activeTab, setActiveTab] = useState('notes');
 
   // Notes Form state
   const [form, setForm] = useState({
     title: '',
     subjectName: '',
+    destination: 'root', // 'root' | 'folder'
+    folderName: '',
     category: 'Theory', // 'Theory' | 'Lab' | 'Suggestions'
     files: []
   });
+
+  // Quick inline folder create inside Notes Upload form
+  const [showQuickFolderCreate, setShowQuickFolderCreate] = useState(false);
+  const [quickFolderName, setQuickFolderName] = useState('');
+  const [creatingQuickFolder, setCreatingQuickFolder] = useState(false);
+
+  // Dedicated Folder Management form state
+  const [folderForm, setFolderForm] = useState({
+    subjectName: '',
+    name: '',
+    description: ''
+  });
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
   // Syllabus Form state
   const [syllabusForm, setSyllabusForm] = useState({
@@ -51,6 +71,9 @@ export default function AdminUpload() {
   });
 
   const [existingSubjects, setExistingSubjects] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [fetchingFolders, setFetchingFolders] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -63,6 +86,21 @@ export default function AdminUpload() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState(null);
 
+  // Note archive filter states
+  const [filterSubject, setFilterSubject] = useState('All');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterFolder, setFilterFolder] = useState('All');
+  const [filterSearch, setFilterSearch] = useState('');
+
+  // Folder delete/rename modals
+  const [deleteFolderModalOpen, setDeleteFolderModalOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState(null);
+  const [deleteFolderWithNotes, setDeleteFolderWithNotes] = useState(false);
+
+  const [renameFolderModalOpen, setRenameFolderModalOpen] = useState(false);
+  const [folderToRename, setFolderToRename] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+
   // Syllabus management states
   const [syllabi, setSyllabi] = useState([]);
   const [fetchingSyllabi, setFetchingSyllabi] = useState(false);
@@ -72,6 +110,7 @@ export default function AdminUpload() {
   useEffect(() => {
     fetchNotes();
     fetchSubjects();
+    fetchFolders();
     fetchSyllabi();
   }, []);
 
@@ -86,10 +125,25 @@ export default function AdminUpload() {
     }
   };
 
+  const fetchFolders = async () => {
+    try {
+      setFetchingFolders(true);
+      const res = await API.get('/notes/folders');
+      const list = res.data?.folders || (Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(list)) {
+        setFolders(list);
+      }
+    } catch (err) {
+      console.error('Error fetching folders:', err);
+    } finally {
+      setFetchingFolders(false);
+    }
+  };
+
   const fetchNotes = async () => {
     try {
       setFetchingNotes(true);
-      const response = await API.get('/notes?limit=150');
+      const response = await API.get('/notes?limit=300');
       const notesData = Array.isArray(response.data) ? response.data : (response.data.notes || []);
       setNotes(notesData);
       
@@ -151,6 +205,14 @@ export default function AdminUpload() {
     navigate('/');
   };
 
+  // Folders for currently selected subject in form
+  const formSubjectFolders = useMemo(() => {
+    if (!form.subjectName?.trim()) return [];
+    const sLower = form.subjectName.trim().toLowerCase();
+    return folders.filter(f => f.subjectName?.toLowerCase() === sLower);
+  }, [folders, form.subjectName]);
+
+  // Handle files selection
   const handleFiles = (files) => {
     const fileArray = Array.from(files);
     setForm(prev => {
@@ -206,12 +268,130 @@ export default function AdminUpload() {
     }
   };
 
-  // Delete note
-  const confirmDeleteNote = (note) => {
-    setNoteToDelete(note);
-    setDeleteModalOpen(true);
+  // Quick inline folder create
+  const handleQuickCreateFolder = async () => {
+    if (!form.subjectName?.trim()) {
+      setError('Please specify the Subject Name first before creating a folder.');
+      return;
+    }
+    if (!quickFolderName?.trim()) {
+      setError('Please provide a Folder Name.');
+      return;
+    }
+
+    try {
+      setCreatingQuickFolder(true);
+      setError('');
+      const res = await API.post('/notes/folders', {
+        name: quickFolderName.trim(),
+        subjectName: form.subjectName.trim()
+      });
+
+      const newFolder = res.data?.folder;
+      setSuccess(`📁 Folder "${quickFolderName.trim()}" created successfully!`);
+      setQuickFolderName('');
+      setShowQuickFolderCreate(false);
+
+      await fetchFolders();
+
+      // Automatically select the newly created folder
+      setForm(prev => ({
+        ...prev,
+        destination: 'folder',
+        folderName: newFolder?.name || quickFolderName.trim()
+      }));
+    } catch (err) {
+      console.error('Quick folder creation error:', err);
+      setError(err.response?.data?.error || err.response?.data?.msg || 'Failed to create folder');
+    } finally {
+      setCreatingQuickFolder(false);
+    }
   };
 
+  // Dedicated Folder creation
+  const handleCreateDedicatedFolder = async (e) => {
+    e.preventDefault();
+    if (!folderForm.subjectName?.trim() || !folderForm.name?.trim()) {
+      setError('Subject name and folder name are required');
+      return;
+    }
+
+    try {
+      setCreatingFolder(true);
+      setError('');
+      setSuccess('');
+      const res = await API.post('/notes/folders', {
+        name: folderForm.name.trim(),
+        subjectName: folderForm.subjectName.trim(),
+        description: folderForm.description.trim()
+      });
+
+      setSuccess(`📁 Folder "${folderForm.name.trim()}" created successfully for ${folderForm.subjectName.trim()}!`);
+      setFolderForm({ subjectName: '', name: '', description: '' });
+      fetchFolders();
+      fetchSubjects();
+    } catch (err) {
+      console.error('Folder create error:', err);
+      setError(err.response?.data?.error || err.response?.data?.msg || 'Failed to create folder');
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
+  // Rename folder
+  const openRenameFolderModal = (folder) => {
+    setFolderToRename(folder);
+    setRenameValue(folder.name);
+    setRenameFolderModalOpen(true);
+  };
+
+  const handleRenameFolder = async () => {
+    if (!folderToRename || !renameValue.trim()) return;
+    try {
+      setLoading(true);
+      await API.put(`/notes/folders/${folderToRename._id || folderToRename.id}`, {
+        name: renameValue.trim()
+      });
+      setSuccess(`Folder renamed to "${renameValue.trim()}"`);
+      setRenameFolderModalOpen(false);
+      setFolderToRename(null);
+      fetchFolders();
+      fetchNotes();
+    } catch (err) {
+      console.error('Rename error:', err);
+      setError(err.response?.data?.error || 'Failed to rename folder');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete folder
+  const openDeleteFolderModal = (folder) => {
+    setFolderToDelete(folder);
+    setDeleteFolderWithNotes(false);
+    setDeleteFolderModalOpen(true);
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!folderToDelete) return;
+    try {
+      setLoading(true);
+      const id = folderToDelete._id || folderToDelete.id;
+      const res = await API.delete(`/notes/folders/${id}?deleteNotes=${deleteFolderWithNotes ? 'true' : 'false'}`);
+      setSuccess(res.data?.message || 'Folder deleted successfully');
+      setDeleteFolderModalOpen(false);
+      setFolderToDelete(null);
+      fetchFolders();
+      fetchNotes();
+    } catch (err) {
+      console.error('Delete folder error:', err);
+      setError(err.response?.data?.error || 'Failed to delete folder');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update note's category
   const handleUpdateCategory = async (note, newCategory) => {
     try {
       setLoading(true);
@@ -226,6 +406,29 @@ export default function AdminUpload() {
     }
   };
 
+  // Update note's folder (Move note to folder or root)
+  const handleUpdateNoteFolder = async (note, newFolderName) => {
+    try {
+      setLoading(true);
+      const folderVal = newFolderName === '__root__' ? '' : newFolderName;
+      await API.put(`/notes/note/${note._id || note.id}`, { folderName: folderVal });
+      setSuccess(`Moved note "${note.title || note.filename}" to ${folderVal ? `folder "${folderVal}"` : 'Subject Root'}`);
+      fetchNotes();
+      fetchFolders();
+    } catch (err) {
+      console.error('Failed to move note folder:', err);
+      setError('Failed to update note folder');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete note
+  const confirmDeleteNote = (note) => {
+    setNoteToDelete(note);
+    setDeleteModalOpen(true);
+  };
+
   const handleDeleteNote = async () => {
     if (!noteToDelete) return;
     try {
@@ -235,6 +438,7 @@ export default function AdminUpload() {
       setDeleteModalOpen(false);
       setNoteToDelete(null);
       fetchNotes();
+      fetchFolders();
       fetchSubjects();
     } catch (err) {
       console.error('Delete error:', err);
@@ -280,6 +484,10 @@ export default function AdminUpload() {
       }
     }
 
+    const folderToUpload = form.destination === 'folder' && form.folderName?.trim()
+      ? form.folderName.trim()
+      : '';
+
     try {
       const data = new FormData();
       data.append('title', noteTitle);
@@ -288,6 +496,10 @@ export default function AdminUpload() {
       data.append('description', form.category || 'Theory');
       data.append('topicName', form.category || 'Theory');
       data.append('date', new Date().toISOString());
+
+      if (folderToUpload) {
+        data.append('folderName', folderToUpload);
+      }
 
       const isSingleFile = form.files.length === 1;
       const uploadUrl = isSingleFile ? '/notes/upload-single' : '/notes/upload';
@@ -303,17 +515,24 @@ export default function AdminUpload() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setSuccess(`🎉 Successfully uploaded "${noteTitle}" (${form.category}) for ${form.subjectName.trim()}!`);
+      setSuccess(
+        `🎉 Successfully uploaded "${noteTitle}" (${form.category}) ${
+          folderToUpload ? `into folder "${folderToUpload}"` : 'directly under subject'
+        } for ${form.subjectName.trim()}!`
+      );
       
       // Reset form
       setForm({
         title: '',
-        subjectName: '',
-        category: 'Theory',
+        subjectName: form.subjectName, // preserve subject for fast sequential uploads
+        destination: form.destination,
+        folderName: form.folderName,
+        category: form.category,
         files: []
       });
       setFilePreview([]);
       fetchNotes();
+      fetchFolders();
       fetchSubjects();
 
     } catch (err) {
@@ -356,9 +575,8 @@ export default function AdminUpload() {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       } catch (err) {
-        // Fallback if server hasn't deployed /syllabus routes yet
         if (err.response?.status === 404 || err.message?.includes('404')) {
-          console.warn('⚠️ /syllabus/upload 404, using resilient /notes/upload-single fallback');
+          console.warn('⚠️ /syllabus/upload 404, using /notes/upload-single fallback');
           const fallbackData = new FormData();
           fallbackData.append('subjectName', syllabusForm.subjectName.trim());
           fallbackData.append('title', syllabusForm.title.trim() || `${syllabusForm.subjectName.trim()} Syllabus`);
@@ -426,6 +644,48 @@ export default function AdminUpload() {
     }
   };
 
+  // Filter notes archive
+  const filteredNotes = useMemo(() => {
+    return notes.filter(note => {
+      if (filterSubject !== 'All' && note.subjectName?.toLowerCase() !== filterSubject.toLowerCase()) {
+        return false;
+      }
+      if (filterCategory !== 'All' && resolveNoteCategory(note).toLowerCase() !== filterCategory.toLowerCase()) {
+        return false;
+      }
+      if (filterFolder !== 'All') {
+        if (filterFolder === '__root__') {
+          if (note.folderName && note.folderName.trim() && note.folderName !== 'none' && note.folderName !== 'root') {
+            return false;
+          }
+        } else {
+          if (note.folderName?.toLowerCase() !== filterFolder.toLowerCase()) {
+            return false;
+          }
+        }
+      }
+      if (filterSearch.trim()) {
+        const q = filterSearch.toLowerCase();
+        const matchTitle = (note.title || '').toLowerCase().includes(q);
+        const matchFile = (note.filename || '').toLowerCase().includes(q);
+        const matchFolder = (note.folderName || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchFile && !matchFolder) return false;
+      }
+      return true;
+    });
+  }, [notes, filterSubject, filterCategory, filterFolder, filterSearch]);
+
+  // Unique folders for the archive filter
+  const archiveFilterFolders = useMemo(() => {
+    if (filterSubject === 'All') {
+      return [...new Set(folders.map(f => f.name).filter(Boolean))].sort();
+    }
+    return folders
+      .filter(f => f.subjectName?.toLowerCase() === filterSubject.toLowerCase())
+      .map(f => f.name)
+      .sort();
+  }, [folders, filterSubject]);
+
   return (
     <div className="admin-upload-page">
       {/* Top Admin Bar */}
@@ -492,7 +752,16 @@ export default function AdminUpload() {
           className={`admin-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
         >
           <BookOpen size={16} />
-          <span>Upload Course Notes</span>
+          <span>Upload & Manage Notes</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setActiveTab('folders'); setError(''); setSuccess(''); }}
+          className={`admin-tab-btn ${activeTab === 'folders' ? 'active' : ''}`}
+        >
+          <FolderOpen size={16} />
+          <span>Manage Folders ({folders.length})</span>
         </button>
 
         <button
@@ -520,7 +789,7 @@ export default function AdminUpload() {
         </div>
       )}
 
-      {/* notes tab */}
+      {/* ================= TAB 1: NOTES UPLOAD & ARCHIVE ================= */}
       {activeTab === 'notes' && (
         <>
           <div className="cyber-panel admin-upload-card">
@@ -528,7 +797,7 @@ export default function AdminUpload() {
               UPLOAD COURSE NOTES
             </h2>
             <p className="admin-card-subtitle">
-              Enter your subject name, choose category (Theory, Lab, Suggestions), and upload documents or images directly.
+              Choose whether to upload directly under the subject or file inside a specific folder (e.g. Lab 8, Lab 1-3, Modules).
             </p>
 
             <form onSubmit={submitNote} style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
@@ -586,11 +855,104 @@ export default function AdminUpload() {
                 )}
               </div>
 
-              {/* 2. Category Selection (Bifurcation: Theory, Lab, Suggestions) */}
+              {/* 2. Destination / Folder Selection */}
+              <div>
+                <label className="admin-field-label">
+                  <FolderOpen size={16} style={{ color: 'var(--accent-orange)' }} />
+                  2. Upload Destination *
+                </label>
+
+                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, destination: 'root', folderName: '' }))}
+                    className={`admin-category-btn ${form.destination === 'root' ? 'active' : ''}`}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <FileText size={16} />
+                      <strong>Subject Root (Direct)</strong>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>No folder • Visible directly in subject view</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, destination: 'folder' }))}
+                    className={`admin-category-btn ${form.destination === 'folder' ? 'active' : ''}`}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <Folder size={16} />
+                      <strong>Inside a Folder</strong>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>e.g. Lab 8, Lab 1-3, Printing Materials</span>
+                  </button>
+                </div>
+
+                {form.destination === 'folder' && (
+                  <div className="folder-selection-subcard">
+                    <label style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', fontFamily: 'var(--font-tech)', display: 'block', marginBottom: '0.6rem' }}>
+                      Choose an Existing Folder for <strong>"{form.subjectName || 'Current Subject'}"</strong> or create a custom one:
+                    </label>
+
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <select
+                        value={form.folderName}
+                        onChange={(e) => setForm(prev => ({ ...prev, folderName: e.target.value }))}
+                        className="admin-text-input"
+                        style={{ flex: 1, minWidth: '220px', cursor: 'pointer' }}
+                      >
+                        <option value="">-- Choose Existing Folder --</option>
+                        {formSubjectFolders.map(f => (
+                          <option key={f.id || f._id || f.name} value={f.name}>
+                            📁 {f.name} ({f.notesCount} {f.notesCount === 1 ? 'resource' : 'resources'})
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickFolderCreate(!showQuickFolderCreate)}
+                        className="cyber-btn-wire"
+                        style={{ padding: '0.65rem 1rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                      >
+                        <FolderPlus size={15} />
+                        <span>{showQuickFolderCreate ? 'Cancel New Folder' : '+ Create New Folder'}</span>
+                      </button>
+                    </div>
+
+                    {/* Inline Quick Folder Creator */}
+                    {showQuickFolderCreate && (
+                      <div className="quick-folder-create-box">
+                        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            placeholder="Custom folder name (e.g. Lab 8, Printing Materials)..."
+                            value={quickFolderName}
+                            onChange={(e) => setQuickFolderName(e.target.value)}
+                            className="admin-text-input"
+                            style={{ flex: 1, minWidth: '200px' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleQuickCreateFolder}
+                            disabled={creatingQuickFolder || !quickFolderName.trim()}
+                            className="cyber-btn-orange"
+                            style={{ padding: '0.65rem 1rem', fontSize: '0.82rem' }}
+                          >
+                            {creatingQuickFolder ? 'Creating...' : 'Create & Select'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Category Selection */}
               <div>
                 <label className="admin-field-label">
                   <Layers size={16} style={{ color: 'var(--accent-orange)' }} />
-                  2. Resource Category *
+                  3. Resource Category *
                 </label>
                 
                 <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
@@ -619,27 +981,27 @@ export default function AdminUpload() {
                 </div>
               </div>
 
-              {/* 3. Note Title (Optional) */}
+              {/* 4. Note Title (Optional) */}
               <div>
                 <label className="admin-field-label">
                   <Type size={16} style={{ color: 'var(--accent-orange)' }} />
-                  3. Note Title <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional - auto-named if left blank)</span>
+                  4. Note Title <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'none', fontWeight: 'normal' }}>(Optional - auto-named if left blank)</span>
                 </label>
 
                 <input 
                   type="text"
-                  placeholder="e.g. Unit 1 Architecture & Instructions, Experiment 3 Code..."
+                  placeholder="e.g. Unit 1 Architecture & Instructions, Lab 8 Observation Sheet..."
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="admin-text-input"
                 />
               </div>
 
-              {/* 4. Drag & Drop File Upload Area */}
+              {/* 5. Drag & Drop File Upload Area */}
               <div>
                 <label className="admin-field-label">
                   <Upload size={16} style={{ color: 'var(--accent-orange)' }} />
-                  4. Upload Notes Files & Documents *
+                  5. Upload Notes Files & Documents *
                 </label>
 
                 <div 
@@ -711,20 +1073,20 @@ export default function AdminUpload() {
             </form>
           </div>
 
-          {/* Published Notes Archive */}
+          {/* Published Notes Archive with Folder bifurcation */}
           <div className="admin-archive-wrapper">
             <div className="admin-archive-header">
               <div>
                 <h3 className="admin-archive-title">
-                  PUBLISHED NOTES ARCHIVE ({notes.length})
+                  PUBLISHED NOTES ARCHIVE ({filteredNotes.length} of {notes.length})
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
-                  Manage, review, or delete uploaded notes in real-time.
+                  Manage, categorize, or reassign notes to folders in real-time.
                 </p>
               </div>
 
               <button
-                onClick={fetchNotes}
+                onClick={() => { fetchNotes(); fetchFolders(); }}
                 className="cyber-btn-wire"
                 style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
               >
@@ -733,40 +1095,98 @@ export default function AdminUpload() {
               </button>
             </div>
 
+            {/* Filter Bar */}
+            <div className="admin-filter-bar">
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', flex: 1 }}>
+                {/* Subject filter */}
+                <select
+                  value={filterSubject}
+                  onChange={(e) => {
+                    setFilterSubject(e.target.value);
+                    setFilterFolder('All');
+                  }}
+                  className="admin-filter-select"
+                >
+                  <option value="All">All Subjects</option>
+                  {existingSubjects.map((s, idx) => (
+                    <option key={idx} value={s}>{s}</option>
+                  ))}
+                </select>
+
+                {/* Category filter */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="admin-filter-select"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Theory">Theory Notes</option>
+                  <option value="Lab">Lab Notes</option>
+                  <option value="Suggestions">Suggestions / PYQ</option>
+                </select>
+
+                {/* Folder filter */}
+                <select
+                  value={filterFolder}
+                  onChange={(e) => setFilterFolder(e.target.value)}
+                  className="admin-filter-select"
+                >
+                  <option value="All">All Folders / Root</option>
+                  <option value="__root__">Subject Root Only (No Folder)</option>
+                  {archiveFilterFolders.map((fName, idx) => (
+                    <option key={idx} value={fName}>📁 Folder: {fName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Search in archive */}
+              <input
+                type="text"
+                placeholder="Search note title or file..."
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
+                className="admin-filter-search"
+              />
+            </div>
+
             {fetchingNotes ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                 <RefreshCw size={24} className="spin-animate" style={{ margin: '0 auto 0.5rem' }} />
                 <div>Loading uploaded notes...</div>
               </div>
-            ) : notes.length === 0 ? (
+            ) : filteredNotes.length === 0 ? (
               <div className="cyber-panel admin-empty-box">
                 <BookOpen size={32} style={{ color: 'var(--accent-orange)', margin: '0 auto 0.8rem', opacity: 0.6 }} />
                 <div style={{ color: '#ffffff', fontWeight: '600', marginBottom: '0.3rem' }}>
-                  No notes published yet
+                  No notes match your filters
                 </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                {notes.map((note) => {
+                {filteredNotes.map((note) => {
                   const noteIsImage = note.fileType === 'image' || isImageFile(note.filename);
                   const cat = resolveNoteCategory(note);
+                  const noteSubjectFolders = folders.filter(
+                    f => f.subjectName?.toLowerCase() === note.subjectName?.toLowerCase()
+                  );
 
                   return (
                     <div key={note._id || note.id} className="cyber-panel admin-note-item">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0, flex: 1 }}>
                         <div className="admin-item-icon">
                           {noteIsImage ? <ImageIcon size={18} /> : <FileText size={18} />}
                         </div>
 
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ color: '#ffffff', fontWeight: '700', fontSize: '0.92rem', wordBreak: 'break-word' }}>
                             {note.title || note.filename}
                           </div>
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.35rem', flexWrap: 'wrap' }}>
                             <span className="admin-badge-subject">
                               {note.subjectName}
                             </span>
                             
+                            {/* Category Badge & Switcher */}
                             <span 
                               className="admin-badge-category"
                               style={{
@@ -781,23 +1201,46 @@ export default function AdminUpload() {
                             <select
                               value={cat}
                               onChange={(e) => handleUpdateCategory(note, e.target.value)}
-                              style={{
-                                background: 'rgba(0, 20, 10, 0.85)',
-                                border: '1px solid rgba(251, 54, 64, 0.3)',
-                                borderRadius: '4px',
-                                color: '#ffffff',
-                                fontSize: '0.72rem',
-                                padding: '0.15rem 0.4rem',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                fontFamily: 'var(--font-tech)'
-                              }}
+                              className="admin-inline-select"
                               title="Switch Category"
                             >
                               <option value="Theory">Theory</option>
                               <option value="Lab">Lab</option>
                               <option value="Suggestions">Suggestions</option>
                             </select>
+
+                            {/* Folder Badge & Folder Reassignment Switcher */}
+                            <span 
+                              className="admin-badge-folder"
+                              style={{
+                                background: note.folderName ? 'rgba(234, 179, 8, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                color: note.folderName ? '#facc15' : 'var(--text-muted)',
+                                border: `1px solid ${note.folderName ? 'rgba(234, 179, 8, 0.35)' : 'rgba(255, 255, 255, 0.1)'}`
+                              }}
+                            >
+                              <Folder size={11} />
+                              <span>{note.folderName || 'Subject Root'}</span>
+                            </span>
+
+                            <select
+                              value={note.folderName || '__root__'}
+                              onChange={(e) => handleUpdateNoteFolder(note, e.target.value)}
+                              className="admin-inline-select folder-select"
+                              title="Change Folder"
+                            >
+                              <option value="__root__">📁 Subject Root (Direct)</option>
+                              {noteSubjectFolders.map(f => (
+                                <option key={f.id || f._id || f.name} value={f.name}>
+                                  📂 {f.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            {note.filename && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                {note.filename}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -832,7 +1275,221 @@ export default function AdminUpload() {
         </>
       )}
 
-      {/* syllabus tab */}
+      {/* ================= TAB 2: FOLDER MANAGEMENT ================= */}
+      {activeTab === 'folders' && (
+        <>
+          <div className="cyber-panel admin-upload-card">
+            <h2 className="admin-card-title">
+              CREATE CUSTOM SUBJECT FOLDER
+            </h2>
+            <p className="admin-card-subtitle">
+              Create custom folders (e.g. Lab 8, Lab 1-3, Modules, Printing Materials) for any subject so students can find specific materials effortlessly.
+            </p>
+
+            <form onSubmit={handleCreateDedicatedFolder} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              {/* Subject Name */}
+              <div>
+                <label className="admin-field-label">
+                  <BookOpen size={16} style={{ color: 'var(--accent-orange)' }} />
+                  Subject Name *
+                </label>
+
+                <input 
+                  type="text"
+                  list="existing-subjects-folders-list"
+                  placeholder="e.g. Web Designing, Cloud Computing, DBMS..."
+                  value={folderForm.subjectName}
+                  onChange={(e) => setFolderForm({ ...folderForm, subjectName: e.target.value })}
+                  required
+                  className="admin-text-input"
+                />
+
+                <datalist id="existing-subjects-folders-list">
+                  {existingSubjects.map((s, i) => (
+                    <option key={i} value={s} />
+                  ))}
+                </datalist>
+
+                {existingSubjects.length > 0 && (
+                  <div style={{ marginTop: '0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Quick Select:</span>
+                    {existingSubjects.map((subj, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setFolderForm({ ...folderForm, subjectName: subj })}
+                        style={{
+                          background: folderForm.subjectName === subj ? 'var(--accent-orange)' : 'rgba(251, 54, 64, 0.08)',
+                          color: folderForm.subjectName === subj ? '#000000' : 'var(--text-secondary)',
+                          border: '1px solid rgba(251, 54, 64, 0.2)',
+                          borderRadius: '4px',
+                          padding: '0.2rem 0.55rem',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {subj}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Folder Name */}
+              <div>
+                <label className="admin-field-label">
+                  <FolderPlus size={16} style={{ color: 'var(--accent-orange)' }} />
+                  Custom Folder Name *
+                </label>
+                <input 
+                  type="text"
+                  placeholder="e.g. Lab 8, Lab 1-3, Unit 1 Notes, Printing Sheets..."
+                  value={folderForm.name}
+                  onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })}
+                  required
+                  className="admin-text-input"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="admin-field-label">
+                  <FileText size={16} style={{ color: 'var(--accent-orange)' }} />
+                  Folder Description <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 'normal' }}>(Optional)</span>
+                </label>
+                <input 
+                  type="text"
+                  placeholder="e.g. Lab 8 experiment manuals, observation printouts, code..."
+                  value={folderForm.description}
+                  onChange={(e) => setFolderForm({ ...folderForm, description: e.target.value })}
+                  className="admin-text-input"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={creatingFolder}
+                className="cyber-btn-orange admin-submit-btn"
+              >
+                {creatingFolder ? (
+                  <>
+                    <RefreshCw size={18} className="spin-animate" />
+                    <span>Creating Folder...</span>
+                  </>
+                ) : (
+                  <>
+                    <FolderPlus size={18} />
+                    <span>Create Subject Folder</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Existing Folders List */}
+          <div className="admin-archive-wrapper">
+            <div className="admin-archive-header">
+              <div>
+                <h3 className="admin-archive-title">
+                  ALL CREATED FOLDERS ({folders.length})
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Manage or delete subject folders. Deleting a folder safely keeps all notes in the subject root.
+                </p>
+              </div>
+
+              <button
+                onClick={fetchFolders}
+                className="cyber-btn-wire"
+                style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
+              >
+                <RefreshCw size={14} className={fetchingFolders ? 'spin-animate' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {fetchingFolders ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                <RefreshCw size={24} className="spin-animate" style={{ margin: '0 auto 0.5rem' }} />
+                <div>Loading folders...</div>
+              </div>
+            ) : folders.length === 0 ? (
+              <div className="cyber-panel admin-empty-box">
+                <Folder size={32} style={{ color: 'var(--accent-orange)', margin: '0 auto 0.8rem', opacity: 0.6 }} />
+                <div style={{ color: '#ffffff', fontWeight: '600', marginBottom: '0.3rem' }}>
+                  No custom folders created yet
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  Use the form above to create your first folder (e.g. "Lab 8").
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                {folders.map((folder) => (
+                  <div key={folder._id || folder.id} className="cyber-panel admin-note-item">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0, flex: 1 }}>
+                      <div className="admin-item-icon" style={{ color: '#facc15' }}>
+                        <FolderOpen size={18} />
+                      </div>
+
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ color: '#ffffff', fontWeight: '700', fontSize: '0.98rem', wordBreak: 'break-word', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>{folder.name}</span>
+                          <span className="folder-notes-badge" style={{ fontSize: '0.72rem', padding: '0.1rem 0.45rem' }}>
+                            {folder.notesCount || 0} {folder.notesCount === 1 ? 'Resource' : 'Resources'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                          <span className="admin-badge-subject">
+                            {folder.subjectName}
+                          </span>
+                          {folder.description && (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                              {folder.description}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-note-actions">
+                      <button
+                        onClick={() => navigate(`/notes?subject=${encodeURIComponent(folder.subjectName)}&folder=${encodeURIComponent(folder.name)}`)}
+                        className="cyber-btn-wire"
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                      >
+                        <ExternalLink size={13} />
+                        <span>View</span>
+                      </button>
+
+                      <button
+                        onClick={() => openRenameFolderModal(folder)}
+                        className="cyber-btn-wire"
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                      >
+                        <Edit3 size={13} />
+                        <span>Rename</span>
+                      </button>
+
+                      <button
+                        onClick={() => openDeleteFolderModal(folder)}
+                        className="admin-delete-btn"
+                        title="Delete folder"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ================= TAB 3: SYLLABUS MANAGEMENT ================= */}
       {activeTab === 'syllabus' && (
         <>
           <div className="cyber-panel admin-upload-card">
@@ -1109,6 +1766,90 @@ export default function AdminUpload() {
         </div>
       )}
 
+      {/* Delete Folder Confirmation Modal */}
+      {deleteFolderModalOpen && folderToDelete && (
+        <div className="admin-modal-backdrop">
+          <div className="cyber-panel admin-modal-box">
+            <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.8rem' }}>
+              CONFIRM DELETE FOLDER
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.2rem' }}>
+              Are you sure you want to delete folder <strong>"{folderToDelete.name}"</strong> under <strong>{folderToDelete.subjectName}</strong>?
+            </p>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+              <input
+                type="checkbox"
+                checked={deleteFolderWithNotes}
+                onChange={(e) => setDeleteFolderWithNotes(e.target.checked)}
+              />
+              <span>Also permanently delete all notes inside this folder? (Unchecked: keeps notes safe in subject root)</span>
+            </label>
+
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteFolderModalOpen(false)}
+                className="cyber-btn-wire"
+                style={{ padding: '0.4rem 0.9rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteFolder}
+                className="admin-delete-btn"
+                style={{ padding: '0.4rem 0.9rem' }}
+              >
+                Delete Folder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Folder Modal */}
+      {renameFolderModalOpen && folderToRename && (
+        <div className="admin-modal-backdrop">
+          <div className="cyber-panel admin-modal-box">
+            <h3 style={{ color: '#ffffff', fontFamily: 'var(--font-cyber)', fontSize: '1.2rem', marginBottom: '0.8rem' }}>
+              RENAME FOLDER
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '1rem' }}>
+              Renaming will update folder name for all notes assigned to <strong>"{folderToRename.name}"</strong>.
+            </p>
+
+            <input
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              className="admin-text-input"
+              style={{ marginBottom: '1.5rem' }}
+              placeholder="Enter new folder name..."
+            />
+
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setRenameFolderModalOpen(false)}
+                className="cyber-btn-wire"
+                style={{ padding: '0.4rem 0.9rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRenameFolder}
+                className="cyber-btn-orange"
+                style={{ padding: '0.4rem 0.9rem' }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Syllabus Confirmation Modal */}
       {deleteSyllabusModalOpen && syllabusToDelete && (
         <div className="admin-modal-backdrop">
@@ -1144,12 +1885,18 @@ export default function AdminUpload() {
       <style>{`
         .admin-upload-page {
           min-height: 100vh;
-          background: radial-gradient(circle at 50% 20%, rgba(251, 54, 64, 0.05) 0%, #000804 70%);
-          padding: 6rem 1.5rem 4rem;
-          max-width: 1000px;
+          background-color: #090d12;
+          background-image: 
+            radial-gradient(circle at 15% 15%, rgba(251, 54, 64, 0.05) 0%, transparent 45%),
+            radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.03) 0%, transparent 45%),
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+          padding: 6.5rem 1.5rem 4rem;
+          box-sizing: border-box;
+          max-width: 1200px;
           margin: 0 auto;
           font-family: var(--font-body);
-          box-sizing: border-box;
         }
 
         .admin-upload-topbar {
@@ -1165,78 +1912,79 @@ export default function AdminUpload() {
           display: flex;
           gap: 0.8rem;
           margin-bottom: 2rem;
-          border-bottom: 1px solid rgba(251, 54, 64, 0.2);
-          padding-bottom: 0.8rem;
+          flex-wrap: wrap;
         }
 
         .admin-tab-btn {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.6rem 1.2rem;
-          background: rgba(0, 15, 8, 0.7);
-          border: 1px solid rgba(251, 54, 64, 0.25);
+          background: rgba(18, 24, 32, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: var(--text-secondary);
+          padding: 0.7rem 1.3rem;
           border-radius: 6px;
           font-family: var(--font-tech);
           font-size: 0.9rem;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .admin-tab-btn:hover {
-          border-color: var(--accent-orange);
+          border-color: rgba(251, 54, 64, 0.4);
           color: #ffffff;
         }
 
         .admin-tab-btn.active {
           background: var(--accent-orange);
           border-color: var(--accent-orange);
-          color: #000000;
-          font-weight: 700;
+          color: #ffffff;
+          box-shadow: 0 0 16px rgba(251, 54, 64, 0.3);
         }
 
         .admin-alert-box {
-          border-radius: 6px;
-          padding: 1rem;
-          margin-bottom: 1.5rem;
-          font-size: 0.95rem;
           display: flex;
           align-items: center;
-          gap: 0.6rem;
+          gap: 0.75rem;
+          padding: 0.85rem 1.2rem;
+          border-radius: 6px;
+          margin-bottom: 1.8rem;
+          font-family: var(--font-tech);
+          font-size: 0.88rem;
         }
 
         .admin-alert-box.error {
-          background: rgba(251, 54, 64, 0.1);
-          border: 1px solid rgba(251, 54, 64, 0.4);
-          color: var(--accent-orange);
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.35);
+          color: #ef4444;
         }
 
         .admin-alert-box.success {
           background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.4);
-          color: #10B981;
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          color: #10b981;
         }
 
         .admin-upload-card {
           padding: 2.2rem;
           border-radius: 10px;
-          margin-bottom: 2.5rem;
+          margin-bottom: 3rem;
         }
 
         .admin-card-title {
           font-family: var(--font-cyber);
-          font-size: 1.6rem;
           color: #ffffff;
+          font-size: 1.5rem;
           margin: 0 0 0.5rem;
+          letter-spacing: 0.04em;
         }
 
         .admin-card-subtitle {
-          color: var(--text-secondary);
-          font-size: 0.95rem;
-          margin: 0 0 2rem;
+          color: var(--text-muted);
+          font-size: 0.9rem;
           line-height: 1.5;
+          margin: 0 0 2rem;
         }
 
         .admin-field-label {
@@ -1244,45 +1992,47 @@ export default function AdminUpload() {
           align-items: center;
           gap: 0.5rem;
           color: #ffffff;
-          font-family: var(--font-cyber);
+          font-family: var(--font-tech);
           font-size: 0.9rem;
           font-weight: 700;
-          margin-bottom: 0.6rem;
           text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.6rem;
         }
 
         .admin-text-input {
           width: 100%;
-          font-family: var(--font-tech);
-          font-size: 1rem;
-          padding: 0.85rem 1.2rem;
+          background: rgba(0, 15, 8, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 6px;
-          background: rgba(0, 5, 2, 0.8);
-          border: 1px solid rgba(251, 54, 64, 0.25);
+          padding: 0.85rem 1rem;
           color: #ffffff;
+          font-family: var(--font-body);
+          font-size: 0.95rem;
           box-sizing: border-box;
           outline: none;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .admin-text-input:focus {
           border-color: var(--accent-orange);
+          box-shadow: 0 0 12px rgba(251, 54, 64, 0.2);
         }
 
         .admin-category-btn {
           flex: 1;
           min-width: 160px;
-          padding: 0.85rem 1rem;
-          border-radius: 6px;
-          background: rgba(0, 5, 2, 0.8);
-          border: 1px solid rgba(251, 54, 64, 0.2);
-          color: var(--text-secondary);
-          cursor: pointer;
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
-          gap: 0.35rem;
+          gap: 0.3rem;
+          padding: 0.9rem 1.1rem;
+          background: rgba(0, 15, 8, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          color: var(--text-secondary);
+          cursor: pointer;
           transition: all 0.2s ease;
-          font-family: var(--font-body);
+          text-align: left;
         }
 
         .admin-category-btn:hover {
@@ -1296,20 +2046,43 @@ export default function AdminUpload() {
           color: #ffffff;
         }
 
+        .folder-selection-subcard {
+          background: rgba(0, 10, 5, 0.55);
+          border: 1px solid rgba(234, 179, 8, 0.25);
+          border-radius: 6px;
+          padding: 1.1rem;
+        }
+
+        .quick-folder-create-box {
+          margin-top: 0.9rem;
+          padding-top: 0.9rem;
+          border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .folder-notes-badge {
+          background: rgba(234, 179, 8, 0.12);
+          border: 1px solid rgba(234, 179, 8, 0.35);
+          color: #facc15;
+          padding: 0.15rem 0.5rem;
+          border-radius: 12px;
+          font-family: var(--font-tech);
+          font-weight: 700;
+        }
+
         .admin-dropzone {
-          border: 2px dashed rgba(251, 54, 64, 0.35);
+          border: 2px dashed rgba(251, 54, 64, 0.3);
           border-radius: 8px;
-          padding: 2.8rem 1.5rem;
+          padding: 2.5rem 1.5rem;
           text-align: center;
           cursor: pointer;
-          background: rgba(0, 5, 2, 0.6);
+          background: rgba(251, 54, 64, 0.02);
           transition: all 0.2s ease;
         }
 
         .admin-dropzone:hover,
         .admin-dropzone.drag-active {
           border-color: var(--accent-orange);
-          background: rgba(251, 54, 64, 0.05);
+          background: rgba(251, 54, 64, 0.06);
         }
 
         .admin-preview-grid {
@@ -1320,8 +2093,8 @@ export default function AdminUpload() {
         }
 
         .admin-preview-card {
-          background: rgba(0, 15, 8, 0.8);
-          border: 1px solid rgba(251, 54, 64, 0.2);
+          background: rgba(0, 20, 10, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 6px;
           padding: 0.6rem;
           display: flex;
@@ -1330,21 +2103,19 @@ export default function AdminUpload() {
         }
 
         .admin-preview-img {
-          width: 44px;
-          height: 44px;
+          width: 36px;
+          height: 36px;
           object-fit: cover;
           border-radius: 4px;
         }
 
         .admin-preview-icon {
-          width: 44px;
-          height: 44px;
+          width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--accent-orange);
-          background: rgba(251, 54, 64, 0.1);
-          border-radius: 4px;
         }
 
         .admin-preview-info {
@@ -1354,7 +2125,7 @@ export default function AdminUpload() {
 
         .admin-preview-name {
           color: #ffffff;
-          font-size: 0.82rem;
+          font-size: 0.78rem;
           font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
@@ -1363,21 +2134,20 @@ export default function AdminUpload() {
 
         .admin-preview-size {
           color: var(--text-muted);
-          font-size: 0.72rem;
+          font-size: 0.7rem;
         }
 
         .admin-submit-btn {
-          width: 100%;
-          padding: 0.9rem;
-          font-size: 1rem;
-          display: flex;
+          padding: 0.9rem 1.8rem;
+          font-size: 0.95rem;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 0.6rem;
         }
 
         .admin-archive-wrapper {
-          margin-top: 2.5rem;
+          margin-top: 2rem;
         }
 
         .admin-archive-header {
@@ -1386,41 +2156,76 @@ export default function AdminUpload() {
           align-items: center;
           margin-bottom: 1.2rem;
           flex-wrap: wrap;
-          gap: 1rem;
+          gap: 0.8rem;
         }
 
         .admin-archive-title {
           font-family: var(--font-cyber);
-          font-size: 1.3rem;
           color: #ffffff;
-          margin: 0 0 0.3rem;
+          font-size: 1.2rem;
+          letter-spacing: 0.04em;
+          margin: 0;
+        }
+
+        .admin-filter-bar {
+          display: flex;
+          gap: 0.75rem;
+          align-items: center;
+          margin-bottom: 1.2rem;
+          flex-wrap: wrap;
+          background: rgba(18, 24, 32, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+        }
+
+        .admin-filter-select {
+          background: rgba(0, 15, 8, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 4px;
+          color: #ffffff;
+          font-family: var(--font-tech);
+          font-size: 0.82rem;
+          padding: 0.45rem 0.8rem;
+          outline: none;
+          cursor: pointer;
+        }
+
+        .admin-filter-search {
+          flex: 1;
+          min-width: 180px;
+          background: rgba(0, 15, 8, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 4px;
+          color: #ffffff;
+          font-family: var(--font-tech);
+          font-size: 0.82rem;
+          padding: 0.45rem 0.8rem;
+          outline: none;
         }
 
         .admin-empty-box {
-          padding: 2.5rem;
+          padding: 3rem;
           text-align: center;
           border-radius: 8px;
-          border: 1px dashed rgba(251, 54, 64, 0.25);
-          background: rgba(0, 15, 8, 0.6);
         }
 
         .admin-note-item {
-          padding: 1rem 1.3rem;
-          border-radius: 6px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          padding: 0.9rem 1.2rem;
+          border-radius: 6px;
           gap: 1rem;
           flex-wrap: wrap;
-          background: rgba(0, 10, 5, 0.7);
         }
 
         .admin-item-icon {
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           border-radius: 6px;
-          background: rgba(251, 54, 64, 0.1);
-          border: 1px solid rgba(251, 54, 64, 0.25);
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1429,26 +2234,54 @@ export default function AdminUpload() {
         }
 
         .admin-badge-subject {
-          background: rgba(251, 54, 64, 0.12);
-          border: 1px solid rgba(251, 54, 64, 0.25);
-          color: var(--accent-orange);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: var(--text-primary);
           padding: 0.1rem 0.5rem;
           border-radius: 4px;
-          font-size: 0.72rem;
-          font-weight: 700;
+          font-size: 0.75rem;
+          font-family: var(--font-tech);
         }
 
         .admin-badge-category {
           padding: 0.1rem 0.5rem;
           border-radius: 4px;
           font-size: 0.72rem;
+          font-family: var(--font-tech);
           font-weight: 700;
-          text-transform: uppercase;
+        }
+
+        .admin-badge-folder {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          padding: 0.1rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.72rem;
+          font-family: var(--font-tech);
+          font-weight: 700;
+        }
+
+        .admin-inline-select {
+          background: rgba(0, 20, 10, 0.85);
+          border: 1px solid rgba(251, 54, 64, 0.3);
+          border-radius: 4px;
+          color: #ffffff;
+          font-size: 0.72rem;
+          padding: 0.15rem 0.4rem;
+          outline: none;
+          cursor: pointer;
+          font-family: var(--font-tech);
+        }
+
+        .admin-inline-select.folder-select {
+          border-color: rgba(234, 179, 8, 0.35);
+          color: #facc15;
         }
 
         .admin-note-actions {
           display: flex;
-          gap: 0.6rem;
+          gap: 0.5rem;
           align-items: center;
         }
 
@@ -1459,10 +2292,10 @@ export default function AdminUpload() {
           padding: 0.35rem 0.75rem;
           border-radius: 4px;
           font-size: 0.8rem;
-          cursor: pointer;
           display: inline-flex;
           align-items: center;
-          gap: 0.35rem;
+          gap: 0.4rem;
+          cursor: pointer;
           font-family: var(--font-tech);
           transition: all 0.2s ease;
         }
@@ -1478,19 +2311,20 @@ export default function AdminUpload() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.85);
-          backdrop-filter: blur(4px);
+          background: rgba(0, 8, 4, 0.88);
+          backdrop-filter: blur(8px);
+          z-index: 9999;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 1.5rem;
-          z-index: 9999;
+          box-sizing: border-box;
         }
 
         .admin-modal-box {
-          max-width: 480px;
           width: 100%;
-          padding: 1.8rem;
+          max-width: 480px;
+          padding: 2rem;
           border-radius: 8px;
         }
 
@@ -1501,13 +2335,9 @@ export default function AdminUpload() {
           .admin-category-btn {
             min-width: 100%;
           }
-          .admin-note-item {
+          .admin-filter-bar {
             flex-direction: column;
-            align-items: flex-start;
-          }
-          .admin-note-actions {
-            width: 100%;
-            justify-content: flex-end;
+            align-items: stretch;
           }
         }
       `}</style>
