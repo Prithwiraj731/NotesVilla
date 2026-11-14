@@ -156,6 +156,19 @@ export default function Notes() {
   const [previewNote, setPreviewNote] = useState(null);
   const [modalFullscreen, setModalFullscreen] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [copiedView, setCopiedView] = useState(false);
+  const [shareToast, setShareToast] = useState('');
+
+  // Update browser tab title dynamically for seamless link sharing & tab context
+  useEffect(() => {
+    if (selectedFolder && selectedSubject) {
+      document.title = `${selectedFolder} (${selectedSubject}) — Notes | NotesVilla`;
+    } else if (selectedSubject) {
+      document.title = `${selectedSubject} Notes | NotesVilla`;
+    } else {
+      document.title = 'Notes Library | NotesVilla';
+    }
+  }, [selectedSubject, selectedFolder]);
 
   // Initial load
   const hasFetchedRef = React.useRef(false);
@@ -561,27 +574,87 @@ export default function Notes() {
     }
   };
 
-  // Copy share link
+  // Beautiful minimal note share helper
   const handleShare = async (note, e) => {
     e.stopPropagation();
+    const cleanTitle = getDisplayNoteTitle(note);
+    const category = resolveNoteCategory(note);
+    const folder = getNoteFolder(note, currentSubjectFolders);
     const noteUrl = `${window.location.origin}/note/${note._id || note.id}`;
+
+    const folderTag = folder ? ` • 📁 ${folder}` : '';
+    const shareText = `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})\n🔗 ${noteUrl}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: note.title,
+          title: `${cleanTitle} — ${note.subjectName}`,
+          text: `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})`,
           url: noteUrl
         });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(noteUrl);
         setCopiedId(note._id || note.id);
         setTimeout(() => setCopiedId(null), 2500);
+        return;
       } catch (err) {
-        console.error('Failed to copy link');
+        if (err.name === 'AbortError') return;
       }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopiedId(note._id || note.id);
+      setShareToast('Copied note details & link!');
+      setTimeout(() => {
+        setCopiedId(null);
+        setShareToast('');
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
+  // Share current folder or subject view
+  const handleShareCurrentView = async () => {
+    const curUrl = window.location.href;
+    let shareText = '';
+    let shareTitle = '';
+
+    if (selectedFolder) {
+      shareTitle = `${selectedFolder} — ${selectedSubject} Notes`;
+      shareText = `📁 ${selectedFolder} • ${selectedSubject}\nAccess all ${selectedFolder} notes, manuals & materials:\n🔗 ${curUrl}`;
+    } else if (selectedSubject) {
+      shareTitle = `${selectedSubject} Notes | NotesVilla`;
+      shareText = `📚 ${selectedSubject} Notes\nTheory, Lab Manuals & PYQ suggestions on NotesVilla:\n🔗 ${curUrl}`;
+    } else {
+      shareTitle = 'Notes Library | NotesVilla';
+      shareText = `📚 NotesVilla Knowledge Dock\nCurated university notes, lab manuals & exam resources:\n🔗 ${curUrl}`;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText.split('\n🔗')[0],
+          url: curUrl
+        });
+        setCopiedView(true);
+        setTimeout(() => setCopiedView(false), 2500);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopiedView(true);
+      setShareToast(selectedFolder ? `Copied ${selectedFolder} folder link!` : `Copied ${selectedSubject} link!`);
+      setTimeout(() => {
+        setCopiedView(false);
+        setShareToast('');
+      }, 2500);
+    } catch (e) {
+      console.error('Failed to copy view link');
     }
   };
 
@@ -805,6 +878,25 @@ export default function Notes() {
                   </span>
                 )}
               </div>
+
+              {/* Share Current View (Folder or Subject) */}
+              <button
+                onClick={handleShareCurrentView}
+                className="cyber-btn-wire"
+                style={{
+                  marginLeft: 'auto',
+                  padding: '0.42rem 0.85rem',
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  borderRadius: '6px'
+                }}
+                title={selectedFolder ? `Share ${selectedFolder} folder link & details` : `Share ${selectedSubject} notes link & details`}
+              >
+                {copiedView ? <Check size={14} style={{ color: '#10B981' }} /> : <Share2 size={14} />}
+                <span>{copiedView ? 'Link Copied!' : (selectedFolder ? `Share 📁 ${selectedFolder}` : `Share ${selectedSubject}`)}</span>
+              </button>
             </div>
 
             {/* Category Bifurcation Tabs */}
@@ -1083,6 +1175,14 @@ export default function Notes() {
                 isFullscreenMode={modalFullscreen}
               />
             </div>
+          </div>
+        )}
+
+        {/* Floating Share Toast */}
+        {shareToast && (
+          <div className="share-toast-banner">
+            <Check size={16} style={{ color: '#10B981' }} />
+            <span>{shareToast}</span>
           </div>
         )}
 
@@ -1754,6 +1854,31 @@ export default function Notes() {
           .category-tab-btn {
             white-space: nowrap;
           }
+        }
+
+        .share-toast-banner {
+          position: fixed;
+          bottom: 2rem;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(15, 23, 42, 0.96);
+          border: 1px solid rgba(16, 185, 129, 0.5);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(16, 185, 129, 0.3);
+          color: #ffffff;
+          padding: 0.65rem 1.4rem;
+          border-radius: 9999px;
+          font-size: 0.88rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          z-index: 9999;
+          animation: toastFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes toastFadeIn {
+          from { opacity: 0; transform: translate(-50%, 15px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
         }
       `}</style>
     </div>

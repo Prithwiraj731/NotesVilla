@@ -13,10 +13,19 @@ export default function NoteDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [shareToast, setShareToast] = useState('');
 
   useEffect(() => {
     loadNote();
   }, [id]);
+
+  useEffect(() => {
+    if (note) {
+      const cleanTitle = note.title?.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || 'Note';
+      const folderPart = note.folderName ? ` (${note.folderName})` : '';
+      document.title = `${cleanTitle} — ${note.subjectName}${folderPart} | NotesVilla`;
+    }
+  }, [note]);
 
   const loadNote = async () => {
     try {
@@ -69,23 +78,40 @@ export default function NoteDetails() {
   };
 
   const handleShare = async () => {
+    if (!note) return;
+    const cleanTitle = note.title?.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || 'Note';
+    const category = resolveNoteCategory(note);
+    const folder = note.folderName;
+    const noteUrl = window.location.href;
+
+    const folderTag = folder ? ` • 📁 ${folder}` : '';
+    const shareText = `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})\n🔗 ${noteUrl}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: note.title,
-          url: window.location.href
+          title: `${cleanTitle} — ${note.subjectName}`,
+          text: `📖 ${cleanTitle}\n📚 ${note.subjectName} (${category} Notes${folderTag})`,
+          url: noteUrl
         });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
+        return;
       } catch (err) {
-        console.error('Failed to copy link');
+        if (err.name === 'AbortError') return;
       }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setShareToast('Copied note details & link!');
+      setTimeout(() => {
+        setCopied(false);
+        setShareToast('');
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to copy link');
     }
   };
 
@@ -291,7 +317,7 @@ export default function NoteDetails() {
           </div>
 
           <h1 className="note-details-title">
-            {note.title}
+            {note.title?.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || note.title}
           </h1>
         </div>
 
@@ -299,10 +325,34 @@ export default function NoteDetails() {
         <div className="note-details-viewer-stage">
           <DocViewer
             files={attachedFiles}
-            title={note.title}
+            title={note.title?.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || note.title}
           />
         </div>
       </div>
+
+      {shareToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(15, 23, 42, 0.95)',
+          border: '1px solid rgba(16, 185, 129, 0.5)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(16, 185, 129, 0.25)',
+          color: '#ffffff',
+          padding: '0.65rem 1.4rem',
+          borderRadius: '9999px',
+          fontSize: '0.88rem',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          zIndex: 9999
+        }}>
+          <Check size={16} style={{ color: '#10B981' }} />
+          <span>{shareToast}</span>
+        </div>
+      )}
 
       <style>{`
         .note-details-page {
