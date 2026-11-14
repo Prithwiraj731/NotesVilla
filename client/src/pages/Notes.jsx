@@ -56,22 +56,65 @@ function getNoteFileType(note) {
   return 'document';
 }
 
-export function getNoteFolder(note) {
+export function getNoteFolder(note, knownFolders = []) {
   if (!note) return null;
+
+  // 1. Explicit folderName from DB
   if (note.folderName && typeof note.folderName === 'string' && note.folderName.trim() && note.folderName.toLowerCase() !== 'none' && note.folderName.toLowerCase() !== 'root') {
     return note.folderName.trim();
   }
+
+  // 2. topicName fallback
   if (note.topicName && typeof note.topicName === 'string' && note.topicName.trim()) {
     const t = note.topicName.trim();
     if (!['theory', 'lab', 'suggestions', 'syllabus'].includes(t.toLowerCase())) {
       return t;
     }
   }
+
+  // 3. description fallback: [Folder: ...]
   if (note.description && typeof note.description === 'string' && note.description.includes('[Folder:')) {
     const m = note.description.match(/\[Folder:\s*([^\]]+)\]/);
     if (m && m[1] && m[1].trim()) return m[1].trim();
   }
+
+  // 4. Client-side local registry mapping
+  try {
+    const noteId = note.id || note._id;
+    if (noteId) {
+      const idMap = JSON.parse(localStorage.getItem('notesvilla_note_folders') || '{}');
+      if (idMap[noteId]) return idMap[noteId];
+    }
+  } catch (e) {}
+
+  // 5. Title bracket prefix fallback: [Lab 5] or [Folder: Lab 5]
+  if (note.title && typeof note.title === 'string') {
+    const bracketMatch = note.title.match(/^\[(?:Folder:\s*)?([^\]]+)\]/i);
+    if (bracketMatch && bracketMatch[1] && bracketMatch[1].trim()) {
+      return bracketMatch[1].trim();
+    }
+
+    // 6. Match against known folders
+    const titleLower = note.title.trim().toLowerCase();
+    if (Array.isArray(knownFolders) && knownFolders.length > 0) {
+      for (const f of knownFolders) {
+        const fName = typeof f === 'string' ? f.trim() : (f?.name || '').trim();
+        if (!fName) continue;
+        const fLower = fName.toLowerCase();
+        if (titleLower === fLower) return fName;
+        if (titleLower.startsWith(fLower + ' ') || titleLower.startsWith(fLower + '-') || titleLower.startsWith(fLower + ':')) {
+          return fName;
+        }
+      }
+    }
+  }
+
   return null;
+}
+
+export function getDisplayNoteTitle(note) {
+  if (!note || !note.title) return note?.filename || 'Untitled Note';
+  return note.title.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || note.title;
 }
 
 export default function Notes() {
@@ -318,11 +361,13 @@ export default function Notes() {
         });
       });
 
+    const knownFoldersList = Array.from(folderMap.values());
+
     // 2. Discover from notes in memory & aggregate category counts
     notes.forEach(n => {
       if (n.subjectName?.toLowerCase() !== sLower) return;
       if (n.category === 'Syllabus') return;
-      const fName = getNoteFolder(n);
+      const fName = getNoteFolder(n, knownFoldersList);
       if (fName) {
         const key = fName.toLowerCase();
         if (!folderMap.has(key)) {
@@ -371,7 +416,7 @@ export default function Notes() {
     if (!selectedFolder) return null;
     const fLower = selectedFolder.toLowerCase();
     const inFolder = currentSubjectAllNotes.filter(n => {
-      const fName = getNoteFolder(n);
+      const fName = getNoteFolder(n, currentSubjectFolders);
       return fName && fName.toLowerCase() === fLower;
     });
     
@@ -392,7 +437,7 @@ export default function Notes() {
       lab,
       suggestions
     };
-  }, [selectedFolder, currentSubjectAllNotes]);
+  }, [selectedFolder, currentSubjectAllNotes, currentSubjectFolders]);
 
   // Notes filtered according to view: Folder drilldown vs Subject overview
   const displayedNotes = useMemo(() => {
@@ -403,13 +448,13 @@ export default function Notes() {
     if (selectedFolder) {
       // Inside specific folder
       list = list.filter(n => {
-        const fName = getNoteFolder(n);
+        const fName = getNoteFolder(n, currentSubjectFolders);
         return fName && fName.toLowerCase() === selectedFolder.toLowerCase();
       });
     } else {
       // At subject level: if folders exist and not searching, show root/direct notes
       if (currentSubjectFolders.length > 0 && !searchTerm.trim()) {
-        list = list.filter(n => !getNoteFolder(n));
+        list = list.filter(n => !getNoteFolder(n, currentSubjectFolders));
       }
     }
 
@@ -420,8 +465,10 @@ export default function Notes() {
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       list = list.filter(n => {
-        const fName = getNoteFolder(n);
+        const fName = getNoteFolder(n, currentSubjectFolders);
+        const dispTitle = getDisplayNoteTitle(n);
         return (
+          (dispTitle && dispTitle.toLowerCase().includes(q)) ||
           (n.title && n.title.toLowerCase().includes(q)) ||
           (n.filename && n.filename.toLowerCase().includes(q)) ||
           (fName && fName.toLowerCase().includes(q))
@@ -949,17 +996,17 @@ export default function Notes() {
                           </div>
 
                           {/* Folder badge if note belongs to a folder and viewing all notes */}
-                          {getNoteFolder(note) && !selectedFolder && (
+                          {getNoteFolder(note, currentSubjectFolders) && !selectedFolder && (
                             <div 
                               className="note-folder-tag"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSelectFolder(getNoteFolder(note));
+                                handleSelectFolder(getNoteFolder(note, currentSubjectFolders));
                               }}
-                              title={`Filed in folder: ${getNoteFolder(note)}. Click to open folder.`}
+                              title={`Filed in folder: ${getNoteFolder(note, currentSubjectFolders)}. Click to open folder.`}
                             >
                               <Folder size={11} />
-                              <span>{getNoteFolder(note)}</span>
+                              <span>{getNoteFolder(note, currentSubjectFolders)}</span>
                             </div>
                           )}
 
@@ -972,7 +1019,7 @@ export default function Notes() {
 
                         {/* Note Title */}
                         <h4 className="note-card-title">
-                          {note.title || note.filename || 'Untitled Note'}
+                          {getDisplayNoteTitle(note)}
                         </h4>
 
                         {/* Card Action Buttons */}
@@ -1031,7 +1078,7 @@ export default function Notes() {
                         fileType: previewNote.fileType
                       }]
                 }
-                title={previewNote.title || previewNote.filename || 'Note Preview'}
+                title={getDisplayNoteTitle(previewNote)}
                 onClose={() => setPreviewNote(null)}
                 isFullscreenMode={modalFullscreen}
               />

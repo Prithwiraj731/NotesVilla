@@ -33,22 +33,65 @@ function isImageFile(filename) {
   return IMAGE_EXTENSIONS.includes(ext);
 }
 
-export function getNoteFolder(note) {
+export function getNoteFolder(note, knownFolders = []) {
   if (!note) return null;
+
+  // 1. Explicit folderName from DB
   if (note.folderName && typeof note.folderName === 'string' && note.folderName.trim() && note.folderName.toLowerCase() !== 'none' && note.folderName.toLowerCase() !== 'root') {
     return note.folderName.trim();
   }
+
+  // 2. topicName fallback
   if (note.topicName && typeof note.topicName === 'string' && note.topicName.trim()) {
     const t = note.topicName.trim();
     if (!['theory', 'lab', 'suggestions', 'syllabus'].includes(t.toLowerCase())) {
       return t;
     }
   }
+
+  // 3. description fallback: [Folder: ...]
   if (note.description && typeof note.description === 'string' && note.description.includes('[Folder:')) {
     const m = note.description.match(/\[Folder:\s*([^\]]+)\]/);
     if (m && m[1] && m[1].trim()) return m[1].trim();
   }
+
+  // 4. Client-side local registry mapping
+  try {
+    const noteId = note.id || note._id;
+    if (noteId) {
+      const idMap = JSON.parse(localStorage.getItem('notesvilla_note_folders') || '{}');
+      if (idMap[noteId]) return idMap[noteId];
+    }
+  } catch (e) {}
+
+  // 5. Title bracket prefix fallback: [Lab 5] or [Folder: Lab 5]
+  if (note.title && typeof note.title === 'string') {
+    const bracketMatch = note.title.match(/^\[(?:Folder:\s*)?([^\]]+)\]/i);
+    if (bracketMatch && bracketMatch[1] && bracketMatch[1].trim()) {
+      return bracketMatch[1].trim();
+    }
+
+    // 6. Match against known folders
+    const titleLower = note.title.trim().toLowerCase();
+    if (Array.isArray(knownFolders) && knownFolders.length > 0) {
+      for (const f of knownFolders) {
+        const fName = typeof f === 'string' ? f.trim() : (f?.name || '').trim();
+        if (!fName) continue;
+        const fLower = fName.toLowerCase();
+        if (titleLower === fLower) return fName;
+        if (titleLower.startsWith(fLower + ' ') || titleLower.startsWith(fLower + '-') || titleLower.startsWith(fLower + ':')) {
+          return fName;
+        }
+      }
+    }
+  }
+
   return null;
+}
+
+export function getDisplayNoteTitle(note) {
+  if (!note || !note.title) return note?.filename || 'Untitled Note';
+  return note.title.replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim() || note.title;
 }
 
 export default function AdminUpload() {
@@ -561,8 +604,12 @@ export default function AdminUpload() {
     try {
       setLoading(true);
       const folderVal = newFolderName === '__root__' ? '' : newFolderName;
+      let cleanTitle = (note.title || note.filename || 'Note').replace(/^\[(?:Folder:\s*)?[^\]]+\]\s*/i, '').trim();
+      const newTitle = folderVal ? `[${folderVal}] ${cleanTitle}` : cleanTitle;
+
       try {
         await API.put(`/notes/note/${note._id || note.id}`, { 
+          title: newTitle,
           folderName: folderVal,
           topicName: folderVal || (note.category || 'Theory'),
           description: folderVal ? `[Folder: ${folderVal}]` : (note.category || 'Theory')
@@ -570,11 +617,25 @@ export default function AdminUpload() {
       } catch (apiErr) {
         // Fallback update on older server versions
         await API.put(`/notes/note/${note._id || note.id}`, {
+          title: newTitle,
           topicName: folderVal || (note.category || 'Theory'),
           description: folderVal ? `[Folder: ${folderVal}]` : (note.category || 'Theory')
         });
       }
-      setSuccess(`Moved note "${note.title || note.filename}" to ${folderVal ? `folder "${folderVal}"` : 'Subject Root'}`);
+
+      // Update in client local registry
+      try {
+        const noteId = note._id || note.id;
+        const idMap = JSON.parse(localStorage.getItem('notesvilla_note_folders') || '{}');
+        if (folderVal) {
+          idMap[noteId] = folderVal;
+        } else {
+          delete idMap[noteId];
+        }
+        localStorage.setItem('notesvilla_note_folders', JSON.stringify(idMap));
+      } catch (e) {}
+
+      setSuccess(`Moved note "${cleanTitle}" to ${folderVal ? `folder "${folderVal}"` : 'Subject Root'}`);
       fetchNotes();
       fetchFolders();
     } catch (err) {
@@ -650,6 +711,22 @@ export default function AdminUpload() {
       ? form.folderName.trim()
       : '';
 
+    // If uploading into a folder, prefix title with [FolderName] so older servers & all clients persist folder
+    if (folderToUpload) {
+      const cleanFld = folderToUpload.trim();
+      const lowerTitle = noteTitle.toLowerCase();
+      const lowerFld = cleanFld.toLowerCase();
+      if (
+        !lowerTitle.startsWith(`[${lowerFld}]`) &&
+        !lowerTitle.startsWith(`[folder: ${lowerFld}]`) &&
+        !lowerTitle.startsWith(lowerFld + ' ') &&
+        !lowerTitle.startsWith(lowerFld + '-') &&
+        !lowerTitle.startsWith(lowerFld + ':')
+      ) {
+        noteTitle = `[${cleanFld}] ${noteTitle}`;
+      }
+    }
+
     try {
       const data = new FormData();
       data.append('title', noteTitle);
@@ -677,7 +754,7 @@ export default function AdminUpload() {
         form.files.forEach(file => data.append('files', file));
       }
 
-      await API.post(uploadUrl, data, {
+      const uploadRes = await API.post(uploadUrl, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -693,6 +770,15 @@ export default function AdminUpload() {
               notesCount: 1
             });
             localStorage.setItem('custom_folders', JSON.stringify(cur));
+          }
+        } catch (e) {}
+
+        try {
+          const savedId = uploadRes.data?.note?._id || uploadRes.data?.note?.id || uploadRes.data?.notes?.[0]?._id;
+          if (savedId) {
+            const idMap = JSON.parse(localStorage.getItem('notesvilla_note_folders') || '{}');
+            idMap[savedId] = folderToUpload;
+            localStorage.setItem('notesvilla_note_folders', JSON.stringify(idMap));
           }
         } catch (e) {}
       }
@@ -835,7 +921,7 @@ export default function AdminUpload() {
       if (filterCategory !== 'All' && resolveNoteCategory(note).toLowerCase() !== filterCategory.toLowerCase()) {
         return false;
       }
-      const noteFolder = getNoteFolder(note);
+      const noteFolder = getNoteFolder(note, folders);
       if (filterFolder !== 'All') {
         if (filterFolder === '__root__') {
           if (noteFolder) return false;
@@ -854,7 +940,7 @@ export default function AdminUpload() {
       }
       return true;
     });
-  }, [notes, filterSubject, filterCategory, filterFolder, filterSearch]);
+  }, [notes, folders, filterSubject, filterCategory, filterFolder, filterSearch]);
 
   // Unique folders for the archive filter
   const archiveFilterFolders = useMemo(() => {
@@ -1347,7 +1433,7 @@ export default function AdminUpload() {
                 {filteredNotes.map((note) => {
                   const noteIsImage = note.fileType === 'image' || isImageFile(note.filename);
                   const cat = resolveNoteCategory(note);
-                  const noteFolder = getNoteFolder(note);
+                  const noteFolder = getNoteFolder(note, folders);
                   const noteSubjectFolders = folders.filter(
                     f => f.subjectName?.toLowerCase() === note.subjectName?.toLowerCase()
                   );
@@ -1361,7 +1447,7 @@ export default function AdminUpload() {
 
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ color: '#ffffff', fontWeight: '700', fontSize: '0.92rem', wordBreak: 'break-word' }}>
-                            {note.title || note.filename}
+                            {getDisplayNoteTitle(note)}
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.35rem', flexWrap: 'wrap' }}>
                             <span className="admin-badge-subject">
